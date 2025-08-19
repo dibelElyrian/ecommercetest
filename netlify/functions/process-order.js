@@ -28,11 +28,17 @@ exports.handler = async (event, context) => {
     const orderData = JSON.parse(event.body);
     console.log('?? Processing TRIOGEL order:', orderData.orderId);
     
-    // Your Discord webhook URL - Get this from your Discord server
+    // Environment variables for integrations
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
     
     if (!DISCORD_WEBHOOK_URL) {
       console.warn('?? Discord webhook URL not configured');
+    }
+    
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      console.warn('?? Supabase database not configured');
     }
 
     // Game name mapping for display
@@ -41,13 +47,13 @@ exports.handler = async (event, context) => {
       'roblox': 'Roblox'
     };
 
-    // Format items list for Discord (clean, no problematic emojis)
+    // Format items list for Discord
     const itemsList = orderData.items.map(item => {
       const gameName = gameNames[item.game] || item.game;
       return `**${item.name}** (${gameName})\nQuantity: ${item.quantity} | Price: $${(item.price * item.quantity).toFixed(2)}`;
     }).join('\n\n');
 
-    // Create rich Discord embed message with clean formatting
+    // Create rich Discord embed message
     const discordMessage = {
       content: `**:bell: NEW TRIOGEL ORDER RECEIVED!**`,
       embeds: [{
@@ -77,7 +83,7 @@ exports.handler = async (event, context) => {
           }
         ],
         footer: {
-          text: 'TRIOGEL Gaming Marketplace'
+          text: 'TRIOGEL Gaming Marketplace • Database: ' + (SUPABASE_URL ? 'Connected' : 'Local')
         },
         timestamp: orderData.timestamp
       }]
@@ -92,33 +98,136 @@ exports.handler = async (event, context) => {
       });
     }
 
-    // Send to Discord if webhook URL is configured
-    if (DISCORD_WEBHOOK_URL) {
-      console.log('?? Sending Discord notification...');
-      
-      const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(discordMessage)
-      });
+    // DATABASE INTEGRATION - Save order to Supabase
+    let databaseSaved = false;
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      try {
+        console.log('?? Saving order to database...');
+        
+        // Prepare order data for database
+        const orderRecord = {
+          order_id: orderData.orderId,
+          customer_email: orderData.customer.email,
+          customer_game_username: orderData.customer.gameUsername,
+          customer_whatsapp: orderData.customer.whatsappNumber || null,
+          customer_region: orderData.customer.serverRegion || null,
+          payment_method: orderData.paymentMethod,
+          customer_notes: orderData.customerNotes || null,
+          total_amount: orderData.total,
+          status: 'pending',
+          discord_sent: true,
+          created_at: orderData.timestamp
+        };
 
-      if (!discordResponse.ok) {
-        const errorText = await discordResponse.text();
-        console.error('? Discord webhook failed:', discordResponse.status, errorText);
-        throw new Error(`Discord notification failed: ${discordResponse.status}`);
+        // Save main order record
+        const orderResponse = await fetch(`${SUPABASE_URL}/rest/v1/triogel_orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(orderRecord)
+        });
+
+        if (orderResponse.ok) {
+          console.log('? Order saved to database');
+          databaseSaved = true;
+
+          // Save order items
+          const orderItems = orderData.items.map(item => ({
+            order_id: orderData.orderId,
+            item_id: item.id,
+            item_name: item.name,
+            item_game: item.game,
+            item_price: item.price,
+            quantity: item.quantity,
+            subtotal: item.price * item.quantity
+          }));
+
+          await fetch(`${SUPABASE_URL}/rest/v1/triogel_order_items`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify(orderItems)
+          });
+
+          console.log('? Order items saved to database');
+
+          // Update customer record
+          const customerRecord = {
+            email: orderData.customer.email,
+            game_username: orderData.customer.gameUsername,
+            whatsapp: orderData.customer.whatsappNumber || null,
+            preferred_region: orderData.customer.serverRegion || null,
+            last_order_date: orderData.timestamp
+          };
+
+          // Try to upsert customer record
+          await fetch(`${SUPABASE_URL}/rest/v1/triogel_customers`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_KEY,
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'Prefer': 'resolution=merge-duplicates'
+            },
+            body: JSON.stringify({
+              ...customerRecord,
+              total_orders: 1,
+              total_spent: orderData.total,
+              first_order_date: orderData.timestamp
+            })
+          });
+
+          console.log('? Customer record updated');
+        } else {
+          const dbError = await orderResponse.text();
+          console.error('? Database save failed:', dbError);
+        }
+      } catch (dbError) {
+        console.error('?? Database error (continuing with Discord):', dbError);
       }
-
-      console.log('? Discord notification sent successfully');
     }
 
-    // Store order data (you could also save to a database here)
+    // Send to Discord if webhook URL is configured
+    let discordSent = false;
+    if (DISCORD_WEBHOOK_URL) {
+      try {
+        console.log('?? Sending Discord notification...');
+        
+        const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(discordMessage)
+        });
+
+        if (!discordResponse.ok) {
+          const errorText = await discordResponse.text();
+          console.error('? Discord webhook failed:', discordResponse.status, errorText);
+        } else {
+          console.log('? Discord notification sent successfully');
+          discordSent = true;
+        }
+      } catch (discordError) {
+        console.error('?? Discord notification error:', discordError);
+      }
+    }
+
+    // Log successful processing
     console.log('?? Order processed:', {
       orderId: orderData.orderId,
       total: orderData.total,
       customerEmail: orderData.customer.email,
-      itemCount: orderData.items.length
+      itemCount: orderData.items.length,
+      databaseSaved: databaseSaved,
+      discordSent: discordSent
     });
 
     // Return success response
@@ -132,9 +241,13 @@ exports.handler = async (event, context) => {
         success: true, 
         message: 'Order processed successfully',
         orderId: orderData.orderId,
-        discordSent: !!DISCORD_WEBHOOK_URL
+        discordSent: discordSent,
+        databaseSaved: databaseSaved,
+        integrations: {
+          discord: !!DISCORD_WEBHOOK_URL,
+          database: !!SUPABASE_URL
+        }
       })
-    };
 
   } catch (error) {
     console.error('?? Error processing TRIOGEL order:', error);
