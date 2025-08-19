@@ -1066,115 +1066,332 @@
             </div>
 
             <!-- Copyright Section -->
-            <div class="copyright">
-                <p>&copy; 2023 TRIOGEL. All rights reserved.</p>
+            <div class="footer-bottom" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 30px; text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 40px;">
+                <p>Premium Mobile Legends & Roblox Items | Trusted Gaming Community</p>
             </div>
         </div>
     </footer>
 
     <!-- JavaScript Section -->
     <script>
-        // Sample items data
+        // TRIOGEL Items Database - Mobile Legends & Roblox
         const items = [
+            // Mobile Legends Items
             {
                 id: 1,
-                name: "ML Skin: Stellar Guardian",
-                description: "Unlock the power of the stars with this exclusive skin.",
-                image: "https://via.placeholder.com/130x130.png?text=ML+Skin",
-                price: 9.99,
+                name: "Legendary Skin Bundle",
                 game: "ml",
+                description: "Premium legendary skin collection with special effects and voice lines. Includes 5 top-tier skins.",
+                price: 89.99,
+                emoji: "✨",
                 rarity: "legendary",
-                stats: {
-                    attack: 10,
-                    defense: 5
-                }
+                stats: { skins: "5", effects: "Special", voice: "Yes" }
             },
             {
                 id: 2,
-                name: "Roblox Item: Super sword",
-                description: "Rule the game with this super sword.",
-                image: "https://via.placeholder.com/130x130.png?text=Roblox+Item",
-                price: 12.5,
-                game: "roblox",
+                name: "Epic Skin - Fanny",
+                game: "ml",
+                description: "Fanny's epic skin with enhanced animations and unique recall effects.",
+                price: 34.99,
+                emoji: "🦸",
                 rarity: "epic",
-                stats: {
-                    attack: 15,
-                    defense: 3
-                }
+                stats: { hero: "Fanny", type: "Epic", recall: "Custom" }
+            },
+            {
+                id: 3,
+                name: "Starlight Pass (Season)",
+                game: "ml",
+                description: "Full season Starlight Pass with exclusive rewards and premium benefits.",
+                price: 12.99,
+                emoji: "⭐",
+                rarity: "rare",
+                stats: { duration: "1 Month", rewards: "Premium", exp: "+50%" }
+            },
+            {
+                id: 4,
+                name: "Diamonds - 2000 Pack",
+                game: "ml",
+                description: "2000 Mobile Legends diamonds for skins, heroes, and premium items.",
+                price: 49.99,
+                emoji: "💎",
+                rarity: "common",
+                stats: { amount: "2000", bonus: "+200", instant: "Yes" }
+            },
+            {
+                id: 5,
+                name: "MLBB Account (Mythic)",
+                game: "ml",
+                description: "High-rank Mythic account with 50+ heroes and 20+ skins. Hand-leveled.",
+                price: 199.99,
+                emoji: "🏆",
+                rarity: "legendary",
+                stats: { rank: "Mythic", heroes: "50+", skins: "20+" }
+            },
+            // Roblox Items
+            {
+                id: 6,
+                name: "Dominus Crown",
+                game: "roblox",
+                description: "Legendary Dominus hat showing ultimate status. Rare and prestigious item.",
+                price: 299.99,
+                emoji: "👑",
+                rarity: "legendary",
+                stats: { type: "Hat", rarity: "Ultra Rare", status: "VIP" }
+            },
+            {
+                id: 7,
+                name: "Robux - 10,000 Pack",
+                game: "roblox",
+                description: "10,000 Robux currency for purchasing items, game passes, and premium content.",
+                price: 99.99,
+                emoji: "💰",
+                rarity: "common",
+                stats: { amount: "10,000", bonus: "+1000", delivery: "Instant" }
+            },
+            {
+                id: 8,
+                name: "Roblox Premium Account",
+                game: "roblox",
+                description: "High-level Roblox account with rare items, limiteds, and premium accessories.",
+                price: 149.99,
+                emoji: "🎮",
+                rarity: "epic",
+                stats: { level: "High", limiteds: "Yes", premium: "Active" }
+            },
+            {
+                id: 9,
+                name: "Golden Wings Package",
+                game: "roblox",
+                description: "Exclusive golden wings accessory with sparkling effects. Limited edition item.",
+                price: 79.99,
+                emoji: "🪶",
+                rarity: "rare",
+                stats: { color: "Golden", effects: "Sparkle", edition: "Limited" }
+            },
+            {
+                id: 10,
+                name: "Pet Collection Bundle",
+                game: "roblox",
+                description: "Collection of 10 rare pets including legendary and mythical variants.",
+                price: 59.99,
+                emoji: "🐾",
+                rarity: "epic",
+                stats: { pets: "10", legendary: "3", mythical: "2" }
             }
         ];
 
+        const gameNames = {
+            'ml': 'Mobile Legends: Bang Bang',
+            'roblox': 'Roblox'
+        };
+
         let cart = [];
+        let currentFilter = 'all';
+
+        function init() {
+            console.log('🎮 TRIOGEL Initializing...');
+            displayItems();
+            updateCartCount();
+            setupFilters();
+            console.log('✅ TRIOGEL Initialized successfully!');
+        }
+
+        function setupFilters() {
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.game;
+                    displayItems();
+                });
+            });
+        }
+
+        function displayItems() {
+            console.log('🔄 Displaying items for filter:', currentFilter);
+            const grid = document.getElementById('itemsGrid');
+            const filteredItems = currentFilter === 'all'
+                ? items
+                : items.filter(item => item.game === currentFilter);
+
+            console.log('📦 Items to display:', filteredItems.length);
+
+            grid.innerHTML = filteredItems.map(item => `
+                <div class="item-card ${item.game}-item" data-game="${item.game}">
+                    <div class="item-header">
+                        <div class="game-tag ${item.game}-tag">${gameNames[item.game]}</div>
+                        <div class="rarity-badge rarity-${item.rarity}">${item.rarity}</div>
+                    </div>
+                    <div class="item-image ${item.game}-bg">${item.emoji}</div>
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-description">${item.description}</div>
+                    <div class="item-stats">
+                        ${Object.entries(item.stats).map(([key, value]) => `
+                            <div class="stat">
+                                <div class="stat-value">${value}</div>
+                                <div class="stat-label">${key}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="item-price">$${item.price}</div>
+                    <button class="add-to-cart-btn" onclick="addToCart(${item.id})">
+                        Add to Cart
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function addToCart(itemId) {
+            const item = items.find(i => i.id === itemId);
+            const existingItem = cart.find(i => i.id === itemId);
+
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...item, quantity: 1 });
+            }
+
+            updateCartCount();
+            showNotification(`${item.name} added to cart!`);
+        }
+
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.id !== itemId);
+            updateCartCount();
+            displayCartItems();
+        }
+
+        function updateCartCount() {
+            const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = count;
+        }
 
         function openCart() {
-            // Logic to open cart modal and display cart items
-            const cartModal = document.getElementById('cartModal');
-            const cartItemsContainer = document.getElementById('cartItems');
-            const cartTotal = document.getElementById('cartTotal');
-
-            cartItemsContainer.innerHTML = '';
-            let total = 0;
-
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-
-                const cartItem = document.createElement('div');
-                cartItem.className = 'cart-item';
-                cartItem.innerHTML = `
-                    <div>
-                        <strong>${item.name}</strong> 
-                        <span class="remove-btn" onclick="removeFromCart(${item.id})">❌ Remove</span>
-                        <div class="item-description">${item.description}</div>
-                    </div>
-                    <div>
-                        <div class="item-price">$${item.price.toFixed(2)}</div>
-                        <div class="item-quantity">
-                            <button class="qty-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
-                            <span class="qty-value">${item.quantity}</span>
-                            <button class="qty-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
-                        </div>
-                    </div>
-                `;
-                cartItemsContainer.appendChild(cartItem);
-            });
-
-            cartTotal.innerHTML = `Total: $${total.toFixed(2)}`;
-            cartModal.style.display = 'block';
+            document.getElementById('cartModal').style.display = 'block';
+            displayCartItems();
         }
 
         function closeCart() {
             document.getElementById('cartModal').style.display = 'none';
         }
 
+        function displayCartItems() {
+            const cartItemsDiv = document.getElementById('cartItems');
+            const cartTotalDiv = document.getElementById('cartTotal');
+
+            if (cart.length === 0) {
+                cartItemsDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Your cart is empty</p>';
+                cartTotalDiv.innerHTML = 'Total: $0.00';
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            cartItemsDiv.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: var(--text-secondary);">${gameNames[item.game]} - Qty: ${item.quantity}</small>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 1.2rem; font-weight: 700; color: var(--success-green);">$${(item.price * item.quantity).toFixed(2)}</div>
+                        <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
+                    </div>
+                </div>
+            `).join('');
+
+            cartTotalDiv.innerHTML = `Total: $${total.toFixed(2)}`;
+        }
+
         function proceedToCheckout() {
-            // Logic to proceed to checkout
-            const checkoutModal = document.getElementById('checkoutModal');
-            const orderSummary = document.getElementById('orderSummary');
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
 
-            orderSummary.innerHTML = '';
-            let total = 0;
-
-            cart.forEach(item => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-
-                const orderItem = document.createElement('div');
-                orderItem.className = 'order-item';
-                orderItem.innerHTML = `
-                    <div>${item.name} <span class="qty-value">x${item.quantity}</span></div>
-                    <div class="item-price">$${itemTotal.toFixed(2)}</div>
-                `;
-                orderSummary.appendChild(orderItem);
-            });
-
-            checkoutModal.style.display = 'block';
+            document.getElementById('cartModal').style.display = 'none';
+            document.getElementById('checkoutModal').style.display = 'block';
+            displayOrderSummary();
         }
 
         function closeCheckout() {
             document.getElementById('checkoutModal').style.display = 'none';
         }
 
+        function displayOrderSummary() {
+            const summaryDiv = document.getElementById('orderSummary');
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            summaryDiv.innerHTML = `
+                <h3 style="margin-bottom: 20px; color: var(--text-primary);">Order Summary</h3>
+                ${cart.map(item => `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span style="color: var(--success-green);">$${(item.price * item.quantity).toFixed(2)}</span>
+                    </div>
+                `).join('')}
+                <hr style="border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: 800;">
+                    <span>Total:</span>
+                    <span style="color: var(--success-green);">$${total.toFixed(2)}</span>
+                </div>
+            `;
+        }
+
+        function showOrderSuccess(orderData) {
+            const checkoutContent = document.getElementById('checkoutContent');
+            checkoutContent.innerHTML = `
+                <div class="success-message">
+                    <h3 style="margin-bottom: 20px; font-size: 2rem;">🎉 Order Confirmed!</h3>
+                    <p style="font-size: 1.2rem; margin-bottom: 15px;">Thank you for your purchase!</p>
+                    <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
+                    <p style="margin-bottom: 20px;">We've received your order and will contact you within 24 hours to coordinate the in-game trade.</p>
+                    <p style="font-size: 0.9rem; opacity: 0.8;">A confirmation will be sent to ${orderData.customer.email}</p>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="checkout-btn" onclick="closeCheckout(); location.reload();">Continue Shopping</button>
+                </div>
+            `;
+        }
+
+        function showOwnerNotification(orderData) {
+            const notification = document.getElementById('ownerNotification');
+            notification.innerHTML = `
+                🔔 New TRIOGEL Order!<br>
+                <small>Order: ${orderData.orderId} - $${orderData.total.toFixed(2)}</small>
+            `;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 10000);
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--primary-gradient);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 3000;
+                font-weight: 700;
+                animation: slideInRight 0.3s ease;
+            `;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // ORDER TRACKING FUNCTIONS
         function openOrderTracking() {
             document.getElementById('orderTrackingModal').style.display = 'block';
             document.getElementById('orderId').value = '';
