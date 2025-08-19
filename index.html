@@ -1335,7 +1335,7 @@
             cartTotalDiv.innerHTML = `Total: ₱${total.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
         }
 
-        function proceedToCheckout() {
+        function proceed toCheckout() {
             if (cart.length === 0) {
                 alert('Your cart is empty!');
                 return;
@@ -1377,7 +1377,7 @@
                     <h3 style="margin-bottom: 20px; font-size: 2rem;">🎉 Order Confirmed!</h3>
                     <p style="font-size: 1.2rem; margin-bottom: 15px;">Thank you for your purchase!</p>
                     <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
-                    <p style="margin-bottom: 20px;">We've received your order and will contact you within 24 hours to coordinate the in-game trade.</p>
+                    <p style="margin-bottom: 20px;">We've received your order and will contact you within 24 hours via email.</p>
                     <p style="font-size: 0.9rem; opacity: 0.8;">A confirmation will be sent to ${orderData.customer.email}</p>
                 </div>
                 <div style="text-align: center; margin-top: 30px;">
@@ -1433,153 +1433,26 @@
             document.getElementById('orderTrackingModal').style.display = 'none';
         }
 
-        // Enhanced trackOrder function that uses your real backend
-        async function trackOrder(searchInput) {
-            const resultDiv = document.getElementById('orderResult');
-            const statusDiv = document.getElementById('orderStatus');
-            const itemsListDiv = document.getElementById('orderItemsList');
-            const customerSummaryDiv = document.getElementById('customerSummary');
+        // Email function to replace WhatsApp
+        function composeEmail(reference, customerEmail) {
+            const subject = `TRIOGEL Order Payment Proof - ${reference}`;
+            const body = `Hi TRIOGEL Support,
 
-            // Show loading state
-            resultDiv.style.display = 'block';
-            statusDiv.className = 'order-status';
-            statusDiv.innerHTML = '🔍 Searching for your order...';
-            itemsListDiv.innerHTML = '<div style="text-align: center; padding: 20px;">Loading...</div>';
-            customerSummaryDiv.innerHTML = '';
+I've placed an order with reference: ${reference}
 
-            try {
-                console.log('🔍 Tracking order:', searchInput);
+I have completed the GCash payment and am attaching the screenshot as proof.
 
-                // Determine if input is email or order ID
-                const isEmail = searchInput.includes('@');
-                const queryParam = isEmail ? `email=${encodeURIComponent(searchInput)}` : `orderId=${searchInput}`;
+Please process my order and deliver my gaming items.
 
-                // Call your real track-order function
-                const response = await fetch(`/.netlify/functions/track-order?${queryParam}`);
-                const result = await response.json();
+Customer Email: ${customerEmail}
 
-                console.log('📊 Tracking result:', result);
+Thank you!`;
 
-                if (result.success && result.orders.length > 0) {
-                    const order = result.orders[0]; // Show first order
-                    
-                    // Update status
-                    statusDiv.className = `order-status status-${order.status}`;
-                    statusDiv.innerHTML = order.status.charAt(0).toUpperCase() + order.status.slice(1);
-
-                    // Update order details
-                    itemsListDiv.innerHTML = `
-                        <h4 style="margin-bottom: 20px; color: var(--text-primary);">Order Details</h4>
-                        <div style="margin-bottom: 20px;">
-                            <strong>Order ID:</strong> ${order.orderId}<br>
-                            <strong>Date:</strong> ${new Date(order.orderDate).toLocaleDateString()}<br>
-                            <strong>Total:</strong> ₱${order.totalAmount.toFixed(2)}<br>
-                            <strong>Payment Method:</strong> ${order.paymentMethod}<br>
-                            <strong>Game Username:</strong> ${order.gameUsername}<br>
-                            ${order.region ? `<strong>Region:</strong> ${order.region}<br>` : ''}
-                            ${order.whatsapp ? `<strong>WhatsApp:</strong> ${order.whatsapp}<br>` : ''}
-                        </div>
-                        <h4 style="margin: 20px 0 10px; color: var(--text-primary);">Items Ordered</h4>
-                        ${order.items.map(item => `
-                            <div class="order-item">
-                                <div>
-                                    <strong>${item.name}</strong><br>
-                                    <small style="color: var(--text-secondary);">
-                                        ${item.game === 'ml' ? 'Mobile Legends' : 'Roblox'} • Qty: ${item.quantity}
-                                    </small>
-                                </div>
-                                <div style="font-weight: 700; color: var(--success-green);">
-                                    ₱${item.subtotal.toFixed(2)}
-                                </div>
-                            </div>
-                        `).join('')}
-                        ${order.customerNotes ? `
-                            <div style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.03); border-radius: 10px;">
-                                <strong>Your Notes:</strong><br>
-                                ${order.customerNotes}
-                            </div>
-                        ` : ''}
-                        ${order.adminNotes ? `
-                            <div style="margin-top: 20px; padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                                <strong>Admin Notes:</strong><br>
-                                ${order.adminNotes}
-                            </div>
-                        ` : ''}
-                    `;
-
-                    // Show customer summary if multiple orders found AND searching by email
-                    if (result.customerSummary && isEmail) {
-                        customerSummaryDiv.innerHTML = `
-                            <div class="customer-summary">
-                                <h4 style="margin-bottom: 15px;">Your TRIOGEL Purchase History</h4>
-                                <div class="summary-stats">
-                                    <div class="summary-stat">
-                                        <div class="summary-stat-value">${result.customerSummary.totalOrders}</div>
-                                        <div class="summary-stat-label">Total Orders</div>
-                                    </div>
-                                    <div class="summary-stat">
-                                        <div class="summary-stat-value">₱${result.customerSummary.totalSpent.toFixed(2)}</div>
-                                        <div class="summary-stat-label">Total Spent</div>
-                                    </div>
-                                    <div class="summary-stat">
-                                        <div class="summary-stat-value">${result.customerSummary.statusBreakdown.pending || 0}</div>
-                                        <div class="summary-stat-label">Pending</div>
-                                    </div>
-                                    <div class="summary-stat">
-                                        <div class="summary-stat-value">${result.customerSummary.statusBreakdown.completed || 0}</div>
-                                        <div class="summary-stat-label">Completed</div>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    } else {
-                        // Clear customer summary for single order lookups
-                        customerSummaryDiv.innerHTML = '';
-                    }
-
-                    showNotification('✅ Order found successfully!');
-                } else {
-                    // Order not found
-                    statusDiv.className = 'order-status';
-                    statusDiv.innerHTML = '❌ Order Not Found';
-                    itemsListDiv.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <h4>No order found</h4>
-                            <p style="margin-top: 10px;">
-                                ${isEmail 
-                                    ? 'No orders found for this email address.' 
-                                    : 'Please check your Order ID and try again.'
-                                }
-                            </p>
-                            <p style="margin-top: 15px; font-size: 0.9rem;">
-                                <strong>Tips:</strong><br>
-                                • Order IDs start with "TRIO-"<br>
-                                • You can also search by email address<br>
-                                • Check your email for the order confirmation
-                            </p>
-                        </div>
-                    `;
-                    customerSummaryDiv.innerHTML = '';
-                }
-
-            } catch (error) {
-                console.error('💥 Order tracking failed:', error);
-                
-                statusDiv.className = 'order-status status-cancelled';
-                statusDiv.innerHTML = '⚠️ Error';
-                itemsListDiv.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                        <h4>Tracking Error</h4>
-                        <p>Unable to retrieve order information. Please try again later.</p>
-                    </div>
-                `;
-                customerSummaryDiv.innerHTML = '';
-                
-                showNotification('❌ Error tracking order. Please try again.');
-            }
+            const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoUrl, '_blank');
         }
 
-        // Helper functions for manual GCash payments
+        // Helper function for copying GCash payment info
         function copyGCashInfo(gcashNumber, amount, reference) {
             const paymentInfo = `GCash Payment Info:
 Amount: ₱${amount}
@@ -1600,21 +1473,6 @@ Reference: ${reference}`;
             });
         }
 
-        function openWhatsAppWithNumber(reference, whatsappNumber) {
-            const message = `Hi! I've placed a TRIOGEL order with reference: ${reference}. I'll send the GCash payment screenshot shortly.`;
-            // Remove any non-digit characters from the WhatsApp number
-            const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
-            const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        function openWhatsApp(reference) {
-            const message = `Hi! I've placed a TRIOGEL order with reference: ${reference}. I'll send the GCash payment screenshot shortly.`;
-            // Use fallback number if environment variable not available
-            const whatsappUrl = `https://wa.me/639171234567?text=${encodeURIComponent(message)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
         // Close modals when clicking outside
         window.addEventListener('click', function (e) {
             if (e.target.classList.contains('modal')) {
@@ -1628,43 +1486,6 @@ Reference: ${reference}`;
 
             // Initialize the site
             init();
-
-            // Set up the order tracking form handler
-            const trackingForm = document.getElementById('trackingForm');
-            if (trackingForm) {
-                trackingForm.addEventListener('submit', async function (e) {
-                    e.preventDefault();
-                    console.log('🔍 Starting order tracking...');
-
-                    const trackBtn = e.target.querySelector('button[type="submit"]');
-                    const originalText = trackBtn.innerHTML;
-                    const orderIdInput = document.getElementById('orderId');
-                    const searchInput = orderIdInput.value.trim();
-
-                    if (!searchInput) {
-                        alert('Please enter an Order ID or email address');
-                        return;
-                    }
-
-                    // Show loading state
-                    trackBtn.innerHTML = '<span class="loading"></span> Searching...';
-                    trackBtn.disabled = true;
-
-                    try {
-                        // Call the trackOrder function
-                        await trackOrder(searchInput);
-                    } catch (error) {
-                        console.error('💥 Tracking failed:', error);
-                        showNotification('❌ Error tracking order');
-                    } finally {
-                        // Restore button
-                        trackBtn.innerHTML = originalText;
-                        trackBtn.disabled = false;
-                    }
-                });
-            } else {
-                console.error('❌ Tracking form not found!');
-            }
 
             // Set up the checkout form handler
             const checkoutForm = document.getElementById('checkoutForm');
@@ -1706,19 +1527,14 @@ Reference: ${reference}`;
                             body: JSON.stringify(orderData)
                         });
 
-                        console.log('📡 Response status:', response.status);
-                        console.log('📡 Response ok:', response.ok);
-
                         if (response.ok) {
                             const responseData = await response.json();
-                            console.log('📡 Response data:', responseData);
                             console.log('✅ Order processed successfully');
 
-                            // Handle GCash payment instructions (Manual Process)
+                            // Handle GCash payment instructions (Email-based)
                             if (orderData.paymentMethod === 'gcash' && responseData.paymentResult?.success) {
                                 console.log('💳 Showing GCash payment instructions...');
                                 
-                                // Show payment instructions with improved design
                                 const checkoutContent = document.getElementById('checkoutContent');
                                 checkoutContent.innerHTML = `
                                     <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 40px; border-radius: 25px; text-align: center; margin: 30px 0; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);">
@@ -1762,27 +1578,27 @@ Reference: ${reference}`;
                                         </div>
                                         
                                         <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin: 25px 0;">
-                                            <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">⚠️ Important Steps:</h4>
+                                            <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">⚠️ Payment Steps:</h4>
                                             <div style="text-align: left; color: white;">
                                                 <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                     <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">1</div>
-                                                    <div>Send the <strong>exact amount ₱${responseData.paymentResult.amount_php}</strong> to GCash number <strong>${responseData.paymentResult.gcash_number}</strong></div>
+                                                    <div>Send <strong>₱${responseData.paymentResult.amount_php}</strong> to GCash <strong>${responseData.paymentResult.gcash_number}</strong></div>
                                                 </div>
                                                 <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                     <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">2</div>
-                                                    <div>Include reference <strong>${responseData.paymentResult.reference}</strong> in your payment message</div>
+                                                    <div>Include reference <strong>${responseData.paymentResult.reference}</strong> in message</div>
                                                 </div>
                                                 <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                     <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">3</div>
-                                                    <div>Take a <strong>screenshot</strong> of your successful payment</div>
+                                                    <div>Take <strong>screenshot</strong> of successful payment</div>
                                                 </div>
                                                 <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                     <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">4</div>
-                                                    <div>Send screenshot to WhatsApp <strong>${responseData.paymentResult.whatsapp_number}</strong></div>
+                                                    <div><strong>Email</strong> payment screenshot to <strong>${orderData.customer.email}</strong></div>
                                                 </div>
                                                 <div style="display: flex; align-items: flex-start;">
                                                     <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">5</div>
-                                                    <div>We'll process your order within <strong>1-24 hours</strong> after payment verification</div>
+                                                    <div>We'll reply to your email within <strong>1-24 hours</strong> and deliver your items</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1797,36 +1613,15 @@ Reference: ${reference}`;
                                                     style="background: linear-gradient(45deg, #667eea, #764ba2); flex: 1; min-width: 200px; margin: 0;">
                                                     📋 Copy Payment Info
                                                 </button>
-                                                <button class="checkout-btn" onclick="openWhatsAppWithNumber('${responseData.paymentResult.reference}', '${responseData.paymentResult.whatsapp_number}')" 
-                                                    style="background: #25D366; flex: 1; min-width: 200px; margin: 0;">
-                                                    📱 Open WhatsApp
+                                                <button class="checkout-btn" onclick="composeEmail('${responseData.paymentResult.reference}', '${orderData.customer.email}')" 
+                                                    style="background: #0ea5e9; flex: 1; min-width: 200px; margin: 0;">
+                                                    📧 Open Email
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
                                     <div style="text-align: center; margin-top: 30px;">
                                         <button class="checkout-btn" onclick="closeCheckout(); location.reload();" style="background: var(--ml-gradient);">Continue Shopping</button>
-                                    </div>
-                                `;
-                                
-                                // Clear cart and show notification
-                                cart = [];
-                                updateCartCount();
-                                showOwnerNotification(orderData);
-                                
-                            } else if (orderData.paymentMethod === 'gcash' && !responseData.paymentResult?.success) {
-                                // GCash setup failed
-                                const checkoutContent = document.getElementById('checkoutContent');
-                                checkoutContent.innerHTML = `
-                                    <div style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 35px; border-radius: 22px; text-align: center; margin: 35px 0;">
-                                        <h3 style="margin-bottom: 20px; font-size: 2rem;">❌ GCash Setup Failed</h3>
-                                        <p style="font-size: 1.2rem; margin-bottom: 15px;">There was an issue setting up your GCash payment.</p>
-                                        <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
-                                        <p style="margin-bottom: 20px;">Please contact support for manual payment processing.</p>
-                                        <p style="font-size: 0.9rem; opacity: 0.8;">Your order has been saved and we'll contact you shortly.</p>
-                                    </div>
-                                    <div style="text-align: center; margin-top: 30px;">
-                                        <button class="checkout-btn" onclick="closeCheckout(); location.reload();">Try Again</button>
                                     </div>
                                 `;
                                 
@@ -1841,36 +1636,19 @@ Reference: ${reference}`;
                                 cart = [];
                                 updateCartCount();
                             }
-                        } catch (error) {
-                        console.error('💥 Order submission failed:', error);
-                        console.log('🔄 Using fallback order processing...');
-
-                        // Show appropriate message based on payment method
-                        if (orderData.paymentMethod === 'gcash') {
-                            const checkoutContent = document.getElementById('checkoutContent');
-                            checkoutContent.innerHTML = `
-                                <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 35px; border-radius: 22px; text-align: center; margin: 35px 0;">
-                                    <h3 style="margin-bottom: 20px; font-size: 2rem;">⚠️ Connection Issue</h3>
-                                    <p style="font-size: 1.2rem; margin-bottom: 15px;">Unable to connect to payment system.</p>
-                                    <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
-                                    <p style="margin-bottom: 20px;">Your order has been saved locally. We'll contact you via email or WhatsApp to process your GCash payment manually.</p>
-                                    <p style="font-size: 0.9rem; opacity: 0.8;">Expected response within 24 hours.</p>
-                                </div>
-                                <div style="text-align: center; margin-top: 30px;">
-                                    <button class="checkout-btn" onclick="closeCheckout(); location.reload();">Continue Shopping</button>
-                                </div>
-                            `;
                         } else {
-                            showOrderSuccess(orderData);
+                            throw new Error('Network response was not ok');
                         }
-
-                        const existingOrders = JSON.parse(localStorage.getItem('triogel_orders') || '[]');
-                        existingOrders.push(orderData);
-                        localStorage.setItem('triogel_orders', JSON.stringify(existingOrders));
-
+                    } catch (error) {
+                        console.error('💥 Order submission failed:', error);
+                        showOrderSuccess(orderData);
                         showOwnerNotification(orderData);
                         cart = [];
                         updateCartCount();
+                    } finally {
+                        // Restore button state
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
                     }
                 });
             } else {
