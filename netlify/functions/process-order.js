@@ -41,56 +41,52 @@ exports.handler = async (event, context) => {
       'roblox': 'Roblox'
     };
 
-    // Format items list for Discord
+    // Format items list for Discord (clean, no problematic emojis)
     const itemsList = orderData.items.map(item => {
       const gameName = gameNames[item.game] || item.game;
-      return `• **${item.name}** (${gameName})\n  Quantity: ${item.quantity} | Price: $${(item.price * item.quantity).toFixed(2)}`;
-    }).join('\n');
+      return `**${item.name}** (${gameName})\nQuantity: ${item.quantity} | Price: $${(item.price * item.quantity).toFixed(2)}`;
+    }).join('\n\n');
 
-    // Create rich Discord embed message
+    // Create rich Discord embed message with clean formatting
     const discordMessage = {
-      content: `?? **NEW TRIOGEL ORDER RECEIVED!**`,
+      content: `**:bell: NEW TRIOGEL ORDER RECEIVED!**`,
       embeds: [{
-        title: '?? New Gaming Item Order',
+        title: ':shopping_cart: New Gaming Item Order',
         description: `A new order has been placed on TRIOGEL marketplace!`,
         color: 0x667eea, // Purple color matching your site
         fields: [
           {
-            name: '?? Order Information',
+            name: ':clipboard: Order Information',
             value: `**Order ID:** ${orderData.orderId}\n**Total Amount:** $${orderData.total.toFixed(2)}\n**Date:** ${new Date(orderData.timestamp).toLocaleString()}`,
             inline: false
           },
           {
-            name: '?? Customer Details',
+            name: ':bust_in_silhouette: Customer Details',
             value: `**Email:** ${orderData.customer.email}\n**Game Username:** ${orderData.customer.gameUsername}\n**Region:** ${orderData.customer.serverRegion || 'Not specified'}`,
             inline: true
           },
           {
-            name: '?? Payment & Contact',
-            value: `**Payment Method:** ${orderData.paymentMethod}\n**WhatsApp:** ${orderData.customer.whatsappNumber || 'Not provided'}\n**Status:** ? Pending`,
+            name: ':credit_card: Payment & Contact',
+            value: `**Payment Method:** ${orderData.paymentMethod}\n**WhatsApp:** ${orderData.customer.whatsappNumber || 'Not provided'}\n**Status:** :hourglass: Pending`,
             inline: true
           },
           {
-            name: '??? Items Ordered',
+            name: ':shopping_bags: Items Ordered',
             value: itemsList,
             inline: false
           }
         ],
         footer: {
-          text: 'TRIOGEL Gaming Marketplace',
-          icon_url: 'https://cdn.discordapp.com/attachments/placeholder/gaming-icon.png'
+          text: 'TRIOGEL Gaming Marketplace'
         },
-        timestamp: orderData.timestamp,
-        thumbnail: {
-          url: 'https://cdn.discordapp.com/attachments/placeholder/order-icon.png'
-        }
+        timestamp: orderData.timestamp
       }]
     };
 
     // Add special instructions if provided
     if (orderData.customerNotes && orderData.customerNotes.trim()) {
       discordMessage.embeds[0].fields.push({
-        name: '?? Special Instructions',
+        name: ':memo: Special Instructions',
         value: orderData.customerNotes,
         inline: false
       });
