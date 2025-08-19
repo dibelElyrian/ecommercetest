@@ -260,7 +260,7 @@
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        error: 'Failed to process order', 
+        error: 'Failed to process order',  
         details: error.message,
         orderId: event.body ? JSON.parse(event.body).orderId : 'unknown'
       })
