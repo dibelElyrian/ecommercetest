@@ -1,0 +1,12 @@
+{
+  "name": "triogel-marketplace",
+  "version": "1.0.0",
+  "description": "TRIOGEL Gaming Marketplace with Netlify Functions",
+  "scripts": {
+    "build": "echo 'TRIOGEL: Building functions and processing site...'"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
