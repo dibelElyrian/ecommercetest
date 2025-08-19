@@ -1,4 +1,4 @@
-exports.handler = async (event, context) => {
+﻿exports.handler = async (event, context) => {
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
@@ -26,7 +26,7 @@ exports.handler = async (event, context) => {
 
   try {
     const orderData = JSON.parse(event.body);
-    console.log('?? Processing TRIOGEL order:', orderData.orderId);
+    console.log('📦 Processing TRIOGEL order:', orderData.orderId);
     
     // Environment variables for integrations
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
@@ -34,11 +34,11 @@ exports.handler = async (event, context) => {
     const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
     
     if (!DISCORD_WEBHOOK_URL) {
-      console.warn('?? Discord webhook URL not configured');
+      console.warn('⚠️ Discord webhook URL not configured');
     }
     
     if (!SUPABASE_URL || !SUPABASE_KEY) {
-      console.warn('?? Supabase database not configured');
+      console.warn('⚠️ Supabase database not configured');
     }
 
     // Game name mapping for display
@@ -83,7 +83,7 @@ exports.handler = async (event, context) => {
           }
         ],
         footer: {
-          text: 'TRIOGEL Gaming Marketplace � Database: ' + (SUPABASE_URL ? 'Connected' : 'Local')
+          text: 'TRIOGEL Gaming Marketplace • Database: ' + (SUPABASE_URL ? 'Connected' : 'Local')
         },
         timestamp: orderData.timestamp
       }]
@@ -102,7 +102,7 @@ exports.handler = async (event, context) => {
     let databaseSaved = false;
     if (SUPABASE_URL && SUPABASE_KEY) {
       try {
-        console.log('?? Saving order to database...');
+        console.log('💾 Saving order to database...');
         
         // Prepare order data for database
         const orderRecord = {
@@ -132,7 +132,7 @@ exports.handler = async (event, context) => {
         });
 
         if (orderResponse.ok) {
-          console.log('? Order saved to database');
+          console.log('✅ Order saved to database');
           databaseSaved = true;
 
           // Save order items
@@ -156,7 +156,7 @@ exports.handler = async (event, context) => {
             body: JSON.stringify(orderItems)
           });
 
-          console.log('? Order items saved to database');
+          console.log('✅ Order items saved to database');
 
           // Update customer record
           const customerRecord = {
@@ -184,13 +184,13 @@ exports.handler = async (event, context) => {
             })
           });
 
-          console.log('? Customer record updated');
+          console.log('✅ Customer record updated');
         } else {
           const dbError = await orderResponse.text();
-          console.error('? Database save failed:', dbError);
+          console.error('❌ Database save failed:', dbError);
         }
       } catch (dbError) {
-        console.error('?? Database error (continuing with Discord):', dbError);
+        console.error('💥 Database error (continuing with Discord):', dbError);
       }
     }
 
@@ -198,7 +198,7 @@ exports.handler = async (event, context) => {
     let discordSent = false;
     if (DISCORD_WEBHOOK_URL) {
       try {
-        console.log('?? Sending Discord notification...');
+        console.log('📡 Sending Discord notification...');
         
         const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
           method: 'POST',
@@ -210,18 +210,18 @@ exports.handler = async (event, context) => {
 
         if (!discordResponse.ok) {
           const errorText = await discordResponse.text();
-          console.error('? Discord webhook failed:', discordResponse.status, errorText);
+          console.error('❌ Discord webhook failed:', discordResponse.status, errorText);
         } else {
-          console.log('? Discord notification sent successfully');
+          console.log('✅ Discord notification sent successfully');
           discordSent = true;
         }
       } catch (discordError) {
-        console.error('?? Discord notification error:', discordError);
+        console.error('💥 Discord notification error:', discordError);
       }
     }
 
     // Log successful processing
-    console.log('?? Order processed:', {
+    console.log('💾 Order processed:', {
       orderId: orderData.orderId,
       total: orderData.total,
       customerEmail: orderData.customer.email,
@@ -231,26 +231,27 @@ exports.handler = async (event, context) => {
     });
 
     // Return success response
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Order processed successfully',
-        orderId: orderData.orderId,
-        discordSent: discordSent,
-        databaseSaved: databaseSaved,
-        integrations: {
-          discord: !!DISCORD_WEBHOOK_URL,
-          database: !!SUPABASE_URL
-        }
-      })
+      return {
+          statusCode: 200,
+          headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              success: true,
+              message: 'Order processed successfully',
+              orderId: orderData.orderId,
+              discordSent: discordSent,
+              databaseSaved: databaseSaved,
+              integrations: {
+                  discord: !!DISCORD_WEBHOOK_URL,
+                  database: !!SUPABASE_URL
+              }
+          })
+      };
 
   } catch (error) {
-    console.error('?? Error processing TRIOGEL order:', error);
+    console.error('💥 Error processing TRIOGEL order:', error);
     
     return {
       statusCode: 500,
