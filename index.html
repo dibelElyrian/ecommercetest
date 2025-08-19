@@ -551,10 +551,26 @@
             backdrop-filter: blur(10px);
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+        }
+
+        .form-group select:focus {
             outline: none;
             border-color: var(--accent-blue);
             box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.15);
+        }
+
+        .form-group select option {
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            padding: 12px;
+            border: none;
         }
 
         .success-message {
@@ -1584,8 +1600,17 @@ Reference: ${reference}`;
             });
         }
 
+        function openWhatsAppWithNumber(reference, whatsappNumber) {
+            const message = `Hi! I've placed a TRIOGEL order with reference: ${reference}. I'll send the GCash payment screenshot shortly.`;
+            // Remove any non-digit characters from the WhatsApp number
+            const cleanNumber = whatsappNumber.replace(/[^0-9]/g, '');
+            const whatsappUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        }
+
         function openWhatsApp(reference) {
             const message = `Hi! I've placed a TRIOGEL order with reference: ${reference}. I'll send the GCash payment screenshot shortly.`;
+            // Use fallback number if environment variable not available
             const whatsappUrl = `https://wa.me/639171234567?text=${encodeURIComponent(message)}`;
             window.open(whatsappUrl, '_blank');
         }
@@ -1693,51 +1718,90 @@ Reference: ${reference}`;
                             if (orderData.paymentMethod === 'gcash' && responseData.paymentResult?.success) {
                                 console.log('💳 Showing GCash payment instructions...');
                                 
-                                // Show payment instructions
+                                // Show payment instructions with improved design
                                 const checkoutContent = document.getElementById('checkoutContent');
                                 checkoutContent.innerHTML = `
-                                    <div class="success-message">
-                                        <h3 style="margin-bottom: 20px; font-size: 2rem;">💳 GCash Payment Instructions</h3>
-                                        <p style="font-size: 1.2rem; margin-bottom: 15px;">Your order has been created!</p>
-                                        <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
+                                    <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 40px; border-radius: 25px; text-align: center; margin: 30px 0; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);">
+                                        <div style="background: white; color: #10b981; padding: 15px 25px; border-radius: 50px; display: inline-block; font-weight: 900; font-size: 1.1rem; margin-bottom: 20px;">
+                                            💳 GCash Payment Instructions
+                                        </div>
                                         
-                                        <div style="background: rgba(0, 255, 136, 0.1); border: 2px solid #00ff88; border-radius: 15px; padding: 25px; margin: 20px 0;">
-                                            <h4 style="color: #00ff88; margin-bottom: 15px;">📱 Send GCash Payment To:</h4>
-                                            <div style="font-size: 1.3rem; margin-bottom: 10px;">
-                                                <strong>Amount: ₱${responseData.paymentResult.amount_php}</strong>
+                                        <h3 style="margin-bottom: 15px; font-size: 1.4rem; opacity: 0.95;">Your order has been created!</h3>
+                                        <p style="margin-bottom: 25px; font-size: 1.1rem; opacity: 0.9;">Order ID: <strong>${orderData.orderId}</strong></p>
+                                        
+                                        <div style="background: rgba(255, 255, 255, 0.15); border-radius: 20px; padding: 30px; margin: 25px 0; backdrop-filter: blur(10px);">
+                                            <h4 style="color: #ffffff; margin-bottom: 20px; font-size: 1.2rem;">📱 Send GCash Payment To:</h4>
+                                            
+                                            <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                                <div style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">
+                                                    ₱${responseData.paymentResult.amount_php}
+                                                </div>
+                                                <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Amount to Send</div>
                                             </div>
-                                            <div style="font-size: 1.2rem; margin-bottom: 10px;">
-                                                <strong>GCash Number: ${responseData.paymentResult.gcash_number}</strong>
+                                            
+                                            <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                                <div style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">
+                                                    ${responseData.paymentResult.gcash_number}
+                                                </div>
+                                                <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">GCash Number</div>
                                             </div>
-                                            <div style="font-size: 1.1rem; margin-bottom: 15px;">
-                                                <strong>Account Name: ${responseData.paymentResult.gcash_name}</strong>
+                                            
+                                            <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                                <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">
+                                                    ${responseData.paymentResult.gcash_name}
+                                                </div>
+                                                <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Account Name</div>
                                             </div>
-                                            <div style="font-size: 1rem; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 8px;">
-                                                <strong>Reference: ${responseData.paymentResult.reference}</strong>
+                                            
+                                            <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px;">
+                                                <div style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; word-break: break-all;">
+                                                    ${responseData.paymentResult.reference}
+                                                </div>
+                                                <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Reference Number</div>
                                             </div>
                                         </div>
                                         
-                                        <div style="background: rgba(255, 193, 7, 0.1); border: 1px solid #ffc107; border-radius: 10px; padding: 15px; margin: 20px 0;">
-                                            <h4 style="color: #ffc107; margin-bottom: 10px;">⚠️ Important Instructions:</h4>
-                                            <ul style="text-align: left; padding-left: 20px;">
-                                                <li>Send the <strong>exact amount</strong> to the GCash number above</li>
-                                                <li>Include the <strong>reference number</strong> in your payment message</li>
-                                                <li>Take a <strong>screenshot</strong> of your successful payment</li>
-                                                <li>Send the screenshot to our <strong>WhatsApp: ${responseData.paymentResult.whatsapp_number}</strong></li>
-                                                <li>We'll process your order within <strong>1-24 hours</strong> after payment verification</li>
-                                            </ul>
+                                        <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin: 25px 0;">
+                                            <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">⚠️ Important Steps:</h4>
+                                            <div style="text-align: left; color: white;">
+                                                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                    <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">1</div>
+                                                    <div>Send the <strong>exact amount ₱${responseData.paymentResult.amount_php}</strong> to GCash number <strong>${responseData.paymentResult.gcash_number}</strong></div>
+                                                </div>
+                                                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                    <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">2</div>
+                                                    <div>Include reference <strong>${responseData.paymentResult.reference}</strong> in your payment message</div>
+                                                </div>
+                                                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                    <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">3</div>
+                                                    <div>Take a <strong>screenshot</strong> of your successful payment</div>
+                                                </div>
+                                                <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                    <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">4</div>
+                                                    <div>Send screenshot to WhatsApp <strong>${responseData.paymentResult.whatsapp_number}</strong></div>
+                                                </div>
+                                                <div style="display: flex; align-items: flex-start;">
+                                                    <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">5</div>
+                                                    <div>We'll process your order within <strong>1-24 hours</strong> after payment verification</div>
+                                                </div>
+                                            </div>
                                         </div>
                                         
-                                        <div style="margin-top: 25px;">
-                                            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 15px;">
+                                        <div style="margin-top: 30px;">
+                                            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">
                                                 Order confirmation sent to ${orderData.customer.email}
                                             </p>
-                                            <button class="checkout-btn" onclick="copyGCashInfo('${responseData.paymentResult.gcash_number}', '${responseData.paymentResult.amount_php}', '${responseData.paymentResult.reference}')" style="margin-right: 10px;">
-                                                📋 Copy Payment Info
-                                            </button>
-                                            <button class="checkout-btn" onclick="openWhatsApp('${responseData.paymentResult.reference}')" style="background: #25D366;">
-                                                📱 Open WhatsApp
-                                            </button>
+                                            
+                                            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                                                <button class="checkout-btn" onclick="copyGCashInfo('${responseData.paymentResult.gcash_number}', '${responseData.paymentResult.amount_php}', '${responseData.paymentResult.reference}')" 
+                                                    style="background: linear-gradient(45deg, #667eea, #764ba2); flex: 1; min-width: 200px; margin: 0;">
+                                                    📋 Copy Payment Info
+                                                </button>
+                                                <button class="checkout-btn" onclick="openWhatsAppWithNumber('${responseData.paymentResult.reference}', '${responseData.paymentResult.whatsapp_number}')" 
+                                                    style="background: #25D366; flex: 1; min-width: 200px; margin: 0;">
+                                                    📱 Open WhatsApp
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div style="text-align: center; margin-top: 30px;">
@@ -1777,12 +1841,7 @@ Reference: ${reference}`;
                                 cart = [];
                                 updateCartCount();
                             }
-                        } else {
-                            const errorData = await response.text();
-                            console.error('❌ Server responded with error:', response.status, errorData);
-                            throw new Error('Netlify function error: ' + errorData);
-                        }
-                    } catch (error) {
+                        } catch (error) {
                         console.error('💥 Order submission failed:', error);
                         console.log('🔄 Using fallback order processing...');
 

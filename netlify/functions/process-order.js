@@ -22,7 +22,7 @@
     const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
     const GCASH_NUMBER = process.env.GCASH_NUMBER; // Your personal GCash number
     const GCASH_NAME = process.env.GCASH_NAME; // Your GCash account name
-    const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || '+639171234567'; // Support WhatsApp
+    const WHATSAPP_NUMBER = null; // No WhatsApp integration needed
     
     if (!DISCORD_WEBHOOK_URL) {
       console.warn('⚠️ Discord webhook URL not configured');
@@ -57,8 +57,8 @@
             amount_usd: orderData.total.toFixed(2),
             gcash_number: GCASH_NUMBER,
             gcash_name: GCASH_NAME,
-            whatsapp_number: WHATSAPP_NUMBER,
-            instructions: `Send ₱${phpAmount} to GCash ${GCASH_NUMBER} (${GCASH_NAME}) with reference: ${paymentReference}`
+            contact_method: 'email', // Use email instead of WhatsApp
+            instructions: `Send ₱${phpAmount} to GCash ${GCASH_NUMBER} (${GCASH_NAME}) with reference: ${paymentReference}. Email payment screenshot to the email address provided in your order confirmation.`
           };
           console.log('✅ Manual GCash payment setup created');
         } else {
@@ -129,7 +129,7 @@
       if (paymentResult.success) {
         discordMessage.embeds[0].fields.push({
           name: ':money_with_wings: GCash Payment Instructions',
-          value: `**Amount:** ₱${paymentResult.amount_php}\n**GCash Number:** ${paymentResult.gcash_number}\n**Account Name:** ${paymentResult.gcash_name}\n**Reference:** ${paymentResult.reference}\n**WhatsApp:** ${paymentResult.whatsapp_number}\n\n:warning: **Customer should:**\n• Send exact amount to GCash number\n• Include reference in payment message\n• Send screenshot to WhatsApp for verification`,
+          value: `**Amount:** ₱${paymentResult.amount_php}\n**GCash Number:** ${paymentResult.gcash_number}\n**Account Name:** ${paymentResult.gcash_name}\n**Reference:** ${paymentResult.reference}\n\n:warning: **Customer should:**\n• Send exact amount to GCash number\n• Include reference in payment message\n• Email screenshot to: ${orderData.customer.email}\n• Reply to their order confirmation email with payment proof`,
           inline: false
         });
       } else {
@@ -300,7 +300,10 @@
             orderId: orderData.orderId,
             discordSent: discordSent,
             databaseSaved: databaseSaved,
-            paymentResult: paymentResult,
+            paymentResult: {
+              ...paymentResult,
+              contact_method: 'email' // Use email instead of WhatsApp
+            },
             integrations: {
                 discord: !!DISCORD_WEBHOOK_URL,
                 database: !!SUPABASE_URL,
