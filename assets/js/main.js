@@ -792,6 +792,88 @@ function getDeliveryEstimate(status) {
     return estimates[status] || '1-24 hours';
 }
 
+// Additional placeholder functions for dropdown menus - DEFINE BEFORE USE
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) {
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+    }
+}
+
+function closeUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+}
+
+function openProfileModal() {
+    closeUserDropdown();
+    showNotification('Profile settings coming soon!');
+}
+
+function openOrderHistoryModal() {
+    closeUserDropdown();
+    if (currentUser && currentUser.orders.length > 0) {
+        showNotification('Order history feature coming soon!');
+    } else {
+        showNotification('No orders found. Start shopping!');
+    }
+}
+
+function openWishlistModal() {
+    closeUserDropdown();
+    showNotification('Wishlist feature coming soon!');
+}
+
+function openForgotPassword() {
+    closeLoginModal();
+    showNotification('Password reset via email coming soon!');
+}
+
+function proceedToCheckout() {
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+
+    document.getElementById('cartModal').style.display = 'none';
+    document.getElementById('checkoutModal').style.display = 'block';
+    displayOrderSummary();
+}
+
+function closeCheckout() {
+    document.getElementById('checkoutModal').style.display = 'none';
+}
+
+function displayOrderSummary() {
+    const summaryDiv = document.getElementById('orderSummary');
+    if (!summaryDiv) return;
+    
+    const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    summaryDiv.innerHTML = `
+        <h3 style="margin-bottom: 20px; color: var(--text-primary);">Order Summary</h3>
+        ${cart.map(item => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>${item.name} x${item.quantity}</span>
+                <span style="color: var(--success-green);">${formatPrice(item.price * item.quantity)}</span>
+            </div>
+        `).join('')}
+        <hr style="border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: 800;">
+            <span>Total:</span>
+            <span style="color: var(--success-green);">${formatPrice(totalInPHP)}</span>
+        </div>
+        ${selectedCurrency !== 'PHP' ? `
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px; text-align: center;">
+                <em>Prices converted from PHP at current exchange rates</em>
+            </div>
+        ` : ''}
+    `;
+}
+
 // Validation Functions - DEFINE BEFORE USE
 function validateItemsSystem() {
     console.log('?? Validating items system...');
@@ -824,6 +906,105 @@ function validateItemsSystem() {
     } catch (error) {
         console.error('? Error in displayItems():', error);
         return false;
+    }
+}
+
+// Initialize everything - DEFINE BEFORE USE
+function init() {
+    console.log('?? TRIOGEL Initializing...');
+    
+    // Load saved currency
+    const savedCurrency = localStorage.getItem('triogel-currency');
+    if (savedCurrency && currencies[savedCurrency]) {
+        selectedCurrency = savedCurrency;
+        console.log('?? Loaded saved currency:', savedCurrency);
+    }
+    
+    // Initialize authentication
+    initAuth();
+    
+    displayItems();
+    updateCartCount();
+    setupFilters();
+    setupCurrencySelector();
+    updateCurrencySelector();
+    setupEventHandlers();
+    
+    console.log('? TRIOGEL Initialized successfully!');
+}
+
+// Event Handlers Setup
+function setupEventHandlers() {
+    console.log('?? Setting up event handlers...');
+    
+    // Authentication form handlers
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Login form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Logging in...';
+            submitBtn.disabled = true;
+
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                await loginUser(email, password);
+            } catch (error) {
+                showNotification(`? Login failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Register form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const userData = {
+                    username: document.getElementById('registerUsername').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value,
+                    confirmPassword: document.getElementById('confirmPassword').value,
+                    favoriteGame: document.getElementById('favoriteGame').value
+                };
+                await registerUser(userData);
+            } catch (error) {
+                showNotification(`? Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Order tracking form handler
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Order tracking form submitted');
+
+            const orderId = document.getElementById('orderId').value.trim();
+            if (!orderId) {
+                showNotification('Please enter an Order ID');
+                return;
+            }
+            await trackOrderById(orderId);
+        });
     }
 }
 
