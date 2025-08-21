@@ -311,9 +311,11 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3.5rem;
+    font-size: 4rem;
     position: relative;
     overflow: hidden;
+    line-height: 1;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
 }
 
 .item-image.ml-bg {
@@ -391,6 +393,8 @@ body {
     background-clip: text;
     margin-bottom: 22px;
     text-align: center;
+    line-height: 1.2;
+    font-family: Arial, "Segoe UI", sans-serif;
 }
 
 .add-to-cart-btn {
@@ -500,6 +504,8 @@ body {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    line-height: 1.2;
+    font-family: Arial, "Segoe UI", sans-serif;
 }
 
 .checkout-btn {
@@ -831,6 +837,7 @@ body {
     gap: 8px;
     min-width: 120px;
     justify-content: space-between;
+    font-family: Arial, "Segoe UI", sans-serif;
 }
 
 .currency-button:hover {
@@ -907,6 +914,7 @@ body {
     min-width: 30px;
     text-align: center;
     color: var(--accent-blue);
+    font-family: Arial, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
 }
 
 .currency-code {

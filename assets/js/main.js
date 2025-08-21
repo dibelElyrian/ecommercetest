@@ -3,16 +3,16 @@ console.log('?? Loading TRIOGEL JavaScript...');
 
 // Currency configuration for international customers
 const currencies = {
-    'PHP': { symbol: '?', name: 'Philippine Peso', rate: 1.0 },
-    'USD': { symbol: '$', name: 'US Dollar', rate: 0.018 },
-    'EUR': { symbol: '€', name: 'Euro', rate: 0.016 },
-    'GBP': { symbol: '£', name: 'British Pound', rate: 0.014 },
-    'JPY': { symbol: '¥', name: 'Japanese Yen', rate: 2.65 },
-    'KRW': { symbol: '?', name: 'Korean Won', rate: 23.5 },
-    'SGD': { symbol: 'S$', name: 'Singapore Dollar', rate: 0.024 },
-    'MYR': { symbol: 'RM', name: 'Malaysian Ringgit', rate: 0.082 },
-    'THB': { symbol: '?', name: 'Thai Baht', rate: 0.63 },
-    'VND': { symbol: '?', name: 'Vietnamese Dong', rate: 440 }
+    'PHP': { symbol: '?', name: 'Philippine Peso', rate: 1.0, fallback: 'PHP' },
+    'USD': { symbol: '$', name: 'US Dollar', rate: 0.018, fallback: 'USD' },
+    'EUR': { symbol: '€', name: 'Euro', rate: 0.016, fallback: 'EUR' },
+    'GBP': { symbol: '£', name: 'British Pound', rate: 0.014, fallback: 'GBP' },
+    'JPY': { symbol: '¥', name: 'Japanese Yen', rate: 2.65, fallback: 'JPY' },
+    'KRW': { symbol: '?', name: 'Korean Won', rate: 23.5, fallback: 'KRW' },
+    'SGD': { symbol: 'S$', name: 'Singapore Dollar', rate: 0.024, fallback: 'SGD' },
+    'MYR': { symbol: 'RM', name: 'Malaysian Ringgit', rate: 0.082, fallback: 'MYR' },
+    'THB': { symbol: '?', name: 'Thai Baht', rate: 0.63, fallback: 'THB' },
+    'VND': { symbol: '?', name: 'Vietnamese Dong', rate: 440, fallback: 'VND' }
 };
 
 let selectedCurrency = 'PHP'; // Default to Philippine Peso
@@ -36,7 +36,7 @@ const items = [
         game: "ml",
         description: "Fanny's epic skin with enhanced animations and unique recall effects.",
         price: 1924.45,
-        emoji: "??",
+        emoji: "?????",
         rarity: "epic",
         stats: { hero: "Fanny", type: "Epic", recall: "Custom" }
     },
@@ -159,13 +159,19 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         return `?${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
     }
     
+    // Ensure currency symbol displays properly with explicit styling
+    const symbol = currencyConfig.symbol;
+    let formattedAmount;
+    
     // Special formatting for different currencies
     if (targetCurrency === 'JPY' || targetCurrency === 'KRW' || targetCurrency === 'VND') {
         // No decimal places for these currencies
-        return `${currencyConfig.symbol}${Math.round(convertedPrice).toLocaleString()}`;
+        formattedAmount = Math.round(convertedPrice).toLocaleString();
     } else {
-        return `${currencyConfig.symbol}${convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+        formattedAmount = convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
     }
+    
+    return `<span style="font-family: Arial, sans-serif; font-weight: 800;">${symbol}</span>${formattedAmount}`;
 }
 
 function setCurrency(currencyCode) {
@@ -196,7 +202,9 @@ function updateCurrencySelector() {
     
     if (selectedOption) {
         const currencyConfig = currencies[selectedCurrency];
-        selectedOption.innerHTML = `${currencyConfig.symbol} ${selectedCurrency}`;
+        // Force UTF-8 encoding for currency symbols
+        const symbol = currencyConfig.symbol;
+        selectedOption.innerHTML = `<span style="font-family: Arial, sans-serif; font-weight: 800;">${symbol}</span> ${selectedCurrency}`;
     }
 }
 
@@ -665,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Account Name</div>
                                         </div>
                                         
-                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px;">
+                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
                                             <div style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; word-break: break-all;">
                                                 ${responseData.paymentResult.reference}
                                             </div>
