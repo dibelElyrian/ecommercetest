@@ -152,11 +152,11 @@ ecommercesite/
 
 ### Environment Variables (Netlify Configuration)
 ```
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-GCASH_NUMBER=09761242194
-GCASH_NAME=TRIOGEL Gaming
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your-supabase-anon-key
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/[your-webhook-id]
+GCASH_NUMBER=[your-gcash-number]
+GCASH_NAME=[your-gcash-account-name]
+SUPABASE_URL=https://[your-project].supabase.co
+SUPABASE_ANON_KEY=[your-supabase-anon-key]
 ```
 
 ## Current Workflow & User Journey
