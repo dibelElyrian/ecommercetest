@@ -42,12 +42,50 @@
                     </div>
                 </div>
 
+                <!-- User Account Section -->
+                <div id="loginSection" class="user-account-section">
+                    <button class="account-btn login-btn" onclick="openLoginModal()">
+                        Login
+                    </button>
+                    <button class="account-btn register-btn" onclick="openRegisterModal()">
+                        Register
+                    </button>
+                </div>
+
+                <div id="userSection" class="user-account-section" style="display: none;">
+                    <div class="user-dropdown">
+                        <button class="user-info-btn" onclick="toggleUserDropdown()">
+                            <div id="userWelcome" class="user-welcome">
+                                <span class="user-name">Player</span>
+                            </div>
+                            <span class="user-arrow">▼</span>
+                        </button>
+                        <div class="user-dropdown-menu" id="userDropdown">
+                            <div id="userStats" class="user-stats"></div>
+                            <div class="user-menu-items">
+                                <button onclick="openProfileModal()" class="user-menu-item">
+                                    Profile Settings
+                                </button>
+                                <button onclick="openOrderHistoryModal()" class="user-menu-item">
+                                    Order History
+                                </button>
+                                <button onclick="openWishlistModal()" class="user-menu-item">
+                                    Wishlist
+                                </button>
+                                <button onclick="logoutUser()" class="user-menu-item logout">
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <button class="track-order-btn" onclick="openOrderTracking()">
-                    📦 Track Order
+                    Track Order
                 </button>
                 
                 <button class="cart-button" onclick="openCart()">
-                    🛒 Cart
+                    Cart
                     <span class="cart-count" id="cartCount">0</span>
                 </button>
             </div>
@@ -135,6 +173,68 @@
                 <div class="order-items-list" id="orderItemsList"></div>
                 <div class="customer-summary" id="customerSummary"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <h2>Login to TRIOGEL</h2>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="loginEmail" placeholder="your.email@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="auth-btn">Login</button>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchToRegister()">Don't have an account? Register</button>
+                    <button type="button" class="link-btn" onclick="openForgotPassword()">Forgot Password?</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeRegisterModal()">&times;</span>
+            <h2>Join TRIOGEL</h2>
+            <form id="registerForm" class="auth-form">
+                <div class="form-group">
+                    <label>Display Name:</label>
+                    <input type="text" id="registerUsername" placeholder="Your gamer name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="registerEmail" placeholder="your.email@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" id="registerPassword" placeholder="Create a strong password" required>
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password:</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                </div>
+                <div class="form-group">
+                    <label>Favorite Game:</label>
+                    <select id="favoriteGame" required>
+                        <option value="">Select your main game</option>
+                        <option value="ml">Mobile Legends: Bang Bang</option>
+                        <option value="roblox">Roblox</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <button type="submit" class="auth-btn">Create Account</button>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchToLogin()">Already have an account? Login</button>
+                </div>
+            </form>
         </div>
     </div>
 

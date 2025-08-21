@@ -188,9 +188,9 @@ function setCurrency(currencyCode) {
         displayCartItems();
     }
     
-    // Show notification
+    // Show notification without emoji
     const currencyName = currencies[currencyCode]?.name || currencyCode;
-    showNotification(`?? Currency changed to ${currencyName}`);
+    showNotification(`Currency changed to ${currencyName}`);
     
     // Save preference to localStorage
     localStorage.setItem('triogel-currency', currencyCode);
@@ -566,12 +566,12 @@ Thank you!`;
 // Helper function for copying GCash payment info
 function copyGCashInfo(gcashNumber, amount, reference) {
     const paymentInfo = `GCash Payment Info:
-Amount: ?${amount}
+Amount: PHP ${amount}
 Send to: ${gcashNumber}
 Reference: ${reference}`;
     
     navigator.clipboard.writeText(paymentInfo).then(() => {
-        showNotification('?? Payment info copied to clipboard!');
+        showNotification('Payment info copied to clipboard!');
     }).catch(() => {
         // Fallback for older browsers
         const textArea = document.createElement('textarea');
@@ -580,33 +580,439 @@ Reference: ${reference}`;
         textArea.select();
         document.execCommand('copy');
         document.body.removeChild(textArea);
-        showNotification('?? Payment info copied!');
+        showNotification('Payment info copied!');
     });
 }
 
-// Close modals when clicking outside
-window.addEventListener('click', function (e) {
-    if (e.target.classList.contains('modal')) {
-        e.target.style.display = 'none';
-    }
+// USER AUTHENTICATION FUNCTIONS
+let currentUser = null;
+
+// Initialize authentication on page load
+function initAuth() {
+    console.log('?? Initializing authentication...');
     
-    // Close currency selector when clicking outside
-    if (!e.target.closest('#currencySelector') && !e.target.closest('#currencyDropdown')) {
-        const dropdown = document.getElementById('currencyDropdown');
-        const selector = document.getElementById('currencySelector');
-        if (dropdown && selector) {
-            dropdown.style.display = 'none';
-            selector.classList.remove('active');
+    // Check if user is logged in (localStorage)
+    const savedUser = localStorage.getItem('triogel-user');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            showUserSection();
+            console.log('? User auto-logged in:', currentUser.username);
+        } catch (error) {
+            console.error('? Error loading saved user:', error);
+            localStorage.removeItem('triogel-user');
         }
     }
-});
+}
 
-// PROPERLY INITIALIZE EVERYTHING WHEN DOM IS READY
+// Modal Management Functions
+function openLoginModal() {
+    document.getElementById('loginModal').style.display = 'block';
+    document.getElementById('loginEmail').focus();
+}
+
+function closeLoginModal() {
+    document.getElementById('loginModal').style.display = 'none';
+    clearLoginForm();
+}
+
+function openRegisterModal() {
+    document.getElementById('registerModal').style.display = 'block';
+    document.getElementById('registerUsername').focus();
+}
+
+function closeRegisterModal() {
+    document.getElementById('registerModal').style.display = 'none';
+    clearRegisterForm();
+}
+
+function switchToRegister() {
+    closeLoginModal();
+    openRegisterModal();
+}
+
+function switchToLogin() {
+    closeRegisterModal();
+    openLoginModal();
+}
+
+// Form Management
+function clearLoginForm() {
+    document.getElementById('loginForm').reset();
+}
+
+function clearRegisterForm() {
+    document.getElementById('registerForm').reset();
+}
+
+// Authentication Logic
+async function loginUser(email, password) {
+    try {
+        console.log('?? Attempting login for:', email);
+        
+        // For demo purposes, we'll use simple localStorage authentication
+        // In production, this would connect to your backend authentication system
+        
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        const user = users[email.toLowerCase()];
+        
+        if (!user) {
+            throw new Error('Account not found. Please register first.');
+        }
+        
+        if (user.password !== password) {
+            throw new Error('Invalid password. Please try again.');
+        }
+        
+        // Login successful
+        currentUser = {
+            id: user.id,
+            username: user.username,
+            email: user.email.toLowerCase(),
+            favoriteGame: user.favoriteGame,
+            joinDate: user.joinDate,
+            orders: user.orders || [],
+            wishlist: user.wishlist || []
+        };
+        
+        // Save to localStorage
+        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+        
+        // Update UI
+        showUserSection();
+        closeLoginModal();
+        
+        showNotification(`?? Welcome back, ${currentUser.username}!`);
+        console.log('? Login successful:', currentUser.username);
+        
+        return { success: true, user: currentUser };
+        
+    } catch (error) {
+        console.error('? Login error:', error);
+        throw error;
+    }
+}
+
+async function registerUser(userData) {
+    try {
+        console.log('?? Attempting registration for:', userData.email);
+        
+        // Validate passwords match
+        if (userData.password !== userData.confirmPassword) {
+            throw new Error('Passwords do not match!');
+        }
+        
+        // Check password strength
+        if (userData.password.length < 6) {
+            throw new Error('Password must be at least 6 characters long!');
+        }
+        
+        // Check if user already exists
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        const email = userData.email.toLowerCase();
+        
+        if (users[email]) {
+            throw new Error('An account with this email already exists!');
+        }
+        
+        // Create new user
+        const newUser = {
+            id: Date.now().toString(),
+            username: userData.username,
+            email: email,
+            password: userData.password, // In production, this would be hashed
+            favoriteGame: userData.favoriteGame,
+            joinDate: new Date().toISOString(),
+            orders: [],
+            wishlist: []
+        };
+        
+        // Save user
+        users[email] = newUser;
+        localStorage.setItem('triogel-users', JSON.stringify(users));
+        
+        // Auto-login after registration
+        currentUser = {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            favoriteGame: newUser.favoriteGame,
+            joinDate: newUser.joinDate,
+            orders: [],
+            wishlist: []
+        };
+        
+        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+        
+        // Update UI
+        showUserSection();
+        closeRegisterModal();
+        
+        showNotification(`?? Welcome to TRIOGEL, ${currentUser.username}!`);
+        console.log('? Registration successful:', currentUser.username);
+        
+        return { success: true, user: currentUser };
+        
+    } catch (error) {
+        console.error('? Registration error:', error);
+        throw error;
+    }
+}
+
+function logoutUser() {
+    console.log('?? Logging out user:', currentUser?.username);
+    
+    currentUser = null;
+    localStorage.removeItem('triogel-user');
+    
+    // Reset UI
+    showLoginSection();
+    closeUserDropdown();
+    
+    showNotification('?? Logged out successfully!');
+}
+
+// UI Management Functions
+function showUserSection() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    const userName = document.querySelector('.user-name');
+    const userStats = document.getElementById('userStats');
+    
+    if (loginSection && userSection && userName && currentUser) {
+        loginSection.style.display = 'none';
+        userSection.style.display = 'block';
+        userName.textContent = currentUser.username;
+        
+        // Update user stats
+        const gameEmoji = currentUser.favoriteGame === 'ml' ? '??' : currentUser.favoriteGame === 'roblox' ? '??' : '??';
+        userStats.innerHTML = `
+            <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                <div style="margin-bottom: 8px;">
+                    ${gameEmoji} ${getGameName(currentUser.favoriteGame)} Player
+                </div>
+                <div style="margin-bottom: 8px;">
+                    ?? ${currentUser.orders.length} Orders
+                </div>
+                <div>
+                    ?? ${currentUser.wishlist.length} Wishlist Items
+                </div>
+            </div>
+        `;
+    }
+}
+
+function showLoginSection() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    
+    if (loginSection && userSection) {
+        loginSection.style.display = 'flex';
+        userSection.style.display = 'none';
+    }
+}
+
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    const button = document.querySelector('.user-info-btn');
+    
+    if (dropdown && button) {
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        button.classList.toggle('active', !isOpen);
+    }
+}
+
+function closeUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    const button = document.querySelector('.user-info-btn');
+    
+    if (dropdown && button) {
+        dropdown.style.display = 'none';
+        button.classList.remove('active');
+    }
+}
+
+function getGameName(gameCode) {
+    const names = {
+        'ml': 'Mobile Legends',
+        'roblox': 'Roblox',
+        'other': 'Various Games'
+    };
+    return names[gameCode] || 'Gamer';
+}
+
+// Profile Modal Functions (Placeholder)
+function openProfileModal() {
+    closeUserDropdown();
+    showNotification('?? Profile settings coming soon!');
+}
+
+function openOrderHistoryModal() {
+    closeUserDropdown();
+    if (currentUser && currentUser.orders.length > 0) {
+        showNotification('?? Order history feature coming soon!');
+    } else {
+        showNotification('?? No orders found. Start shopping!');
+    }
+}
+
+function openWishlistModal() {
+    closeUserDropdown();
+    if (currentUser && currentUser.wishlist.length > 0) {
+        showNotification('?? Wishlist feature coming soon!');
+    } else {
+        showNotification('?? Your wishlist is empty. Add some items!');
+    }
+}
+
+function openForgotPassword() {
+    closeLoginModal();
+    showNotification('?? Password reset via email coming soon!');
+}
+
+// Enhanced addToCart function to work with user accounts
+function addToCartEnhanced(itemId) {
+    const item = items.find(i => i.id === itemId);
+    if (!item) {
+        console.error('? Item not found:', itemId);
+        return;
+    }
+    
+    const existingItem = cart.find(i => i.id === itemId);
+
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({ ...item, quantity: 1 });
+    }
+
+    updateCartCount();
+    
+    // Show personalized notification
+    const userName = currentUser ? currentUser.username : 'Guest';
+    showNotification(`?? ${item.name} added to ${userName}'s cart!`);
+    
+    // If user is logged in, save cart to their profile
+    if (currentUser) {
+        saveUserCart();
+    }
+}
+
+function saveUserCart() {
+    if (currentUser) {
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        if (users[currentUser.email]) {
+            users[currentUser.email].cart = cart;
+            localStorage.setItem('triogel-users', JSON.stringify(users));
+        }
+    }
+}
+
+function loadUserCart() {
+    if (currentUser) {
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        if (users[currentUser.email] && users[currentUser.email].cart) {
+            cart = users[currentUser.email].cart;
+            updateCartCount();
+            console.log('? User cart loaded:', cart.length, 'items');
+        }
+    }
+}
+
+// Update the existing init function to include authentication
+function initEnhanced() {
+    console.log('?? TRIOGEL Enhanced Initializing...');
+    
+    // Load saved currency preference
+    const savedCurrency = localStorage.getItem('triogel-currency');
+    if (savedCurrency && currencies[savedCurrency]) {
+        selectedCurrency = savedCurrency;
+        console.log('?? Loaded saved currency:', savedCurrency);
+    }
+    
+    // Initialize authentication
+    initAuth();
+    
+    displayItems();
+    updateCartCount();
+    setupFilters();
+    setupCurrencySelector();
+    updateCurrencySelector();
+    
+    // Load user's cart if logged in
+    loadUserCart();
+    
+    console.log('? TRIOGEL Enhanced Initialized successfully!');
+}
+
+// Replace the original addToCart with enhanced version
+window.addToCart = addToCartEnhanced;
+
+// ...existing code...
+
+// Update the existing DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('?? DOM Content Loaded - Starting TRIOGEL...');
+    console.log('?? DOM Content Loaded - Starting Enhanced TRIOGEL...');
 
-    // Initialize the site
-    init();
+    // Initialize the enhanced site
+    initEnhanced();
+
+    // Set up authentication form handlers
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Login form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loading"></span> Logging in...';
+            submitBtn.disabled = true;
+
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+
+                await loginUser(email, password);
+            } catch (error) {
+                showNotification(`? Login failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Register form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loading"></span> Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const userData = {
+                    username: document.getElementById('registerUsername').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value,
+                    confirmPassword: document.getElementById('confirmPassword').value,
+                    favoriteGame: document.getElementById('favoriteGame').value
+                };
+
+                await registerUser(userData);
+            } catch (error) {
+                showNotification(`? Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
 
     // Set up the checkout form handler
     const checkoutForm = document.getElementById('checkoutForm');
@@ -636,9 +1042,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 paymentMethod: document.getElementById('paymentMethod').value,
                 customerNotes: document.getElementById('customerNotes').value,
                 items: cart,
-                total: totalInPHP, // Always send PHP amount to backend
-                currency: selectedCurrency, // Include selected currency for reference
-                displayTotal: formatPrice(totalInPHP) // Formatted display price
+                total: totalInPHP,
+                currency: selectedCurrency,
+                displayTotal: formatPrice(totalInPHP),
+                user: currentUser // Include user data if logged in
             };
 
             console.log('?? Order data prepared:', orderData);
@@ -656,6 +1063,30 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('? Order processed successfully');
+
+                    // Save order to user's account if logged in
+                    if (currentUser) {
+                        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+                        if (users[currentUser.email]) {
+                            users[currentUser.email].orders.push({
+                                orderId: orderData.orderId,
+                                timestamp: orderData.timestamp,
+                                total: totalInPHP,
+                                status: 'pending',
+                                items: cart.map(item => ({
+                                    name: item.name,
+                                    quantity: item.quantity,
+                                    price: item.price
+                                }))
+                            });
+                            users[currentUser.email].cart = []; // Clear cart
+                            localStorage.setItem('triogel-users', JSON.stringify(users));
+                            
+                            // Update current user
+                            currentUser.orders = users[currentUser.email].orders;
+                            localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+                        }
+                    }
 
                     // Handle GCash payment instructions (Email-based)
                     if (orderData.paymentMethod === 'gcash' && responseData.paymentResult?.success) {
@@ -682,7 +1113,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                             <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Amount to Send (PHP)</div>
                                             ${selectedCurrency !== 'PHP' ? `
                                                 <div style="font-size: 1rem; margin-top: 8px; opacity: 0.8;">
-                                                    ? ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
+                                                    ?? ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
                                                 </div>
                                             ` : ''}
                                         </div>
@@ -773,7 +1204,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     throw new Error('Network response was not ok');
                 }
             } catch (error) {
-                console.error('?? Order submission failed:', error);
+                console.error('? Order submission failed:', error);
                 showOrderSuccess(orderData);
                 showOwnerNotification(orderData);
                 cart = [];
@@ -788,11 +1219,33 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('? Checkout form not found!');
     }
     
+    // Close modals when clicking outside (enhanced for auth modals)
+    window.addEventListener('click', function (e) {
+        if (e.target.classList.contains('modal')) {
+            e.target.style.display = 'none';
+        }
+        
+        // Close currency selector when clicking outside
+        if (!e.target.closest('#currencySelector') && !e.target.closest('#currencyDropdown')) {
+            const dropdown = document.getElementById('currencyDropdown');
+            const selector = document.getElementById('currencySelector');
+            if (dropdown && selector) {
+                dropdown.style.display = 'none';
+                selector.classList.remove('active');
+            }
+        }
+        
+        // Close user dropdown when clicking outside
+        if (!e.target.closest('.user-dropdown')) {
+            closeUserDropdown();
+        }
+    });
+    
     // Add validation logging
     console.log('?? Running TRIOGEL validation...');
     
     // Check required elements
-    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector'];
+    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector', 'loginSection', 'userSection'];
     let allElementsFound = true;
     
     requiredElements.forEach(id => {
@@ -803,7 +1256,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
     // Check required functions
-    const requiredFunctions = ['init', 'addToCart', 'setCurrency'];
+    const requiredFunctions = ['initEnhanced', 'addToCartEnhanced', 'setCurrency', 'loginUser', 'registerUser'];
     requiredFunctions.forEach(func => {
         if (typeof window[func] !== 'function') {
             console.error(`? Missing function: ${func}`);
@@ -812,24 +1265,24 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     
     if (allElementsFound) {
-        console.log('? All TRIOGEL components validated successfully!');
+        console.log('? All TRIOGEL Enhanced components validated successfully!');
     } else {
         console.warn('?? Some TRIOGEL components missing - check console for details');
     }
 });
 
-// Make functions globally accessible for onclick handlers
-window.addToCart = addToCart;
-window.removeFromCart = removeFromCart;
-window.openCart = openCart;
-window.closeCart = closeCart;
-window.proceedToCheckout = proceedToCheckout;
-window.closeCheckout = closeCheckout;
-window.openOrderTracking = openOrderTracking;
-window.closeOrderTracking = closeOrderTracking;
-window.toggleCurrencySelector = toggleCurrencySelector;
-window.setCurrency = setCurrency;
-window.copyGCashInfo = copyGCashInfo;
-window.composeEmail = composeEmail;
+// Make new functions globally accessible for onclick handlers
+window.openLoginModal = openLoginModal;
+window.closeLoginModal = closeLoginModal;
+window.openRegisterModal = openRegisterModal;
+window.closeRegisterModal = closeRegisterModal;
+window.switchToRegister = switchToRegister;
+window.switchToLogin = switchToLogin;
+window.toggleUserDropdown = toggleUserDropdown;
+window.logoutUser = logoutUser;
+window.openProfileModal = openProfileModal;
+window.openOrderHistoryModal = openOrderHistoryModal;
+window.openWishlistModal = openWishlistModal;
+window.openForgotPassword = openForgotPassword;
 
-console.log('? TRIOGEL JavaScript loaded successfully!');
+console.log('? TRIOGEL Enhanced JavaScript loaded successfully!');
