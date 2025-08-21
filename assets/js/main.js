@@ -479,7 +479,7 @@ function showOrderSuccess(orderData) {
     
     checkoutContent.innerHTML = `
         <div class="success-message">
-            <h3 style="margin-bottom: 20px; font-size: 2rem;">?? Order Confirmed!</h3>
+            <h3 style="margin-bottom: 20px; font-size: 2rem;">Order Confirmed!</h3>
             <p style="font-size: 1.2rem; margin-bottom: 15px;">Thank you for your purchase!</p>
             <p style="margin-bottom: 20px;">Order ID: <strong>${orderData.orderId}</strong></p>
             <p style="margin-bottom: 20px;">We've received your order and will contact you within 24 hours via email.</p>
@@ -500,7 +500,7 @@ function showOwnerNotification(orderData) {
     
     const totalInPHP = orderData.total;
     notification.innerHTML = `
-        ?? New TRIOGEL Order!<br>
+        New TRIOGEL Order!<br>
         <small>Order: ${orderData.orderId} - ${formatPrice(totalInPHP)}</small>
     `;
     notification.style.display = 'block';
@@ -533,344 +533,6 @@ function showNotification(message) {
     }, 3000);
 }
 
-// ORDER TRACKING FUNCTIONS
-function openOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'block';
-    document.getElementById('orderId').value = '';
-    document.getElementById('orderResult').style.display = 'none';
-}
-
-function closeOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'none';
-}
-
-// Email function to replace WhatsApp
-function composeEmail(reference, customerEmail) {
-    const subject = `TRIOGEL Order Payment Proof - ${reference}`;
-    const body = `Hi TRIOGEL Support,
-
-I've placed an order with reference: ${reference}
-
-I have completed the GCash payment and am attaching the screenshot as proof.
-
-Please process my order and deliver my gaming items.
-
-Customer Email: ${customerEmail}
-
-Thank you!`;
-
-    const mailtoUrl = `mailto:${customerEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoUrl, '_blank');
-}
-
-// Helper function for copying GCash payment info
-function copyGCashInfo(gcashNumber, amount, reference) {
-    const paymentInfo = `GCash Payment Info:
-Amount: PHP ${amount}
-Send to: ${gcashNumber}
-Reference: ${reference}`;
-    
-    navigator.clipboard.writeText(paymentInfo).then(() => {
-        showNotification('Payment info copied to clipboard!');
-    }).catch(() => {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = paymentInfo;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        showNotification('Payment info copied!');
-    });
-}
-
-// USER AUTHENTICATION FUNCTIONS
-let currentUser = null;
-
-// Initialize authentication on page load
-function initAuth() {
-    console.log('?? Initializing authentication...');
-    
-    // Check if user is logged in (localStorage)
-    const savedUser = localStorage.getItem('triogel-user');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            showUserSection();
-            console.log('? User auto-logged in:', currentUser.username);
-        } catch (error) {
-            console.error('? Error loading saved user:', error);
-            localStorage.removeItem('triogel-user');
-        }
-    }
-}
-
-// Modal Management Functions
-function openLoginModal() {
-    document.getElementById('loginModal').style.display = 'block';
-    document.getElementById('loginEmail').focus();
-}
-
-function closeLoginModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    clearLoginForm();
-}
-
-function openRegisterModal() {
-    document.getElementById('registerModal').style.display = 'block';
-    document.getElementById('registerUsername').focus();
-}
-
-function closeRegisterModal() {
-    document.getElementById('registerModal').style.display = 'none';
-    clearRegisterForm();
-}
-
-function switchToRegister() {
-    closeLoginModal();
-    openRegisterModal();
-}
-
-function switchToLogin() {
-    closeRegisterModal();
-    openLoginModal();
-}
-
-// Form Management
-function clearLoginForm() {
-    document.getElementById('loginForm').reset();
-}
-
-function clearRegisterForm() {
-    document.getElementById('registerForm').reset();
-}
-
-// Authentication Logic
-async function loginUser(email, password) {
-    try {
-        console.log('?? Attempting login for:', email);
-        
-        // For demo purposes, we'll use simple localStorage authentication
-        // In production, this would connect to your backend authentication system
-        
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        const user = users[email.toLowerCase()];
-        
-        if (!user) {
-            throw new Error('Account not found. Please register first.');
-        }
-        
-        if (user.password !== password) {
-            throw new Error('Invalid password. Please try again.');
-        }
-        
-        // Login successful
-        currentUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email.toLowerCase(),
-            favoriteGame: user.favoriteGame,
-            joinDate: user.joinDate,
-            orders: user.orders || [],
-            wishlist: user.wishlist || []
-        };
-        
-        // Save to localStorage
-        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-        
-        // Update UI
-        showUserSection();
-        closeLoginModal();
-        
-        showNotification(`?? Welcome back, ${currentUser.username}!`);
-        console.log('? Login successful:', currentUser.username);
-        
-        return { success: true, user: currentUser };
-        
-    } catch (error) {
-        console.error('? Login error:', error);
-        throw error;
-    }
-}
-
-async function registerUser(userData) {
-    try {
-        console.log('?? Attempting registration for:', userData.email);
-        
-        // Validate passwords match
-        if (userData.password !== userData.confirmPassword) {
-            throw new Error('Passwords do not match!');
-        }
-        
-        // Check password strength
-        if (userData.password.length < 6) {
-            throw new Error('Password must be at least 6 characters long!');
-        }
-        
-        // Check if user already exists
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        const email = userData.email.toLowerCase();
-        
-        if (users[email]) {
-            throw new Error('An account with this email already exists!');
-        }
-        
-        // Create new user
-        const newUser = {
-            id: Date.now().toString(),
-            username: userData.username,
-            email: email,
-            password: userData.password, // In production, this would be hashed
-            favoriteGame: userData.favoriteGame,
-            joinDate: new Date().toISOString(),
-            orders: [],
-            wishlist: []
-        };
-        
-        // Save user
-        users[email] = newUser;
-        localStorage.setItem('triogel-users', JSON.stringify(users));
-        
-        // Auto-login after registration
-        currentUser = {
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            favoriteGame: newUser.favoriteGame,
-            joinDate: newUser.joinDate,
-            orders: [],
-            wishlist: []
-        };
-        
-        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-        
-        // Update UI
-        showUserSection();
-        closeRegisterModal();
-        
-        showNotification(`?? Welcome to TRIOGEL, ${currentUser.username}!`);
-        console.log('? Registration successful:', currentUser.username);
-        
-        return { success: true, user: currentUser };
-        
-    } catch (error) {
-        console.error('? Registration error:', error);
-        throw error;
-    }
-}
-
-function logoutUser() {
-    console.log('?? Logging out user:', currentUser?.username);
-    
-    currentUser = null;
-    localStorage.removeItem('triogel-user');
-    
-    // Reset UI
-    showLoginSection();
-    closeUserDropdown();
-    
-    showNotification('?? Logged out successfully!');
-}
-
-// UI Management Functions
-function showUserSection() {
-    const loginSection = document.getElementById('loginSection');
-    const userSection = document.getElementById('userSection');
-    const userName = document.querySelector('.user-name');
-    const userStats = document.getElementById('userStats');
-    
-    if (loginSection && userSection && userName && currentUser) {
-        loginSection.style.display = 'none';
-        userSection.style.display = 'block';
-        userName.textContent = currentUser.username;
-        
-        // Update user stats
-        const gameEmoji = currentUser.favoriteGame === 'ml' ? '??' : currentUser.favoriteGame === 'roblox' ? '??' : '??';
-        userStats.innerHTML = `
-            <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
-                <div style="margin-bottom: 8px;">
-                    ${gameEmoji} ${getGameName(currentUser.favoriteGame)} Player
-                </div>
-                <div style="margin-bottom: 8px;">
-                    ?? ${currentUser.orders.length} Orders
-                </div>
-                <div>
-                    ?? ${currentUser.wishlist.length} Wishlist Items
-                </div>
-            </div>
-        `;
-    }
-}
-
-function showLoginSection() {
-    const loginSection = document.getElementById('loginSection');
-    const userSection = document.getElementById('userSection');
-    
-    if (loginSection && userSection) {
-        loginSection.style.display = 'flex';
-        userSection.style.display = 'none';
-    }
-}
-
-function toggleUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    const button = document.querySelector('.user-info-btn');
-    
-    if (dropdown && button) {
-        const isOpen = dropdown.style.display === 'block';
-        dropdown.style.display = isOpen ? 'none' : 'block';
-        button.classList.toggle('active', !isOpen);
-    }
-}
-
-function closeUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    const button = document.querySelector('.user-info-btn');
-    
-    if (dropdown && button) {
-        dropdown.style.display = 'none';
-        button.classList.remove('active');
-    }
-}
-
-function getGameName(gameCode) {
-    const names = {
-        'ml': 'Mobile Legends',
-        'roblox': 'Roblox',
-        'other': 'Various Games'
-    };
-    return names[gameCode] || 'Gamer';
-}
-
-// Profile Modal Functions (Placeholder)
-function openProfileModal() {
-    closeUserDropdown();
-    showNotification('?? Profile settings coming soon!');
-}
-
-function openOrderHistoryModal() {
-    closeUserDropdown();
-    if (currentUser && currentUser.orders.length > 0) {
-        showNotification('?? Order history feature coming soon!');
-    } else {
-        showNotification('?? No orders found. Start shopping!');
-    }
-}
-
-function openWishlistModal() {
-    closeUserDropdown();
-    if (currentUser && currentUser.wishlist.length > 0) {
-        showNotification('?? Wishlist feature coming soon!');
-    } else {
-        showNotification('?? Your wishlist is empty. Add some items!');
-    }
-}
-
-function openForgotPassword() {
-    closeLoginModal();
-    showNotification('?? Password reset via email coming soon!');
-}
-
 // Enhanced addToCart function to work with user accounts
 function addToCartEnhanced(itemId) {
     const item = items.find(i => i.id === itemId);
@@ -889,9 +551,9 @@ function addToCartEnhanced(itemId) {
 
     updateCartCount();
     
-    // Show personalized notification
+    // Show personalized notification - Fixed emoji issue
     const userName = currentUser ? currentUser.username : 'Guest';
-    showNotification(`?? ${item.name} added to ${userName}'s cart!`);
+    showNotification(`${item.name} added to ${userName}'s cart!`);
     
     // If user is logged in, save cart to their profile
     if (currentUser) {
@@ -1014,6 +676,23 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Set up the tracking form handler
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Order tracking form submitted');
+
+            const orderId = document.getElementById('orderId').value.trim();
+            if (!orderId) {
+                showNotification('Please enter an Order ID');
+                return;
+            }
+
+            await trackOrderById(orderId);
+        });
+    }
+
     // Set up the checkout form handler
     const checkoutForm = document.getElementById('checkoutForm');
     if (checkoutForm) {
@@ -1097,23 +776,23 @@ document.addEventListener('DOMContentLoaded', function () {
                             checkoutContent.innerHTML = `
                                 <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 40px; border-radius: 25px; text-align: center; margin: 30px 0; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);">
                                     <div style="background: white; color: #10b981; padding: 15px 25px; border-radius: 50px; display: inline-block; font-weight: 900; font-size: 1.1rem; margin-bottom: 20px;">
-                                        ?? GCash Payment Instructions
+                                        GCash Payment Instructions
                                     </div>
                                     
                                     <h3 style="margin-bottom: 15px; font-size: 1.4rem; opacity: 0.95;">Your order has been created!</h3>
                                     <p style="margin-bottom: 25px; font-size: 1.1rem; opacity: 0.9;">Order ID: <strong>${orderData.orderId}</strong></p>
                                     
                                     <div style="background: rgba(255, 255, 255, 0.15); border-radius: 20px; padding: 30px; margin: 25px 0; backdrop-filter: blur(10px);">
-                                        <h4 style="color: #ffffff; margin-bottom: 20px; font-size: 1.2rem;">?? Send GCash Payment To:</h4>
+                                        <h4 style="color: #ffffff; margin-bottom: 20px; font-size: 1.2rem;">Send GCash Payment To:</h4>
                                         
                                         <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
                                             <div style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">
-                                                ?${responseData.paymentResult.amount_php}
+                                                PHP ${responseData.paymentResult.amount_php}
                                             </div>
                                             <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Amount to Send (PHP)</div>
                                             ${selectedCurrency !== 'PHP' ? `
                                                 <div style="font-size: 1rem; margin-top: 8px; opacity: 0.8;">
-                                                    ?? ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
+                                                    ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
                                                 </div>
                                             ` : ''}
                                         </div>
@@ -1141,11 +820,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                     </div>
                                     
                                     <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin: 25px 0;">
-                                        <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">?? Payment Steps:</h4>
+                                        <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">Payment Steps:</h4>
                                         <div style="text-align: left; color: white;">
                                             <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                 <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">1</div>
-                                                <div>Send <strong>?${responseData.paymentResult.amount_php}</strong> to GCash <strong>${responseData.paymentResult.gcash_number}</strong></div>
+                                                <div>Send <strong>PHP ${responseData.paymentResult.amount_php}</strong> to GCash <strong>${responseData.paymentResult.gcash_number}</strong></div>
                                             </div>
                                             <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
                                                 <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">2</div>
@@ -1174,11 +853,11 @@ document.addEventListener('DOMContentLoaded', function () {
                                         <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                                             <button class="checkout-btn" onclick="copyGCashInfo('${responseData.paymentResult.gcash_number}', '${responseData.paymentResult.amount_php}', '${responseData.paymentResult.reference}')" 
                                                 style="background: linear-gradient(45deg, #667eea, #764ba2); flex: 1; min-width: 200px; margin: 0;">
-                                                ?? Copy Payment Info
+                                                Copy Payment Info
                                             </button>
                                             <button class="checkout-btn" onclick="composeEmail('${responseData.paymentResult.reference}', '${orderData.customer.email}')" 
                                                 style="background: #0ea5e9; flex: 1; min-width: 200px; margin: 0;">
-                                                ?? Open Email
+                                                Open Email
                                             </button>
                                         </div>
                                     </div>
@@ -1284,5 +963,319 @@ window.openProfileModal = openProfileModal;
 window.openOrderHistoryModal = openOrderHistoryModal;
 window.openWishlistModal = openWishlistModal;
 window.openForgotPassword = openForgotPassword;
+window.trackOrderById = trackOrderById;
+window.closeOrderHistoryModal = closeOrderHistoryModal;
+window.trackSpecificOrder = trackSpecificOrder;
 
-console.log('? TRIOGEL Enhanced JavaScript loaded successfully!');
+// ORDER TRACKING FUNCTIONS - Enhanced
+function openOrderTracking() {
+    document.getElementById('orderTrackingModal').style.display = 'block';
+    document.getElementById('orderId').value = '';
+    document.getElementById('orderResult').style.display = 'none';
+    
+    // Clear previous results
+    const orderStatus = document.getElementById('orderStatus');
+    const orderItemsList = document.getElementById('orderItemsList');
+    const customerSummary = document.getElementById('customerSummary');
+    
+    if (orderStatus) orderStatus.innerHTML = '';
+    if (orderItemsList) orderItemsList.innerHTML = '';
+    if (customerSummary) customerSummary.innerHTML = '';
+}
+
+function closeOrderTracking() {
+    document.getElementById('orderTrackingModal').style.display = 'none';
+}
+
+async function trackOrderById(orderId) {
+    try {
+        console.log('?? Tracking order:', orderId);
+        
+        const trackBtn = document.querySelector('.track-btn');
+        const originalText = trackBtn.innerHTML;
+        trackBtn.innerHTML = '<span class="loading"></span> Tracking...';
+        trackBtn.disabled = true;
+
+        // Try to fetch from Netlify function first
+        let orderData = null;
+        
+        try {
+            const response = await fetch(`/.netlify/functions/track-order?orderId=${orderId}`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.orders && result.orders.length > 0) {
+                    orderData = result.orders[0];
+                    console.log('? Order found in database:', orderData);
+                }
+            }
+        } catch (netError) {
+            console.log('?? Database not available, checking local storage...');
+        }
+
+        // Fallback to localStorage for demo/testing
+        if (!orderData) {
+            orderData = findOrderInLocalStorage(orderId);
+        }
+
+        if (orderData) {
+            displayOrderTrackingResult(orderData);
+        } else {
+            displayOrderNotFound(orderId);
+        }
+
+    } catch (error) {
+        console.error('? Error tracking order:', error);
+        showNotification('Error tracking order. Please try again.');
+        displayOrderNotFound(orderId);
+    } finally {
+        // Restore button state
+        const trackBtn = document.querySelector('.track-btn');
+        trackBtn.innerHTML = 'Track Order';
+        trackBtn.disabled = false;
+    }
+}
+
+function findOrderInLocalStorage(orderId) {
+    // Check if user is logged in and has orders
+    if (currentUser && currentUser.orders) {
+        const userOrder = currentUser.orders.find(order => order.orderId === orderId);
+        if (userOrder) {
+            console.log('? Order found in user account:', userOrder);
+            return {
+                orderId: userOrder.orderId,
+                status: userOrder.status || 'pending',
+                totalAmount: userOrder.total,
+                gameUsername: currentUser.username,
+                orderDate: userOrder.timestamp,
+                items: userOrder.items || []
+            };
+        }
+    }
+
+    // Check all registered users for the order (admin functionality)
+    try {
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        for (const [email, user] of Object.entries(users)) {
+            if (user.orders) {
+                const foundOrder = user.orders.find(order => order.orderId === orderId);
+                if (foundOrder) {
+                    console.log('? Order found for user:', email);
+                    return {
+                        orderId: foundOrder.orderId,
+                        status: foundOrder.status || 'pending',
+                        totalAmount: foundOrder.total,
+                        gameUsername: foundOrder.gameUsername || user.username,
+                        customerEmail: email,
+                        orderDate: foundOrder.timestamp,
+                        items: foundOrder.items || []
+                    };
+                }
+            }
+        }
+    } catch (error) {
+        console.error('? Error searching localStorage:', error);
+    }
+
+    return null;
+}
+
+function displayOrderTrackingResult(orderData) {
+    console.log('?? Displaying order result:', orderData);
+    
+    const orderResult = document.getElementById('orderResult');
+    const orderStatus = document.getElementById('orderStatus');
+    const orderItemsList = document.getElementById('orderItemsList');
+    const customerSummary = document.getElementById('customerSummary');
+
+    if (!orderResult || !orderStatus || !orderItemsList || !customerSummary) {
+        console.error('? Tracking modal elements not found');
+        return;
+    }
+
+    // Show the result section
+    orderResult.style.display = 'block';
+
+    // Display order status
+    const status = orderData.status || 'pending';
+    const statusClass = `status-${status}`;
+    const statusEmojis = {
+        'pending': '?',
+        'processing': '??',
+        'completed': '?',
+        'cancelled': '?'
+    };
+    
+    orderStatus.innerHTML = `
+        <div class="order-status ${statusClass}">
+            ${statusEmojis[status] || '??'} ${status.charAt(0).toUpperCase() + status.slice(1)}
+        </div>
+        <div style="margin-top: 15px; color: var(--text-secondary);">
+            <strong>Order ID:</strong> ${orderData.orderId}<br>
+            <strong>Date:</strong> ${new Date(orderData.orderDate).toLocaleDateString()}<br>
+            <strong>Total:</strong> ${formatPrice(orderData.totalAmount)}
+        </div>
+    `;
+
+    // Display order items
+    if (orderData.items && orderData.items.length > 0) {
+        orderItemsList.innerHTML = `
+            <h4 style="color: var(--text-primary); margin-bottom: 15px;">Items Ordered:</h4>
+            ${orderData.items.map(item => `
+                <div class="order-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: var(--text-secondary);">Quantity: ${item.quantity}</small>
+                    </div>
+                    <div style="text-align: right; color: var(--success-green);">
+                        ${formatPrice(item.price * item.quantity)}
+                    </div>
+                </div>
+            `).join('')}
+        `;
+    } else {
+        orderItemsList.innerHTML = '<p style="color: var(--text-secondary);">No item details available</p>';
+    }
+
+    // Display customer summary
+    const deliveryEstimate = getDeliveryEstimate(status);
+    customerSummary.innerHTML = `
+        <h4 style="color: var(--text-primary); margin-bottom: 15px;">Delivery Information:</h4>
+        <div style="background: var(--card-bg); padding: 20px; border-radius: 15px;">
+            <p><strong>Game Username:</strong> ${orderData.gameUsername || 'N/A'}</p>
+            ${orderData.customerEmail ? `<p><strong>Email:</strong> ${orderData.customerEmail}</p>` : ''}
+            <p><strong>Status:</strong> ${getStatusDescription(status)}</p>
+            <p><strong>Estimated Delivery:</strong> ${deliveryEstimate}</p>
+        </div>
+    `;
+}
+
+function displayOrderNotFound(orderId) {
+    const orderResult = document.getElementById('orderResult');
+    const orderStatus = document.getElementById('orderStatus');
+    const orderItemsList = document.getElementById('orderItemsList');
+    const customerSummary = document.getElementById('customerSummary');
+
+    if (!orderResult) return;
+
+    orderResult.style.display = 'block';
+
+    orderStatus.innerHTML = `
+        <div class="order-status status-cancelled">
+            ? Order Not Found
+        </div>
+    `;
+
+    orderItemsList.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            <h4>Order ${orderId} not found</h4>
+            <p style="margin-top: 15px;">Please check your order ID and try again.</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                Order IDs start with "TRIO-" and are sent to your email after purchase.
+            </p>
+        </div>
+    `;
+
+    customerSummary.innerHTML = '';
+}
+
+function getStatusDescription(status) {
+    const descriptions = {
+        'pending': 'Order received and awaiting payment verification',
+        'processing': 'Payment confirmed, preparing your items for delivery', 
+        'completed': 'Items delivered successfully to your game account',
+        'cancelled': 'Order has been cancelled or refunded'
+    };
+    return descriptions[status] || 'Status unknown';
+}
+
+function getDeliveryEstimate(status) {
+    const estimates = {
+        'pending': '1-24 hours after payment',
+        'processing': '1-6 hours', 
+        'completed': 'Delivered',
+        'cancelled': 'N/A'
+    };
+    return estimates[status] || '1-24 hours';
+}
+
+// Enhanced order history for logged-in users
+function openOrderHistoryModal() {
+    closeUserDropdown();
+    
+    if (!currentUser) {
+        showNotification('Please login to view order history');
+        return;
+    }
+
+    if (!currentUser.orders || currentUser.orders.length === 0) {
+        showNotification('No orders found. Start shopping!');
+        return;
+    }
+
+    // Create and show order history modal
+    const existingModal = document.getElementById('orderHistoryModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const modal = document.createElement('div');
+    modal.id = 'orderHistoryModal';
+    modal.className = 'modal';
+    modal.style.display = 'block';
+
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderHistoryModal()">&times;</span>
+            <h2>Order History</h2>
+            <div class="order-history-list">
+                ${currentUser.orders.map(order => `
+                    <div class="order-history-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 10px;">
+                            <div>
+                                <strong>${order.orderId}</strong>
+                                <div class="order-status status-${order.status || 'pending'}" style="display: inline-block; margin-left: 10px;">
+                                    ${(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}
+                                </div>
+                            </div>
+                            <div style="text-align: right; color: var(--success-green); font-weight: 700;">
+                                ${formatPrice(order.total)}
+                            </div>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 10px;">
+                            ${new Date(order.timestamp).toLocaleDateString()} at ${new Date(order.timestamp).toLocaleTimeString()}
+                        </div>
+                        ${order.items ? `
+                            <div style="font-size: 0.9rem;">
+                                <strong>Items:</strong> ${order.items.map(item => `${item.name} (${item.quantity})`).join(', ')}
+                            </div>
+                        ` : ''}
+                        <div style="margin-top: 15px;">
+                            <button class="track-order-btn" onclick="trackSpecificOrder('${order.orderId}')" 
+                                style="padding: 8px 16px; font-size: 0.9rem;">
+                                Track Order
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+}
+
+function closeOrderHistoryModal() {
+    const modal = document.getElementById('orderHistoryModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+function trackSpecificOrder(orderId) {
+    closeOrderHistoryModal();
+    openOrderTracking();
+    document.getElementById('orderId').value = orderId;
+    trackOrderById(orderId);
+}
+
+// ...existing code...

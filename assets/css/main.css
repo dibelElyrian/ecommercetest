@@ -752,6 +752,23 @@ body {
     width: 100%;
     transition: all 0.3s ease;
     text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+}
+
+.track-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.track-btn:hover::before {
+    left: 100%;
 }
 
 .track-btn:hover {
@@ -766,6 +783,11 @@ body {
     box-shadow: none;
 }
 
+.track-btn:disabled::before {
+    display: none;
+}
+
+/* Order Tracking Styles - Enhanced */
 .order-result {
     background: var(--card-bg);
     backdrop-filter: blur(15px);
@@ -777,32 +799,38 @@ body {
 
 .order-status {
     display: inline-block;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.9rem;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 1rem;
     font-weight: 700;
     text-transform: uppercase;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    min-width: 140px;
+    text-align: center;
 }
 
 .status-pending {
     background: linear-gradient(45deg, #f59e0b, #d97706);
     color: white;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
 }
 
 .status-processing {
     background: linear-gradient(45deg, #3b82f6, #2563eb);
     color: white;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 .status-completed {
     background: linear-gradient(45deg, #10b981, #059669);
     color: white;
+    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
 }
 
 .status-cancelled {
     background: linear-gradient(45deg, #ef4444, #dc2626);
     color: white;
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
 
 .order-items-list {
@@ -810,6 +838,12 @@ body {
     padding: 20px;
     border-radius: 15px;
     margin-top: 20px;
+}
+
+.order-items-list h4 {
+    color: var(--text-primary);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
 }
 
 .order-item {
@@ -824,167 +858,82 @@ body {
     border-bottom: none;
 }
 
-/* Currency Selector Styles */
-.currency-selector {
-    position: relative;
-    display: inline-block;
+.order-item strong {
+    color: var(--text-primary);
+    font-size: 1rem;
 }
 
-.currency-button {
+.order-item small {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+/* Order History Styles */
+.order-history-list {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.order-history-item {
     background: var(--card-bg);
     backdrop-filter: blur(15px);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    color: var(--text-primary);
-    padding: 12px 20px;
-    border-radius: 25px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 120px;
-    justify-content: space-between;
-    font-family: Arial, "Segoe UI", sans-serif;
 }
 
-.currency-button:hover {
-    background: var(--primary-gradient);
+.order-history-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
-.currency-button.active {
-    background: var(--primary-gradient);
-    border-color: rgba(255, 255, 255, 0.3);
+/* Status badges in order history */
+.order-history-item .order-status {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    margin: 0;
+    min-width: auto;
 }
 
-.currency-arrow {
-    font-size: 0.8rem;
-    transition: transform 0.3s ease;
+/* Loading animation for tracking */
+@keyframes trackingPulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
 
-.currency-button.active .currency-arrow {
-    transform: rotate(180deg);
+.tracking-loading {
+    animation: trackingPulse 1.5s ease-in-out infinite;
 }
 
-.currency-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    background: var(--dark-bg);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 20px;
-    padding: 15px 0;
-    min-width: 280px;
-    max-height: 400px;
-    overflow-y: auto;
-    z-index: 2000;
-    backdrop-filter: blur(25px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
-    display: none;
-    animation: slideInDown 0.3s ease;
-}
-
-@keyframes slideInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.currency-option {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 12px 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.currency-option:last-child {
-    border-bottom: none;
-}
-
-.currency-option:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: var(--accent-blue);
-}
-
-.currency-symbol {
-    font-size: 1.3rem;
-    font-weight: 800;
-    min-width: 30px;
-    text-align: center;
-    color: var(--accent-blue);
-    font-family: Arial, "Segoe UI", "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
-}
-
-.currency-code {
-    font-weight: 700;
-    font-size: 1rem;
-    min-width: 45px;
-    color: var(--text-primary);
-}
-
-.currency-name {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    flex: 1;
-}
-
-/* Mobile responsive adjustments for currency selector */
+/* Mobile responsive for order tracking */
 @media (max-width: 768px) {
-    .currency-dropdown {
-        right: 0;
-        left: auto;
-        min-width: 250px;
-    }
-    
-    .currency-button {
-        min-width: 100px;
-        padding: 10px 15px;
-        font-size: 0.9rem;
-    }
-    
-    .nav-section {
-        flex-wrap: wrap;
-        gap: 15px;
-    }
-    
-    .nav-controls {
-        display: flex;
-        flex-wrap: wrap;
+    .order-item {
+        flex-direction: column;
+        align-items: flex-start;
         gap: 10px;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
     }
-}
-
-/* Custom scrollbar for currency dropdown */
-.currency-dropdown::-webkit-scrollbar {
-    width: 6px;
-}
-
-.currency-dropdown::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-}
-
-.currency-dropdown::-webkit-scrollbar-thumb {
-    background: var(--accent-blue);
-    border-radius: 3px;
-}
-
-.currency-dropdown::-webkit-scrollbar-thumb:hover {
-    background: var(--accent-purple);
+    
+    .order-history-item {
+        padding: 15px;
+    }
+    
+    .order-status {
+        font-size: 0.85rem;
+        padding: 8px 14px;
+        min-width: 120px;
+    }
+    
+    .tracking-input {
+        font-size: 1rem;
+        padding: 15px;
+    }
+    
+    .track-btn {
+        font-size: 1rem;
+        padding: 15px 30px;
+    }
 }
 
 /* User Account Section Styles */
