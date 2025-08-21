@@ -615,10 +615,18 @@ window.addToCart = addToCartEnhanced;
 
 // Update the existing DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('?? DOM Content Loaded - Starting Enhanced TRIOGEL...');
+    console.log('?? DOM Content Loaded - Starting TRIOGEL...');
 
-    // Initialize the enhanced site
+    // CRITICAL: Use the correct initialization function
     initEnhanced();
+
+    // Add items system validation immediately after init
+    setTimeout(() => {
+        if (!validateItemsSystem()) {
+            console.error('?? CRITICAL FAILURE: Items not loading properly');
+            alert('CRITICAL ERROR: Items not loading. Check console for details.');
+        }
+    }, 200);
 
     // Set up authentication form handlers
     const loginForm = document.getElementById('loginForm');
@@ -950,332 +958,74 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Make new functions globally accessible for onclick handlers
-window.openLoginModal = openLoginModal;
-window.closeLoginModal = closeLoginModal;
-window.openRegisterModal = openRegisterModal;
-window.closeRegisterModal = closeRegisterModal;
-window.switchToRegister = switchToRegister;
-window.switchToLogin = switchToLogin;
-window.toggleUserDropdown = toggleUserDropdown;
-window.logoutUser = logoutUser;
-window.openProfileModal = openProfileModal;
-window.openOrderHistoryModal = openOrderHistoryModal;
-window.openWishlistModal = openWishlistModal;
-window.openForgotPassword = openForgotPassword;
-window.trackOrderById = trackOrderById;
-window.closeOrderHistoryModal = closeOrderHistoryModal;
-window.trackSpecificOrder = trackSpecificOrder;
+console.log('? TRIOGEL Enhanced JavaScript loaded successfully!');
 
-// ORDER TRACKING FUNCTIONS - Enhanced
-function openOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'block';
-    document.getElementById('orderId').value = '';
-    document.getElementById('orderResult').style.display = 'none';
+// CRITICAL VALIDATION FUNCTIONS (MANDATORY FOR ITEMS LOADING)
+function validateItemsSystem() {
+    console.log('?? Validating items system...');
     
-    // Clear previous results
-    const orderStatus = document.getElementById('orderStatus');
-    const orderItemsList = document.getElementById('orderItemsList');
-    const customerSummary = document.getElementById('customerSummary');
+    // Check items array
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array missing or empty');
+        return false;
+    }
     
-    if (orderStatus) orderStatus.innerHTML = '';
-    if (orderItemsList) orderItemsList.innerHTML = '';
-    if (customerSummary) customerSummary.innerHTML = '';
-}
-
-function closeOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'none';
-}
-
-async function trackOrderById(orderId) {
+    // Check display function
+    if (typeof displayItems !== 'function') {
+        console.error('?? CRITICAL: displayItems function missing or incomplete');
+        return false;
+    }
+    
+    // Check grid element
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('?? CRITICAL: itemsGrid element missing from DOM');
+        return false;
+    }
+    
+    // Test item display
     try {
-        console.log('?? Tracking order:', orderId);
-        
-        const trackBtn = document.querySelector('.track-btn');
-        const originalText = trackBtn.innerHTML;
-        trackBtn.innerHTML = '<span class="loading"></span> Tracking...';
-        trackBtn.disabled = true;
-
-        // Try to fetch from Netlify function first
-        let orderData = null;
-        
-        try {
-            const response = await fetch(`/.netlify/functions/track-order?orderId=${orderId}`);
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.orders && result.orders.length > 0) {
-                    orderData = result.orders[0];
-                    console.log('? Order found in database:', orderData);
-                }
-            }
-        } catch (netError) {
-            console.log('?? Database not available, checking local storage...');
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('?? CRITICAL: Items not rendering to DOM');
+            return false;
         }
-
-        // Fallback to localStorage for demo/testing
-        if (!orderData) {
-            orderData = findOrderInLocalStorage(orderId);
-        }
-
-        if (orderData) {
-            displayOrderTrackingResult(orderData);
-        } else {
-            displayOrderNotFound(orderId);
-        }
-
+        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        return true;
     } catch (error) {
-        console.error('? Error tracking order:', error);
-        showNotification('Error tracking order. Please try again.');
-        displayOrderNotFound(orderId);
-    } finally {
-        // Restore button state
-        const trackBtn = document.querySelector('.track-btn');
-        trackBtn.innerHTML = 'Track Order';
-        trackBtn.disabled = false;
+        console.error('?? CRITICAL: Error in displayItems():', error);
+        return false;
     }
 }
 
-function findOrderInLocalStorage(orderId) {
-    // Check if user is logged in and has orders
-    if (currentUser && currentUser.orders) {
-        const userOrder = currentUser.orders.find(order => order.orderId === orderId);
-        if (userOrder) {
-            console.log('? Order found in user account:', userOrder);
-            return {
-                orderId: userOrder.orderId,
-                status: userOrder.status || 'pending',
-                totalAmount: userOrder.total,
-                gameUsername: currentUser.username,
-                orderDate: userOrder.timestamp,
-                items: userOrder.items || []
-            };
+function validateCodeIntegrity() {
+    console.log('?? Validating code integrity...');
+    
+    // Critical function existence check
+    const criticalFunctions = ['initEnhanced', 'displayItems', 'addToCartEnhanced', 'setCurrency', 'showNotification', 'setupCurrencySelector'];
+    criticalFunctions.forEach(funcName => {
+        if (typeof window[funcName] !== 'function') {
+            console.error(`?? CRITICAL TRUNCATION: ${funcName} function missing or incomplete`);
         }
-    }
-
-    // Check all registered users for the order (admin functionality)
-    try {
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        for (const [email, user] of Object.entries(users)) {
-            if (user.orders) {
-                const foundOrder = user.orders.find(order => order.orderId === orderId);
-                if (foundOrder) {
-                    console.log('? Order found for user:', email);
-                    return {
-                        orderId: foundOrder.orderId,
-                        status: foundOrder.status || 'pending',
-                        totalAmount: foundOrder.total,
-                        gameUsername: foundOrder.gameUsername || user.username,
-                        customerEmail: email,
-                        orderDate: foundOrder.timestamp,
-                        items: foundOrder.items || []
-                    };
-                }
-            }
-        }
-    } catch (error) {
-        console.error('? Error searching localStorage:', error);
-    }
-
-    return null;
-}
-
-function displayOrderTrackingResult(orderData) {
-    console.log('?? Displaying order result:', orderData);
+    });
     
-    const orderResult = document.getElementById('orderResult');
-    const orderStatus = document.getElementById('orderStatus');
-    const orderItemsList = document.getElementById('orderItemsList');
-    const customerSummary = document.getElementById('customerSummary');
-
-    if (!orderResult || !orderStatus || !orderItemsList || !customerSummary) {
-        console.error('? Tracking modal elements not found');
-        return;
+    // Data structure integrity check
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL TRUNCATION: Items array incomplete or empty');
     }
-
-    // Show the result section
-    orderResult.style.display = 'block';
-
-    // Display order status
-    const status = orderData.status || 'pending';
-    const statusClass = `status-${status}`;
-    const statusEmojis = {
-        'pending': '?',
-        'processing': '??',
-        'completed': '?',
-        'cancelled': '?'
-    };
     
-    orderStatus.innerHTML = `
-        <div class="order-status ${statusClass}">
-            ${statusEmojis[status] || '??'} ${status.charAt(0).toUpperCase() + status.slice(1)}
-        </div>
-        <div style="margin-top: 15px; color: var(--text-secondary);">
-            <strong>Order ID:</strong> ${orderData.orderId}<br>
-            <strong>Date:</strong> ${new Date(orderData.orderDate).toLocaleDateString()}<br>
-            <strong>Total:</strong> ${formatPrice(orderData.totalAmount)}
-        </div>
-    `;
-
-    // Display order items
-    if (orderData.items && orderData.items.length > 0) {
-        orderItemsList.innerHTML = `
-            <h4 style="color: var(--text-primary); margin-bottom: 15px;">Items Ordered:</h4>
-            ${orderData.items.map(item => `
-                <div class="order-item">
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small style="color: var(--text-secondary);">Quantity: ${item.quantity}</small>
-                    </div>
-                    <div style="text-align: right; color: var(--success-green);">
-                        ${formatPrice(item.price * item.quantity)}
-                    </div>
-                </div>
-            `).join('')}
-        `;
-    } else {
-        orderItemsList.innerHTML = '<p style="color: var(--text-secondary);">No item details available</p>';
+    if (!currencies || typeof currencies !== 'object' || Object.keys(currencies).length === 0) {
+        console.error('?? CRITICAL TRUNCATION: Currencies object incomplete or missing');
     }
-
-    // Display customer summary
-    const deliveryEstimate = getDeliveryEstimate(status);
-    customerSummary.innerHTML = `
-        <h4 style="color: var(--text-primary); margin-bottom: 15px;">Delivery Information:</h4>
-        <div style="background: var(--card-bg); padding: 20px; border-radius: 15px;">
-            <p><strong>Game Username:</strong> ${orderData.gameUsername || 'N/A'}</p>
-            ${orderData.customerEmail ? `<p><strong>Email:</strong> ${orderData.customerEmail}</p>` : ''}
-            <p><strong>Status:</strong> ${getStatusDescription(status)}</p>
-            <p><strong>Estimated Delivery:</strong> ${deliveryEstimate}</p>
-        </div>
-    `;
-}
-
-function displayOrderNotFound(orderId) {
-    const orderResult = document.getElementById('orderResult');
-    const orderStatus = document.getElementById('orderStatus');
-    const orderItemsList = document.getElementById('orderItemsList');
-    const customerSummary = document.getElementById('customerSummary');
-
-    if (!orderResult) return;
-
-    orderResult.style.display = 'block';
-
-    orderStatus.innerHTML = `
-        <div class="order-status status-cancelled">
-            ? Order Not Found
-        </div>
-    `;
-
-    orderItemsList.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <h4>Order ${orderId} not found</h4>
-            <p style="margin-top: 15px;">Please check your order ID and try again.</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-                Order IDs start with "TRIO-" and are sent to your email after purchase.
-            </p>
-        </div>
-    `;
-
-    customerSummary.innerHTML = '';
-}
-
-function getStatusDescription(status) {
-    const descriptions = {
-        'pending': 'Order received and awaiting payment verification',
-        'processing': 'Payment confirmed, preparing your items for delivery', 
-        'completed': 'Items delivered successfully to your game account',
-        'cancelled': 'Order has been cancelled or refunded'
-    };
-    return descriptions[status] || 'Status unknown';
-}
-
-function getDeliveryEstimate(status) {
-    const estimates = {
-        'pending': '1-24 hours after payment',
-        'processing': '1-6 hours', 
-        'completed': 'Delivered',
-        'cancelled': 'N/A'
-    };
-    return estimates[status] || '1-24 hours';
-}
-
-// Enhanced order history for logged-in users
-function openOrderHistoryModal() {
-    closeUserDropdown();
     
-    if (!currentUser) {
-        showNotification('Please login to view order history');
-        return;
+    if (!gameNames || typeof gameNames !== 'object') {
+        console.error('?? CRITICAL TRUNCATION: GameNames object incomplete or missing');
     }
-
-    if (!currentUser.orders || currentUser.orders.length === 0) {
-        showNotification('No orders found. Start shopping!');
-        return;
-    }
-
-    // Create and show order history modal
-    const existingModal = document.getElementById('orderHistoryModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'orderHistoryModal';
-    modal.className = 'modal';
-    modal.style.display = 'block';
-
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeOrderHistoryModal()">&times;</span>
-            <h2>Order History</h2>
-            <div class="order-history-list">
-                ${currentUser.orders.map(order => `
-                    <div class="order-history-item" style="background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                        <div style="display: flex; justify-content: between; align-items: flex-start; margin-bottom: 10px;">
-                            <div>
-                                <strong>${order.orderId}</strong>
-                                <div class="order-status status-${order.status || 'pending'}" style="display: inline-block; margin-left: 10px;">
-                                    ${(order.status || 'pending').charAt(0).toUpperCase() + (order.status || 'pending').slice(1)}
-                                </div>
-                            </div>
-                            <div style="text-align: right; color: var(--success-green); font-weight: 700;">
-                                ${formatPrice(order.total)}
-                            </div>
-                        </div>
-                        <div style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 10px;">
-                            ${new Date(order.timestamp).toLocaleDateString()} at ${new Date(order.timestamp).toLocaleTimeString()}
-                        </div>
-                        ${order.items ? `
-                            <div style="font-size: 0.9rem;">
-                                <strong>Items:</strong> ${order.items.map(item => `${item.name} (${item.quantity})`).join(', ')}
-                            </div>
-                        ` : ''}
-                        <div style="margin-top: 15px;">
-                            <button class="track-order-btn" onclick="trackSpecificOrder('${order.orderId}')" 
-                                style="padding: 8px 16px; font-size: 0.9rem;">
-                                Track Order
-                            </button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
+    
+    console.log('? Code integrity validation completed');
 }
 
-function closeOrderHistoryModal() {
-    const modal = document.getElementById('orderHistoryModal');
-    if (modal) {
-        modal.remove();
-    }
-}
-
-function trackSpecificOrder(orderId) {
-    closeOrderHistoryModal();
-    openOrderTracking();
-    document.getElementById('orderId').value = orderId;
-    trackOrderById(orderId);
-}
-
-// ...existing code...
+// Make validation functions globally accessible
+window.validateItemsSystem = validateItemsSystem;
+window.validateCodeIntegrity = validateCodeIntegrity;
