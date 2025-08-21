@@ -1,23 +1,23 @@
 // TRIOGEL JavaScript - Extracted from index.html
 console.log('?? Loading TRIOGEL JavaScript...');
 
-// Currency configuration for international customers
+// Currency configuration for international customers - simplified without symbols
 const currencies = {
-    'PHP': { symbol: '?', name: 'Philippine Peso', rate: 1.0, fallback: 'PHP' },
-    'USD': { symbol: '$', name: 'US Dollar', rate: 0.018, fallback: 'USD' },
-    'EUR': { symbol: '€', name: 'Euro', rate: 0.016, fallback: 'EUR' },
-    'GBP': { symbol: '£', name: 'British Pound', rate: 0.014, fallback: 'GBP' },
-    'JPY': { symbol: '¥', name: 'Japanese Yen', rate: 2.65, fallback: 'JPY' },
-    'KRW': { symbol: '?', name: 'Korean Won', rate: 23.5, fallback: 'KRW' },
-    'SGD': { symbol: 'S$', name: 'Singapore Dollar', rate: 0.024, fallback: 'SGD' },
-    'MYR': { symbol: 'RM', name: 'Malaysian Ringgit', rate: 0.082, fallback: 'MYR' },
-    'THB': { symbol: '?', name: 'Thai Baht', rate: 0.63, fallback: 'THB' },
-    'VND': { symbol: '?', name: 'Vietnamese Dong', rate: 440, fallback: 'VND' }
+    'PHP': { symbol: '', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
+    'USD': { symbol: '', name: 'US Dollar', code: 'USD', rate: 0.018 },
+    'EUR': { symbol: '', name: 'Euro', code: 'EUR', rate: 0.016 },
+    'GBP': { symbol: '', name: 'British Pound', code: 'GBP', rate: 0.014 },
+    'JPY': { symbol: '', name: 'Japanese Yen', code: 'JPY', rate: 2.65 },
+    'KRW': { symbol: '', name: 'Korean Won', code: 'KRW', rate: 23.5 },
+    'SGD': { symbol: '', name: 'Singapore Dollar', code: 'SGD', rate: 0.024 },
+    'MYR': { symbol: '', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
+    'THB': { symbol: '', name: 'Thai Baht', code: 'THB', rate: 0.63 },
+    'VND': { symbol: '', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
 };
 
 let selectedCurrency = 'PHP'; // Default to Philippine Peso
 
-// TRIOGEL Items Database - Mobile Legends & Roblox (PHP Prices)
+// TRIOGEL Items Database - Mobile Legends & Roblox (PHP Prices) - with text icons
 const items = [
     // Mobile Legends Items
     {
@@ -26,7 +26,7 @@ const items = [
         game: "ml",
         description: "Premium legendary skin collection with special effects and voice lines. Includes 5 top-tier skins.",
         price: 4949.45,
-        emoji: "?",
+        icon: "SKIN",
         rarity: "legendary",
         stats: { skins: "5", effects: "Special", voice: "Yes" }
     },
@@ -36,7 +36,7 @@ const items = [
         game: "ml",
         description: "Fanny's epic skin with enhanced animations and unique recall effects.",
         price: 1924.45,
-        emoji: "??",
+        icon: "HERO",
         rarity: "epic",
         stats: { hero: "Fanny", type: "Epic", recall: "Custom" }
     },
@@ -46,7 +46,7 @@ const items = [
         game: "ml",
         description: "Full season Starlight Pass with exclusive rewards and premium benefits.",
         price: 714.45,
-        emoji: "?",
+        icon: "STAR",
         rarity: "rare",
         stats: { duration: "1 Month", rewards: "Premium", exp: "+50%" }
     },
@@ -56,7 +56,7 @@ const items = [
         game: "ml",
         description: "2000 Mobile Legends diamonds for skins, heroes, and premium items.",
         price: 2749.45,
-        emoji: "??",
+        icon: "GEMS",
         rarity: "common",
         stats: { amount: "2000", bonus: "+200", instant: "Yes" }
     },
@@ -66,7 +66,7 @@ const items = [
         game: "ml",
         description: "High-rank Mythic account with 50+ heroes and 20+ skins. Hand-leveled.",
         price: 10999.45,
-        emoji: "??",
+        icon: "RANK",
         rarity: "legendary",
         stats: { rank: "Mythic", heroes: "50+", skins: "20+" }
     },
@@ -77,7 +77,7 @@ const items = [
         game: "roblox",
         description: "Legendary Dominus hat showing ultimate status. Rare and prestigious item.",
         price: 16499.45,
-        emoji: "??",
+        icon: "CROWN",
         rarity: "legendary",
         stats: { type: "Hat", rarity: "Ultra Rare", status: "VIP" }
     },
@@ -87,7 +87,7 @@ const items = [
         game: "roblox",
         description: "10,000 Robux currency for purchasing items, game passes, and premium content.",
         price: 5499.45,
-        emoji: "??",
+        icon: "ROBUX",
         rarity: "common",
         stats: { amount: "10,000", bonus: "+1000", delivery: "Instant" }
     },
@@ -97,7 +97,7 @@ const items = [
         game: "roblox",
         description: "High-level Roblox account with rare items, limiteds, and premium accessories.",
         price: 8249.45,
-        emoji: "??",
+        icon: "GAME",
         rarity: "epic",
         stats: { level: "High", limiteds: "Yes", premium: "Active" }
     },
@@ -107,7 +107,7 @@ const items = [
         game: "roblox",
         description: "Exclusive golden wings accessory with sparkling effects. Limited edition item.",
         price: 4399.45,
-        emoji: "???",
+        icon: "WINGS",
         rarity: "rare",
         stats: { color: "Golden", effects: "Sparkle", edition: "Limited" }
     },
@@ -117,20 +117,20 @@ const items = [
         game: "roblox",
         description: "Collection of 10 rare pets including legendary and mythical variants.",
         price: 3299.45,
-        emoji: "??",
+        icon: "PETS",
         rarity: "epic",
         stats: { pets: "10", legendary: "3", mythical: "2" }
     },
-    // Test item for GCash (?1)
+    // Test item for GCash
     {
         id: 11,
         name: "Test GCash Payment",
         game: "ml",
-        description: "?1 test item to verify GCash payment integration is working correctly.",
+        description: "Test item to verify GCash payment integration is working correctly.",
         price: 1,
-        emoji: "??",
+        icon: "TEST",
         rarity: "common",
-        stats: { purpose: "Testing", amount: "?1", payment: "GCash" }
+        stats: { purpose: "Testing", amount: "PHP 1", payment: "GCash" }
     }
 ];
 
@@ -156,10 +156,9 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
     
     if (!currencyConfig) {
         console.warn('?? Unknown currency:', targetCurrency);
-        return `?${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+        return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
     }
     
-    // Use simple string concatenation instead of HTML for better compatibility
     let formattedAmount;
     
     // Special formatting for different currencies
@@ -170,8 +169,8 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         formattedAmount = convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
     }
     
-    // Return plain text instead of HTML
-    return `${currencyConfig.symbol}${formattedAmount}`;
+    // Return with currency code instead of symbol
+    return `${currencyConfig.code} ${formattedAmount}`;
 }
 
 function setCurrency(currencyCode) {
@@ -202,8 +201,8 @@ function updateCurrencySelector() {
     
     if (selectedOption) {
         const currencyConfig = currencies[selectedCurrency];
-        // Use plain text instead of HTML
-        selectedOption.textContent = `${currencyConfig.symbol} ${selectedCurrency}`;
+        // Use currency code only
+        selectedOption.textContent = currencyConfig.code;
     }
 }
 
@@ -275,19 +274,6 @@ function setupFilters() {
     });
 }
 
-// Test emoji support and provide fallbacks
-function testEmojiSupport() {
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    
-    ctx.textBaseline = 'top';
-    ctx.font = '32px Arial';
-    ctx.fillText('??', 0, 0);
-    
-    return ctx.getImageData(0, 0, 1, 1).data[3] > 0;
-}
-
 // Enhanced items array with fallback images
 const itemFallbacks = {
     1: { emoji: "?", fallback: "?", text: "SKIN" },
@@ -304,11 +290,10 @@ const itemFallbacks = {
 };
 
 function getItemEmoji(itemId, originalEmoji) {
-    const hasEmojiSupport = testEmojiSupport();
     const fallback = itemFallbacks[itemId];
     
-    if (!hasEmojiSupport && fallback) {
-        return fallback.fallback;
+    if (fallback) {
+        return fallback.text;
     }
     
     return originalEmoji;
@@ -329,9 +314,8 @@ function displayItems() {
     console.log('?? Items to display:', filteredItems.length);
 
     grid.innerHTML = filteredItems.map(item => {
-        // Use fallback emoji if needed
-        const displayEmoji = getItemEmoji(item.id, item.emoji);
-        const emojiElement = `<div class="item-emoji">${displayEmoji}</div>`;
+        // Use text icon instead of emoji
+        const iconElement = `<div class="item-icon">${item.icon}</div>`;
         
         return `
         <div class="item-card ${item.game}-item" data-game="${item.game}">
@@ -339,7 +323,7 @@ function displayItems() {
                 <div class="game-tag ${item.game}-tag">${gameNames[item.game]}</div>
                 <div class="rarity-badge rarity-${item.rarity}">${item.rarity}</div>
             </div>
-            <div class="item-image ${item.game}-bg">${emojiElement}</div>
+            <div class="item-image ${item.game}-bg">${iconElement}</div>
             <div class="item-name">${item.name}</div>
             <div class="item-description">${item.description}</div>
             <div class="item-stats">
