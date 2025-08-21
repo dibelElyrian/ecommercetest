@@ -1128,18 +1128,30 @@ function setupEventHandlers() {
                         // RESTORE ORIGINAL: Check for GCash payment success and show appropriate notification
                         if (orderData.paymentMethod === 'gcash') {
                             // Enhanced GCash notification - always show for GCash payments
-                            const gcashDetails = `?? Order ${orderData.orderId} confirmed! 
+                            const gcashDetails = `?? Order ${orderData.orderId} confirmed!
 
 ?? GCash Payment Required:
-• Amount: ?${orderData.total.toFixed(2)}
-• GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
-• Reference: ${result.paymentResult?.reference || orderData.orderId}
+?? Amount: ?${orderData.total.toFixed(2)}
+?? GCash Number: ${result.paymentResult?.gcash_number || '09761242194'}
+?? Reference: ${result.paymentResult?.reference || orderData.orderId}
 
-?? Email payment screenshot to: ${orderData.email}
+?? Email payment screenshot to:
+${orderData.email}
 ?? We'll process your order within 1-24 hours!`;
                             
-                            // Show longer notification for GCash
-                            showGcashNotification(gcashDetails);
+                            console.log('?? DEBUG: About to call showGcashNotification');
+                            console.log('?? DEBUG: gcashDetails =', gcashDetails);
+                            
+                            // Test if the function exists
+                            if (typeof showGcashNotification === 'function') {
+                                console.log('? showGcashNotification function exists');
+                                // Show longer notification for GCash
+                                showGcashNotification(gcashDetails);
+                            } else {
+                                console.error('? showGcashNotification function not found!');
+                                // Fallback to regular notification
+                                showNotification(gcashDetails);
+                            }
                         } else {
                             showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
                         }
