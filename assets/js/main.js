@@ -1037,6 +1037,12 @@ function setupEventHandlers() {
                     currency: selectedCurrency,
                     serverRegion: document.getElementById('serverRegion').value || '',
                     customerNotes: document.getElementById('customerNotes').value || '',
+                    customer: {
+                        email: document.getElementById('email').value,
+                        gameUsername: document.getElementById('gameUsername').value,
+                        whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                        serverRegion: document.getElementById('serverRegion').value || ''
+                    },
                     items: cart.map(item => ({
                         id: item.id,
                         name: item.name,
@@ -1050,7 +1056,6 @@ function setupEventHandlers() {
 
                 console.log('?? Processing order:', orderData);
 
-                // Try to submit to Netlify function
                 try {
                     const response = await fetch('/.netlify/functions/process-order', {
                         method: 'POST',
@@ -1070,14 +1075,20 @@ function setupEventHandlers() {
                         updateCartCount();
                         closeCheckout();
                         
-                        // Show success notification
-                        showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
+                        // Show success notification with more details
+                        if (result.paymentResult?.success && result.paymentResult.payment_type === 'manual_gcash') {
+                            showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for GCash payment instructions.`);
+                        } else {
+                            showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
+                        }
                         
                     } else {
-                        throw new Error('Server error');
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('? Server response error:', response.status, errorData);
+                        throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
                     }
                 } catch (netError) {
-                    console.log('?? Server not available, saving order locally...');
+                    console.log('?? Server not available, using local fallback...', netError.message);
                     
                     // Fallback: save locally and show user
                     saveOrderLocally(orderData);
