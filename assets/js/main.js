@@ -1250,3 +1250,320 @@ setTimeout(() => {
         console.log('Items already loaded, emergency fallback not needed');
     }
 }, 2000);
+
+function openWishlistModal() {
+    closeUserDropdown();
+    showNotification('Wishlist feature coming soon!');
+}
+
+function openForgotPassword() {
+    closeLoginModal();
+    showNotification('Password reset via email coming soon!');
+}
+
+function proceedToCheckout() {
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+
+    document.getElementById('cartModal').style.display = 'none';
+    document.getElementById('checkoutModal').style.display = 'block';
+    displayOrderSummary();
+}
+
+function closeCheckout() {
+    document.getElementById('checkoutModal').style.display = 'none';
+}
+
+function displayOrderSummary() {
+    const summaryDiv = document.getElementById('orderSummary');
+    if (!summaryDiv) return;
+    
+    const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    // Update the currency display field when checkout opens
+    const currencyDisplayField = document.getElementById('selectedCurrencyDisplay');
+    if (currencyDisplayField) {
+        const currencyName = currencies[selectedCurrency]?.name || selectedCurrency;
+        currencyDisplayField.value = `${selectedCurrency} - ${currencyName}`;
+    }
+
+    summaryDiv.innerHTML = `
+        <h3 style="margin-bottom: 20px; color: var(--text-primary);">Order Summary</h3>
+        ${cart.map(item => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>${item.name} x${item.quantity}</span>
+                <span style="color: var(--success-green);">${formatPrice(item.price * item.quantity)}</span>
+            </div>
+        `).join('')}
+        <hr style="border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: 800;">
+            <span>Total:</span>
+            <span style="color: var(--success-green);">${formatPrice(totalInPHP)}</span>
+        </div>
+        ${selectedCurrency !== 'PHP' ? `
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px; text-align: center;">
+                <em>Prices converted from PHP at current exchange rates</em>
+            </div>
+        ` : ''}
+    `;
+}
+
+// Validation Functions
+function validateItemsSystem() {
+    console.log('Validating items system...');
+    
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('Items array missing or empty');
+        return false;
+    }
+    
+    if (typeof displayItems !== 'function') {
+        console.error('displayItems function missing');
+        return false;
+    }
+    
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('itemsGrid element missing');
+        return false;
+    }
+    
+    try {
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('Items not rendering to DOM');
+            return false;
+        }
+        console.log(`Items system validated: ${itemCards.length} items displayed`);
+        return true;
+    } catch (error) {
+        console.error('Error in displayItems():', error);
+        return false;
+    }
+}
+
+// Initialize everything
+function init() {
+    console.log('TRIOGEL Initializing...');
+    
+    // Load saved currency
+    const savedCurrency = localStorage.getItem('triogel-currency');
+    if (savedCurrency && currencies[savedCurrency]) {
+        selectedCurrency = savedCurrency;
+        console.log('Loaded saved currency:', savedCurrency);
+    }
+    
+    // Initialize authentication
+    initAuth();
+    
+    displayItems();
+    updateCartCount();
+    setupFilters();
+    setupCurrencySelector();
+    updateCurrencySelector();
+    setupEventHandlers();
+    
+    console.log('TRIOGEL Initialized successfully!');
+}
+
+// Event Handlers Setup
+function setupEventHandlers() {
+    console.log('Setting up event handlers...');
+    
+    // Authentication form handlers
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Login form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Logging in...';
+            submitBtn.disabled = true;
+
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                await loginUser(email, password);
+            } catch (error) {
+                showNotification(`Login failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Register form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const userData = {
+                    username: document.getElementById('registerUsername').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value,
+                    confirmPassword: document.getElementById('confirmPassword').value,
+                    favoriteGame: document.getElementById('favoriteGame').value
+                };
+                await registerUser(userData);
+            } catch (error) {
+                showNotification(`Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Order tracking form handler
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Order tracking form submitted');
+
+            const orderId = document.getElementById('orderId').value.trim();
+            if (!orderId) {
+                showNotification('Please enter an Order ID');
+                return;
+            }
+            await trackOrderById(orderId);
+        });
+    }
+
+    // Checkout form handler
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Checkout form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Processing Order...';
+            submitBtn.disabled = true;
+
+            try {
+                // Collect form data
+                const orderData = {
+                    orderId: 'TRIO-' + Date.now(),
+                    gameUsername: document.getElementById('gameUsername').value,
+                    email: document.getElementById('email').value,
+                    whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    currency: selectedCurrency,
+                    serverRegion: document.getElementById('serverRegion').value || '',
+                    customerNotes: document.getElementById('customerNotes').value || '',
+                    customer: {
+                        email: document.getElementById('email').value,
+                        gameUsername: document.getElementById('gameUsername').value,
+                        whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                        serverRegion: document.getElementById('serverRegion').value || ''
+                    },
+                    items: cart.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        game: item.game,
+                        price: item.price,
+                        quantity: item.quantity
+                    })),
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('Processing order:', orderData);
+
+                try {
+                    const response = await fetch('/.netlify/functions/process-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('Order processed successfully:', result);
+                        console.log('DEBUG: paymentMethod =', orderData.paymentMethod);
+                        console.log('DEBUG: result.paymentResult =', result.paymentResult);
+                        
+                        // Save order locally for tracking
+                        saveOrderLocally(orderData);
+                        
+                        // Clear cart and close checkout
+                        cart = [];
+                        updateCartCount();
+                        closeCheckout();
+                        
+                        // Check for GCash payment success and show appropriate notification
+                        if (orderData.paymentMethod === 'gcash') {
+                            // Enhanced GCash notification - always show for GCash payments
+                            const gcashDetails = `Order ${orderData.orderId} confirmed!
+
+GCash Payment Required:
+Amount: PHP ${orderData.total.toFixed(2)}
+GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
+Reference: ${result.paymentResult?.reference || orderData.orderId}
+
+Email payment screenshot to:
+${orderData.email}
+We'll process your order within 1-24 hours!`;
+                            
+                            console.log('DEBUG: About to call showGcashNotification');
+                            console.log('DEBUG: gcashDetails =', gcashDetails);
+                            
+                            // Test if the function exists
+                            if (typeof showGcashNotification === 'function') {
+                                console.log('showGcashNotification function exists');
+                                // Show longer notification for GCash
+                                showGcashNotification(gcashDetails);
+                            } else {
+                                console.error('showGcashNotification function not found!');
+                                // Fallback to regular notification
+                                showNotification(gcashDetails);
+                            }
+                        } else {
+                            showNotification(`Order ${orderData.orderId} confirmed! Check your email for details.`);
+                        }
+                        
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('Server response error:', response.status, errorData);
+                        throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
+                    }
+                } catch (netError) {
+                    console.log('Server not available, using local fallback...', netError.message);
+                    
+                    // Fallback: save order locally and show user
+                    saveOrderLocally(orderData);
+                    
+                    // Clear cart and close checkout
+                    cart = [];
+                    updateCartCount();
+                    closeCheckout();
+                    
+                    // Show local save notification
+                    showNotification(`Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
+                }
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                showNotification('Order failed. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+}
