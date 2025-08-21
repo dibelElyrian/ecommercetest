@@ -1,208 +1,151 @@
-# TRIOGEL Database Integration Guide
+# TRIOGEL Database Setup Guide - Supabase Integration
 
-## ??? **Supabase Database Setup for TRIOGEL**
+## Overview
+Your TRIOGEL marketplace now has full database integration with Supabase for order management, customer tracking, and analytics.
 
-Your TRIOGEL marketplace now has advanced database integration! Here's how to set it up:
+## Environment Variables Required
 
----
+Add these to your Netlify environment variables:
 
-## **Step 1: Create Supabase Account & Project**
+```
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+DISCORD_WEBHOOK_URL=your_discord_webhook_url
+GCASH_NUMBER=your_gcash_number
+GCASH_NAME=your_gcash_account_name
+```
 
-1. **Go to [supabase.com](https://supabase.com)**
-2. **Sign up/Login** with GitHub (recommended)
-3. **Create a new project:**
-   - Project name: `triogel-marketplace`
-   - Database password: Create a strong password
-   - Region: Choose closest to your users (e.g., Southeast Asia)
+## Database Schema
 
----
+### Tables Created in Supabase:
 
-## **Step 2: Set Up Database Tables**
-
-In your Supabase dashboard, go to **SQL Editor** and run these commands:
-
-### **Orders Table**
+#### 1. triogel_orders
 ```sql
 CREATE TABLE triogel_orders (
-  id SERIAL PRIMARY KEY,
-  order_id VARCHAR(50) UNIQUE NOT NULL,
-  customer_email VARCHAR(255) NOT NULL,
-  customer_game_username VARCHAR(100) NOT NULL,
-  customer_whatsapp VARCHAR(20),
-  customer_region VARCHAR(100),
-  payment_method VARCHAR(50) NOT NULL,
-  customer_notes TEXT,
-  total_amount DECIMAL(10,2) NOT NULL,
-  status VARCHAR(20) DEFAULT 'pending',
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  discord_sent BOOLEAN DEFAULT false,
-  admin_notes TEXT
+    id SERIAL PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL,
+    customer_email TEXT NOT NULL,
+    customer_game_username TEXT NOT NULL,
+    customer_whatsapp TEXT,
+    customer_region TEXT,
+    payment_method TEXT NOT NULL,
+    customer_notes TEXT,
+    total_amount DECIMAL(10,2) NOT NULL,
+    status TEXT DEFAULT 'pending',
+    discord_sent BOOLEAN DEFAULT false,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    payment_reference TEXT,
+    payment_amount_php DECIMAL(10,2),
+    payment_gcash_number TEXT
 );
-
--- Add indexes for better performance
-CREATE INDEX idx_orders_status ON triogel_orders(status);
-CREATE INDEX idx_orders_email ON triogel_orders(customer_email);
-CREATE INDEX idx_orders_created ON triogel_orders(created_at DESC);
 ```
 
-### **Order Items Table**
+#### 2. triogel_order_items
 ```sql
 CREATE TABLE triogel_order_items (
-  id SERIAL PRIMARY KEY,
-  order_id VARCHAR(50) REFERENCES triogel_orders(order_id),
-  item_id INTEGER NOT NULL,
-  item_name VARCHAR(255) NOT NULL,
-  item_game VARCHAR(20) NOT NULL,
-  item_price DECIMAL(10,2) NOT NULL,
-  quantity INTEGER NOT NULL,
-  subtotal DECIMAL(10,2) NOT NULL
+    id SERIAL PRIMARY KEY,
+    order_id TEXT REFERENCES triogel_orders(order_id),
+    item_id INTEGER NOT NULL,
+    item_name TEXT NOT NULL,
+    item_game TEXT NOT NULL,
+    item_price DECIMAL(10,2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
-CREATE INDEX idx_order_items_order ON triogel_order_items(order_id);
 ```
 
-### **Customers Table**
+#### 3. triogel_customers
 ```sql
 CREATE TABLE triogel_customers (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  game_username VARCHAR(100),
-  whatsapp VARCHAR(20),
-  preferred_region VARCHAR(100),
-  total_orders INTEGER DEFAULT 0,
-  total_spent DECIMAL(10,2) DEFAULT 0.00,
-  first_order_date TIMESTAMP,
-  last_order_date TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id SERIAL PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    game_username TEXT,
+    whatsapp TEXT,
+    preferred_region TEXT,
+    total_orders INTEGER DEFAULT 0,
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    first_order_date TIMESTAMP WITH TIME ZONE,
+    last_order_date TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
-
-CREATE INDEX idx_customers_email ON triogel_customers(email);
 ```
 
----
+## Setup Instructions
 
-## **Step 3: Configure Netlify Environment Variables**
+### Step 1: Create Supabase Project
+1. Go to [supabase.com](https://supabase.com)
+2. Create new project
+3. Copy your project URL and anon key
 
-In your Netlify dashboard:
+### Step 2: Run Database Schema
+1. Go to Supabase Dashboard ? SQL Editor
+2. Run the table creation scripts above
+3. Verify tables are created correctly
 
-1. **Go to Site Settings** ? **Environment Variables**
-2. **Add these variables:**
+### Step 3: Configure Environment Variables
+Add the Supabase credentials to your Netlify environment variables.
 
-| Key | Value | Description |
-|-----|-------|-------------|
-| `SUPABASE_URL` | `https://your-project.supabase.co` | Your project URL |
-| `SUPABASE_ANON_KEY` | `eyJ...` | Your anon/public API key |
-| `DISCORD_WEBHOOK_URL` | `https://discord.com/api/webhooks/...` | Your existing Discord webhook |
+### Step 4: Test Database Integration
+Your orders will now be automatically saved to Supabase while maintaining Discord notifications.
 
-**Where to find Supabase credentials:**
-- Go to **Settings** ? **API** in your Supabase dashboard
-- Copy the **Project URL** and **anon public** key
+## Features You Get
 
----
+- **Order Management**: All orders saved with full details
+- **Customer Tracking**: Automatic customer profile creation
+- **Order History**: Complete order tracking per customer
+- **Analytics Ready**: Data structure ready for reporting
+- **Backup**: Orders saved even if Discord fails
 
-## **Step 4: Test Database Integration**
+## Order Processing Flow
 
-After deploying your updated functions, test with browser console:
+1. Customer places order ? Netlify function processes
+2. Order saved to Supabase database
+3. Discord notification sent
+4. GCash payment instructions generated (if applicable)
+5. Customer and order tracking updated
 
-```javascript
-async function testDatabaseIntegration() {
-  const testOrder = {
-    orderId: 'DB-TEST-' + Date.now(),
-    timestamp: new Date().toISOString(),
-    customer: {
-      gameUsername: 'DatabaseTester',
-      email: 'dbtest@triogel.com',
-      whatsappNumber: '+1234567890',
-      serverRegion: 'Southeast Asia'
-    },
-    paymentMethod: 'paypal',
-    customerNotes: 'Testing database integration',
-    items: [{
-      id: 3,
-      name: 'Starlight Pass (Season)',
-      game: 'ml',
-      price: 12.99,
-      quantity: 1
-    }],
-    total: 12.99
-  };
+## Admin Queries
 
-  const response = await fetch('/.netlify/functions/process-order', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(testOrder)
-  });
-  
-  const result = await response.json();
-  console.log('Database test result:', result);
-  
-  if (result.databaseSaved) {
-    console.log('? Database integration working!');
-  } else {
-    console.log('? Database not configured or failed');
-  }
-}
-
-testDatabaseIntegration();
+### View Recent Orders
+```sql
+SELECT 
+    order_id,
+    customer_email,
+    total_amount,
+    status,
+    created_at
+FROM triogel_orders 
+ORDER BY created_at DESC 
+LIMIT 10;
 ```
 
----
+### Customer Summary
+```sql
+SELECT 
+    email,
+    total_orders,
+    total_spent,
+    last_order_date
+FROM triogel_customers 
+ORDER BY total_spent DESC;
+```
 
-## **Step 5: What You Get**
+### Order Details
+```sql
+SELECT 
+    o.order_id,
+    o.customer_email,
+    o.total_amount,
+    o.status,
+    oi.item_name,
+    oi.quantity,
+    oi.subtotal
+FROM triogel_orders o
+JOIN triogel_order_items oi ON o.order_id = oi.order_id
+WHERE o.order_id = 'TRIO-1234567890';
+```
 
-### **?? Order Management**
-- All orders automatically saved to database
-- Discord notifications still work
-- Customer information tracked
-- Order status management
-- Sales analytics ready
-
-### **?? Data Tracking**
-- **Orders:** ID, customer, items, status, timestamps
-- **Customers:** Purchase history, contact info, spending
-- **Items:** Sales tracking per game/item
-- **Revenue:** Total sales, pending orders
-
-### **?? Real-time Updates**
-- Orders update instantly in database
-- Customer records automatically maintained
-- Full audit trail of all transactions
-
----
-
-## **Step 6: Next Features to Add**
-
-With database ready, you can now add:
-
-1. **Admin Panel** - View and manage orders
-2. **Order Status Updates** - Mark as processing/completed
-3. **Customer Lookup** - Search by email/order ID
-4. **Sales Reports** - Revenue analytics
-5. **Inventory Tracking** - Stock management
-
----
-
-## **?? Troubleshooting**
-
-### **Database Not Saving?**
-1. Check Netlify environment variables are set correctly
-2. Verify Supabase URL and API key
-3. Check Netlify function logs for database errors
-4. Ensure tables are created in Supabase
-
-### **Discord Still Works, DB Doesn't?**
-- This is by design! Discord notifications continue even if database fails
-- Check Supabase dashboard for connection issues
-- Verify table names match exactly
-
-### **Need Help?**
-- Check Supabase logs in dashboard
-- Use Netlify function logs for debugging
-- Test database queries in Supabase SQL editor
-
----
-
-**?? Your TRIOGEL marketplace now has enterprise-level order management!**
-
-Deploy these changes to GitHub and test the database integration. You'll have full order tracking alongside your existing Discord notifications.
+Your TRIOGEL marketplace now has enterprise-level order management!

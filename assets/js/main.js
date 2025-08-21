@@ -1132,7 +1132,7 @@ function setupEventHandlers() {
 
 ?? GCash Payment Required:
 ?? Amount: ?${orderData.total.toFixed(2)}
-?? GCash Number: ${result.paymentResult?.gcash_number || '09761242194'}
+?? GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
 ?? Reference: ${result.paymentResult?.reference || orderData.orderId}
 
 ?? Email payment screenshot to:
@@ -1302,7 +1302,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 500);
 });
 
-console.log('? TRIOGEL JavaScript loaded successfully!');
+console.log('? TRIOGEL JavaScript loaded successfully!' );
 
 // EMERGENCY FALLBACK - Force items to load after 2 seconds if nothing else works
 setTimeout(() => {
