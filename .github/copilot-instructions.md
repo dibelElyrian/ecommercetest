@@ -25,6 +25,112 @@ This rule applies to:
 - ? **Plain text**: "Order confirmed!" instead of "?? Order confirmed!"
 - ? **Simple characters**: "X" instead of "×", ">" instead of "?"
 
+## ?? **CRITICAL RULE: NEVER BREAK THE ITEMS LOADING SYSTEM**
+
+**THE MOST IMPORTANT RULE: Items MUST always load on the website. This is the core functionality.**
+
+### ? **COMMON MISTAKES THAT BREAK ITEM LOADING:**
+
+1. **Function Duplication**: Never duplicate functions like `openOrderHistoryModal()`, `displayItems()`, `init()`, etc.
+   - **CRITICAL**: Duplicating ANY function causes JavaScript conflicts and prevents items from loading
+   - **Example of duplication that breaks the site**:
+     ```javascript
+     function init() { ... } // First definition
+     // ... other code ...
+     function init() { ... } // DUPLICATE - BREAKS EVERYTHING!
+     ```
+
+2. **Missing Essential Functions**: Never remove or accidentally delete:
+   - `init()` function
+   - `displayItems()` function  
+   - `setupEventHandlers()` function
+   - `validateItemsSystem()` function
+   - `proceedToCheckout()` function
+   - `closeCheckout()` function
+   - `displayOrderSummary()` function
+
+3. **Syntax Errors**: Always double-check for typos like:
+   - `foundFound.status` instead of `foundOrder.status`
+   - Missing semicolons or brackets
+   - Incorrect variable names
+
+4. **Function Order Dependency**: Never move critical functions like `init()` or `setupEventHandlers()` to wrong locations in the file
+
+5. **Missing Checkout Functions**: The `proceedToCheckout()` and `closeCheckout()` functions MUST be defined before the `window.proceedToCheckout` assignment
+
+6. **Adding Code at End of File**: Never add new functions at the very end of main.js after the emergency fallback - this causes duplication
+
+### ?? **EMERGENCY PROCEDURE WHEN ITEMS DON'T LOAD:**
+
+**STEP 1**: Check for duplicate functions immediately:
+```bash
+# Search for duplicate function definitions
+grep -n "^function " assets/js/main.js | sort
+```
+
+**STEP 2**: Look for these specific error patterns in console:
+- "Function already defined" errors
+- "displayItems is not a function"
+- "init is not a function"  
+- JavaScript syntax errors
+
+**STEP 3**: Recovery actions:
+1. Remove ALL duplicate function definitions
+2. Ensure there's only ONE definition of each critical function
+3. Verify the file ends with the emergency fallback setTimeout
+4. Test items loading immediately after any fix
+
+### ? **MANDATORY CHECKS BEFORE ANY CODE CHANGE:**
+
+```javascript
+// ALWAYS run this validation after ANY change to main.js:
+function criticalSystemCheck() {
+    const essentialFunctions = [
+        'init', 'displayItems', 'setupEventHandlers', 'validateItemsSystem',
+        'proceedToCheckout', 'closeCheckout', 'displayOrderSummary',
+        'addToCart', 'updateCartCount', 'formatPrice'
+    ];
+    
+    const missing = essentialFunctions.filter(name => typeof window[name] !== 'function');
+    if (missing.length > 0) {
+        console.error('CRITICAL ERROR: Missing functions:', missing);
+        return false;
+    }
+    
+    // Check items array
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('CRITICAL ERROR: Items array missing or empty');
+        return false;
+    }
+    
+    // Check DOM elements
+    if (!document.getElementById('itemsGrid')) {
+        console.error('CRITICAL ERROR: itemsGrid element missing');
+        return false;
+    }
+    
+    return true;
+}
+```
+
+### ?? **RECOVERY PROCESS WHEN ITEMS DON'T LOAD:**
+
+1. **Check browser console** for JavaScript errors
+2. **Verify items array** exists and has 11 items
+3. **Confirm itemsGrid element** exists in HTML
+4. **Test displayItems() function** manually in console
+5. **Check for duplicate function definitions**
+6. **Verify all essential functions exist**
+
+### ?? **NEVER DO THESE WHEN EDITING MAIN.JS:**
+
+- ? Don't copy/paste large sections without verifying syntax
+- ? Don't move functions without understanding dependencies  
+- ? Don't duplicate existing functions (causes conflicts)
+- ? Don't remove essential functions even temporarily
+- ? Don't edit while other JavaScript errors exist
+- ? Don't assume the code will work without testing
+
 ## Current Website Capabilities (Comprehensive Feature Documentation)
 
 ### ?? **Core E-commerce Features**
@@ -282,28 +388,31 @@ SUPABASE_ANON_KEY=[your-supabase-anon-key]
 
 ### Critical System Requirements
 1. **No Build System**: Static HTML project - never attempt npm install or build commands
-2. **Code Integrity First**: Always verify complete functions, objects, and arrays after edits
-3. **Items Loading Validation**: Run `validateItemsSystem()` after every change
-4. **Security Best Practices**: Never hardcode sensitive values, always use environment variables
-5. **Mobile-First Design**: Test all features on mobile devices first
+2. **Never Use Visual Studio Build**: This is a static HTML project - never run Visual Studio build commands or use build tools
+3. **Manual Error Checking Only**: Always manually check for JavaScript errors in browser console instead of using build systems
+4. **Code Integrity First**: Always verify complete functions, objects, and arrays after edits
+5. **Items Loading Validation**: Run `validateItemsSystem()` after every change
+6. **Security Best Practices**: Never hardcode sensitive values, always use environment variables
+7. **Mobile-First Design**: Test all features on mobile devices first
 
-### Error Prevention Patterns
-```javascript
-// Always validate critical systems after changes
-function validateCriticalSystems() {
-    console.log('?? Validating critical systems...');
-    
-    const checks = [
-        () => Array.isArray(items) && items.length > 0,
-        () => typeof displayItems === 'function',
-        () => typeof showGcashNotification === 'function',
-        () => document.getElementById('itemsGrid') !== null,
-        () => Object.keys(currencies).length === 10
-    ];
-    
-    return checks.every((check, index) => {
-        const result = check();
-        if (!result) console.error(`? Critical check ${index + 1} failed`);
-        return result;
-    });
-}
+### Manual Error Detection Process
+Instead of using build systems, always:
+1. **Open browser developer console** (F12) to check for JavaScript errors
+2. **Test core functionality manually** by clicking buttons and testing features
+3. **Check items loading** by refreshing the page and verifying items display
+4. **Validate forms manually** by trying to submit with invalid data
+5. **Test responsive design** by resizing browser window or using mobile view
+
+### Never Use These Commands
+- ? `npm install`
+- ? `npm run build` 
+- ? `yarn build`
+- ? Visual Studio "Build Solution"
+- ? Any build or compile commands
+- ? Package managers or bundlers
+
+### Always Use These Instead
+- ? Open index.html directly in browser
+- ? Check browser console for errors (F12 ? Console)
+- ? Test functionality by clicking and using the website
+- ? Validate with manual testing only
