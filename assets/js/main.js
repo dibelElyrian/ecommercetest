@@ -843,16 +843,30 @@ function getDeliveryEstimate(status) {
 // Additional placeholder functions for dropdown menus
 function toggleUserDropdown() {
     const dropdown = document.getElementById('userDropdown');
-    if (dropdown) {
+    const userBtn = document.querySelector('.user-info-btn');
+    
+    if (dropdown && userBtn) {
         const isOpen = dropdown.style.display === 'block';
         dropdown.style.display = isOpen ? 'none' : 'block';
+        
+        // Toggle active state on button without changing content
+        if (isOpen) {
+            userBtn.classList.remove('active');
+        } else {
+            userBtn.classList.add('active');
+        }
     }
 }
 
 function closeUserDropdown() {
     const dropdown = document.getElementById('userDropdown');
+    const userBtn = document.querySelector('.user-info-btn');
+    
     if (dropdown) {
         dropdown.style.display = 'none';
+    }
+    if (userBtn) {
+        userBtn.classList.remove('active');
     }
 }
 
