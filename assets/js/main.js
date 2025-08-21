@@ -192,12 +192,48 @@ function setCurrency(currencyCode) {
 }
 
 function updateCurrencySelector() {
-    const selector = document.getElementById('currencySelector');
     const selectedOption = document.getElementById('selectedCurrency');
     
-    if (selector && selectedOption) {
+    if (selectedOption) {
         const currencyConfig = currencies[selectedCurrency];
         selectedOption.innerHTML = `${currencyConfig.symbol} ${selectedCurrency}`;
+    }
+}
+
+function toggleCurrencySelector() {
+    const dropdown = document.getElementById('currencyDropdown');
+    const selector = document.getElementById('currencySelector');
+    
+    if (dropdown && selector) {
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        selector.classList.toggle('active', !isOpen);
+    }
+}
+
+function setupCurrencySelector() {
+    console.log('?? Setting up currency selector...');
+    
+    // Create currency dropdown HTML
+    const currencyDropdown = document.getElementById('currencyDropdown');
+    if (currencyDropdown) {
+        currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => `
+            <div class="currency-option" data-currency="${code}">
+                <span class="currency-symbol">${config.symbol}</span>
+                <span class="currency-code">${code}</span>
+                <span class="currency-name">${config.name}</span>
+            </div>
+        `).join('');
+        
+        // Add click handlers for currency options
+        currencyDropdown.addEventListener('click', (e) => {
+            const option = e.target.closest('.currency-option');
+            if (option) {
+                const currency = option.dataset.currency;
+                setCurrency(currency);
+                toggleCurrencySelector();
+            }
+        });
     }
 }
 
@@ -220,43 +256,6 @@ function init() {
     console.log('? TRIOGEL Initialized successfully!');
 }
 
-function setupCurrencySelector() {
-    console.log('?? Setting up currency selector...');
-    
-    // Create currency dropdown HTML
-    const currencyDropdown = document.getElementById('currencyDropdown');
-    if (currencyDropdown) {
-        currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => `
-            <div class="currency-option" data-currency="${code}">
-                <span class="currency-symbol">${config.symbol}</span>
-                <span class="currency-code">${code}</span>
-                <span class="currency-name">${config.name}</span>
-            </div>
-        `).join '';
-        
-        // Add click handlers for currency options
-        currencyDropdown.addEventListener('click', (e) => {
-            const option = e.target.closest('.currency-option');
-            if (option) {
-                const currency = option.dataset.currency;
-                setCurrency(currency);
-                toggleCurrencySelector();
-            }
-        });
-    }
-}
-
-function toggleCurrencySelector() {
-    const dropdown = document.getElementById('currencyDropdown');
-    const selector = document.getElementById('currencySelector');
-    
-    if (dropdown && selector) {
-        const isOpen = dropdown.style.display === 'block';
-        dropdown.style.display = isOpen ? 'none' : 'block';
-        selector.classList.toggle('active', !isOpen);
-    }
-}
-
 function setupFilters() {
     const filterBtns = document.querySelectorAll('.filter-btn');
     filterBtns.forEach(btn => {
@@ -272,6 +271,11 @@ function setupFilters() {
 function displayItems() {
     console.log('?? Displaying items for filter:', currentFilter);
     const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('? Items grid element not found!');
+        return;
+    }
+    
     const filteredItems = currentFilter === 'all'
         ? items
         : items.filter(item => item.game === currentFilter);
@@ -305,6 +309,11 @@ function displayItems() {
 
 function addToCart(itemId) {
     const item = items.find(i => i.id === itemId);
+    if (!item) {
+        console.error('? Item not found:', itemId);
+        return;
+    }
+    
     const existingItem = cart.find(i => i.id === itemId);
 
     if (existingItem) {
@@ -324,8 +333,11 @@ function removeFromCart(itemId) {
 }
 
 function updateCartCount() {
-    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-    document.getElementById('cartCount').textContent = count;
+    const cartCountElement = document.getElementById('cartCount');
+    if (cartCountElement) {
+        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+        cartCountElement.textContent = count;
+    }
 }
 
 function openCart() {
@@ -340,6 +352,11 @@ function closeCart() {
 function displayCartItems() {
     const cartItemsDiv = document.getElementById('cartItems');
     const cartTotalDiv = document.getElementById('cartTotal');
+
+    if (!cartItemsDiv || !cartTotalDiv) {
+        console.error('? Cart elements not found');
+        return;
+    }
 
     if (cart.length === 0) {
         cartItemsDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Your cart is empty</p>';
@@ -389,6 +406,11 @@ function closeCheckout() {
 
 function displayOrderSummary() {
     const summaryDiv = document.getElementById('orderSummary');
+    if (!summaryDiv) {
+        console.error('? Order summary element not found');
+        return;
+    }
+    
     const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     summaryDiv.innerHTML = `
@@ -414,6 +436,11 @@ function displayOrderSummary() {
 
 function showOrderSuccess(orderData) {
     const checkoutContent = document.getElementById('checkoutContent');
+    if (!checkoutContent) {
+        console.error('? Checkout content element not found');
+        return;
+    }
+    
     checkoutContent.innerHTML = `
         <div class="success-message">
             <h3 style="margin-bottom: 20px; font-size: 2rem;">?? Order Confirmed!</h3>
@@ -430,6 +457,11 @@ function showOrderSuccess(orderData) {
 
 function showOwnerNotification(orderData) {
     const notification = document.getElementById('ownerNotification');
+    if (!notification) {
+        console.error('? Owner notification element not found');
+        return;
+    }
+    
     const totalInPHP = orderData.total;
     notification.innerHTML = `
         ?? New TRIOGEL Order!<br>
@@ -594,99 +626,101 @@ document.addEventListener('DOMContentLoaded', function () {
                         console.log('?? Showing GCash payment instructions...');
                         
                         const checkoutContent = document.getElementById('checkoutContent');
-                        checkoutContent.innerHTML = `
-                            <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 40px; border-radius: 25px; text-align: center; margin: 30px 0; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);">
-                                <div style="background: white; color: #10b981; padding: 15px 25px; border-radius: 50px; display: inline-block; font-weight: 900; font-size: 1.1rem; margin-bottom: 20px;">
-                                    ?? GCash Payment Instructions
-                                </div>
-                                
-                                <h3 style="margin-bottom: 15px; font-size: 1.4rem; opacity: 0.95;">Your order has been created!</h3>
-                                <p style="margin-bottom: 25px; font-size: 1.1rem; opacity: 0.9;">Order ID: <strong>${orderData.orderId}</strong></p>
-                                
-                                <div style="background: rgba(255, 255, 255, 0.15); border-radius: 20px; padding: 30px; margin: 25px 0; backdrop-filter: blur(10px);">
-                                    <h4 style="color: #ffffff; margin-bottom: 20px; font-size: 1.2rem;">?? Send GCash Payment To:</h4>
+                        if (checkoutContent) {
+                            checkoutContent.innerHTML = `
+                                <div style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 40px; border-radius: 25px; text-align: center; margin: 30px 0; box-shadow: 0 15px 40px rgba(16, 185, 129, 0.3);">
+                                    <div style="background: white; color: #10b981; padding: 15px 25px; border-radius: 50px; display: inline-block; font-weight: 900; font-size: 1.1rem; margin-bottom: 20px;">
+                                        ?? GCash Payment Instructions
+                                    </div>
                                     
-                                    <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                                        <div style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">
-                                            ?${responseData.paymentResult.amount_php}
-                                        </div>
-                                        <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Amount to Send (PHP)</div>
-                                        ${selectedCurrency !== 'PHP' ? `
-                                            <div style="font-size: 1rem; margin-top: 8px; opacity: 0.8;">
-                                                ? ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
+                                    <h3 style="margin-bottom: 15px; font-size: 1.4rem; opacity: 0.95;">Your order has been created!</h3>
+                                    <p style="margin-bottom: 25px; font-size: 1.1rem; opacity: 0.9;">Order ID: <strong>${orderData.orderId}</strong></p>
+                                    
+                                    <div style="background: rgba(255, 255, 255, 0.15); border-radius: 20px; padding: 30px; margin: 25px 0; backdrop-filter: blur(10px);">
+                                        <h4 style="color: #ffffff; margin-bottom: 20px; font-size: 1.2rem;">?? Send GCash Payment To:</h4>
+                                        
+                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                            <div style="font-size: 1.8rem; font-weight: 900; margin-bottom: 8px;">
+                                                ?${responseData.paymentResult.amount_php}
                                             </div>
-                                        ` : ''}
+                                            <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Amount to Send (PHP)</div>
+                                            ${selectedCurrency !== 'PHP' ? `
+                                                <div style="font-size: 1rem; margin-top: 8px; opacity: 0.8;">
+                                                    ? ${formatPrice(totalInPHP)} (${currencies[selectedCurrency].name})
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        
+                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                            <div style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">
+                                                ${responseData.paymentResult.gcash_number}
+                                            </div>
+                                            <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">GCash Number</div>
+                                        </div>
+                                        
+                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
+                                            <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">
+                                                ${responseData.paymentResult.gcash_name}
+                                            </div>
+                                            <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Account Name</div>
+                                        </div>
+                                        
+                                        <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px;">
+                                            <div style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; word-break: break-all;">
+                                                ${responseData.paymentResult.reference}
+                                            </div>
+                                            <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Reference Number</div>
+                                        </div>
                                     </div>
                                     
-                                    <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                                        <div style="font-size: 1.4rem; font-weight: 800; margin-bottom: 8px;">
-                                            ${responseData.paymentResult.gcash_number}
+                                    <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin: 25px 0;">
+                                        <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">?? Payment Steps:</h4>
+                                        <div style="text-align: left; color: white;">
+                                            <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">1</div>
+                                                <div>Send <strong>?${responseData.paymentResult.amount_php}</strong> to GCash <strong>${responseData.paymentResult.gcash_number}</strong></div>
+                                            </div>
+                                            <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">2</div>
+                                                <div>Include reference <strong>${responseData.paymentResult.reference}</strong> in message</div>
+                                            </div>
+                                            <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">3</div>
+                                                <div>Take <strong>screenshot</strong> of successful payment</div>
+                                            </div>
+                                            <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
+                                                <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">4</div>
+                                                <div><strong>Email</strong> payment screenshot to <strong>${orderData.customer.email}</strong></div>
+                                            </div>
+                                            <div style="display: flex; align-items: flex-start;">
+                                                <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">5</div>
+                                                <div>We'll reply to your email within <strong>1-24 hours</strong> and deliver your items</div>
+                                            </div>
                                         </div>
-                                        <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">GCash Number</div>
                                     </div>
                                     
-                                    <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px; margin-bottom: 15px;">
-                                        <div style="font-size: 1.2rem; font-weight: 700; margin-bottom: 8px;">
-                                            ${responseData.paymentResult.gcash_name}
+                                    <div style="margin-top: 30px;">
+                                        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">
+                                            Order confirmation sent to ${orderData.customer.email}
+                                        </p>
+                                        
+                                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                                            <button class="checkout-btn" onclick="copyGCashInfo('${responseData.paymentResult.gcash_number}', '${responseData.paymentResult.amount_php}', '${responseData.paymentResult.reference}')" 
+                                                style="background: linear-gradient(45deg, #667eea, #764ba2); flex: 1; min-width: 200px; margin: 0;">
+                                                ?? Copy Payment Info
+                                            </button>
+                                            <button class="checkout-btn" onclick="composeEmail('${responseData.paymentResult.reference}', '${orderData.customer.email}')" 
+                                                style="background: #0ea5e9; flex: 1; min-width: 200px; margin: 0;">
+                                                ?? Open Email
+                                            </button>
                                         </div>
-                                        <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Account Name</div>
-                                    </div>
-                                    
-                                    <div style="background: rgba(255, 255, 255, 0.9); color: #059669; padding: 20px; border-radius: 15px;">
-                                        <div style="font-size: 1rem; font-weight: 700; margin-bottom: 8px; word-break: break-all;">
-                                            ${responseData.paymentResult.reference}
-                                        </div>
-                                        <div style="font-size: 0.9rem; opacity: 0.7; text-transform: uppercase; font-weight: 600;">Reference Number</div>
                                     </div>
                                 </div>
-                                
-                                <div style="background: rgba(255, 193, 7, 0.2); border: 2px solid #ffc107; border-radius: 15px; padding: 20px; margin: 25px 0;">
-                                    <h4 style="color: #ffc107; margin-bottom: 15px; font-size: 1.1rem;">?? Payment Steps:</h4>
-                                    <div style="text-align: left; color: white;">
-                                        <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
-                                            <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">1</div>
-                                            <div>Send <strong>?${responseData.paymentResult.amount_php}</strong> to GCash <strong>${responseData.paymentResult.gcash_number}</strong></div>
-                                        </div>
-                                        <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
-                                            <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">2</div>
-                                            <div>Include reference <strong>${responseData.paymentResult.reference}</strong> in message</div>
-                                        </div>
-                                        <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
-                                            <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">3</div>
-                                            <div>Take <strong>screenshot</strong> of successful payment</div>
-                                        </div>
-                                        <div style="display: flex; align-items: flex-start; margin-bottom: 12px;">
-                                            <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">4</div>
-                                            <div><strong>Email</strong> payment screenshot to <strong>${orderData.customer.email}</strong></div>
-                                        </div>
-                                        <div style="display: flex; align-items: flex-start;">
-                                            <div style="background: #ffc107; color: #0a0a1a; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; margin-right: 15px; flex-shrink: 0;">5</div>
-                                            <div>We'll reply to your email within <strong>1-24 hours</strong> and deliver your items</div>
-                                        </div>
-                                    </div>
+                                <div style="text-align: center; margin-top: 30px;">
+                                    <button class="checkout-btn" onclick="closeCheckout(); location.reload();" style="background: var(--ml-gradient);">Continue Shopping</button>
                                 </div>
-                                
-                                <div style="margin-top: 30px;">
-                                    <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 20px;">
-                                        Order confirmation sent to ${orderData.customer.email}
-                                    </p>
-                                    
-                                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                                        <button class="checkout-btn" onclick="copyGCashInfo('${responseData.paymentResult.gcash_number}', '${responseData.paymentResult.amount_php}', '${responseData.paymentResult.reference}')" 
-                                            style="background: linear-gradient(45deg, #667eea, #764ba2); flex: 1; min-width: 200px; margin: 0;">
-                                            ?? Copy Payment Info
-                                        </button>
-                                        <button class="checkout-btn" onclick="composeEmail('${responseData.paymentResult.reference}', '${orderData.customer.email}')" 
-                                            style="background: #0ea5e9; flex: 1; min-width: 200px; margin: 0;">
-                                            ?? Open Email
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="text-align: center; margin-top: 30px;">
-                                <button class="checkout-btn" onclick="closeCheckout(); location.reload();" style="background: var(--ml-gradient);">Continue Shopping</button>
-                            </div>
-                        `;
+                            `;
+                        }
                         
                         cart = [];
                         updateCartCount();
@@ -717,6 +751,49 @@ document.addEventListener('DOMContentLoaded', function () {
     } else {
         console.error('? Checkout form not found!');
     }
+    
+    // Add validation logging
+    console.log('?? Running TRIOGEL validation...');
+    
+    // Check required elements
+    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector'];
+    let allElementsFound = true;
+    
+    requiredElements.forEach(id => {
+        if (!document.getElementById(id)) {
+            console.error(`? Missing element: ${id}`);
+            allElementsFound = false;
+        }
+    });
+    
+    // Check required functions
+    const requiredFunctions = ['init', 'addToCart', 'setCurrency'];
+    requiredFunctions.forEach(func => {
+        if (typeof window[func] !== 'function') {
+            console.error(`? Missing function: ${func}`);
+            allElementsFound = false;
+        }
+    });
+    
+    if (allElementsFound) {
+        console.log('? All TRIOGEL components validated successfully!');
+    } else {
+        console.warn('?? Some TRIOGEL components missing - check console for details');
+    }
 });
+
+// Make functions globally accessible for onclick handlers
+window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
+window.openCart = openCart;
+window.closeCart = closeCart;
+window.proceedToCheckout = proceedToCheckout;
+window.closeCheckout = closeCheckout;
+window.openOrderTracking = openOrderTracking;
+window.closeOrderTracking = closeOrderTracking;
+window.toggleCurrencySelector = toggleCurrencySelector;
+window.setCurrency = setCurrency;
+window.copyGCashInfo = copyGCashInfo;
+window.composeEmail = composeEmail;
 
 console.log('? TRIOGEL JavaScript loaded successfully!');
