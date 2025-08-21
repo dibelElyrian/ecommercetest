@@ -1385,6 +1385,56 @@ body {
     box-shadow: 0 12px 35px rgba(0, 255, 136, 0.4);
 }
 
+/* Order Tracking Input Styling */
+.tracking-input {
+    background: var(--card-bg);
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    padding: 16px 20px;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    width: 100%;
+    max-width: 300px;
+    margin-right: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.tracking-input::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+    font-weight: 500;
+}
+
+.tracking-input:focus {
+    outline: none;
+    border-color: rgba(102, 126, 234, 0.6);
+    box-shadow: 
+        0 0 0 3px rgba(102, 126, 234, 0.2),
+        0 4px 20px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.tracking-input:hover {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+/* Tracking Form Layout */
+.tracking-form {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
 @media (max-width: 480px) {
     .header {
         padding: 30px 20px;
@@ -1424,5 +1474,17 @@ body {
     .auth-form button[type="submit"] {
         padding: 14px 28px;
         font-size: 1rem;
+    }
+    
+    .tracking-form {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+    
+    .tracking-input {
+        max-width: 100%;
+        margin-right: 0;
+        margin-bottom: 10px;
     }
 }

@@ -6,6 +6,86 @@
 **Tech Stack**: HTML5, CSS3, Vanilla JavaScript, Netlify Functions, Supabase Database, Discord Integration
 **Project Type**: Static HTML website with serverless backend (no local build system)
 
+## ?? **CRITICAL RULE: PRESERVE TRIOGEL CYBERPUNK DESIGN THEME**
+
+**NEVER REVERT BUTTON AND UI STYLING TO PLAIN/DEFAULT BROWSER STYLES**
+
+This project has a carefully crafted cyberpunk/gaming aesthetic that MUST be preserved:
+
+### ? **NEVER Allow These Plain Styles:**
+- ? **Browser default buttons**: Plain gray/white buttons with basic borders
+- ? **Unstyled form elements**: Default input boxes, dropdowns, textareas
+- ? **Plain text links**: Basic underlined links instead of styled buttons
+- ? **Default modal styling**: Basic modals without glass-morphism effects
+- ? **Missing hover effects**: Buttons without animations or interactive states
+- ? **Inconsistent theming**: Elements that don't match the TRIOGEL design language
+
+### ? **ALWAYS Maintain These TRIOGEL Design Elements:**
+- ? **Gradient backgrounds**: `var(--primary-gradient)` for primary buttons
+- ? **Glass-morphism effects**: `backdrop-filter: blur()` for cards and inputs
+- ? **Hover animations**: `transform: translateY()` and glow effects
+- ? **Rounded corners**: 25px+ border-radius for modern appearance
+- ? **Cyberpunk colors**: Purple/blue gradients, neon accents, dark themes
+- ? **Interactive feedback**: Shimmer effects, scale transforms, shadow glows
+- ? **Consistent typography**: Bold weights, proper spacing, uppercase text
+
+### ?? **Specific Elements That Must Always Be Styled:**
+
+#### **Modal Buttons** (Critical - frequently broken):
+```css
+/* These buttons MUST have TRIOGEL styling: */
+.auth-form button[type="submit"]     /* Login, Register, Create Account */
+.auth-links button                   /* "Don't have account?", "Forgot Password?" */
+.tracking-form button[type="submit"] /* Track Order button */
+.tracking-input                      /* Order ID input textbox */
+.checkout-btn                        /* Proceed to Checkout, Complete Purchase */
+.remove-btn                          /* Remove from cart buttons */
+```
+
+#### **Navigation Elements**:
+```css
+.account-btn                         /* Login, Register buttons in header */
+.currency-button                     /* Currency selector dropdown */
+.user-info-btn                       /* User profile dropdown */
+.filter-btn                          /* All Items, Mobile Legends, Roblox */
+.cart-button                         /* Cart button with count badge */
+.track-order-btn                     /* Track Order button in header */
+```
+
+#### **Form Elements**:
+```css
+.form-group input                    /* All text inputs */
+.form-group select                   /* All dropdown selects */
+.tracking-input                      /* Order tracking input */
+```
+
+### ??? **Design Preservation Checklist**
+Before making ANY changes, verify these elements maintain TRIOGEL styling:
+
+1. **Button Gradients**: All primary buttons use `var(--primary-gradient)`
+2. **Hover Effects**: All interactive elements have hover animations
+3. **Glass Effects**: Cards and inputs have `backdrop-filter: blur()`
+4. **Border Radius**: Modern rounded corners (20px+ for buttons, 15px+ for cards)
+5. **Color Consistency**: Purple/blue theme maintained throughout
+6. **Typography**: Bold weights and proper font sizing preserved
+7. **Animations**: Smooth transitions and transform effects working
+8. **Responsive Design**: Mobile styling maintains theme consistency
+
+### ?? **If Styling Breaks, Immediately Fix:**
+
+**Common causes of style regression:**
+1. **CSS selector conflicts**: New CSS overriding existing TRIOGEL styles
+2. **Missing CSS classes**: Buttons missing their proper class names
+3. **Inline style overrides**: JavaScript adding inline styles that override CSS
+4. **CSS specificity issues**: New selectors being too general and affecting existing elements
+
+**Emergency fix process:**
+1. **Identify affected elements**: Login buttons, modal buttons, form inputs
+2. **Check CSS specificity**: Ensure TRIOGEL selectors have proper priority
+3. **Verify class names**: Ensure elements have correct CSS classes applied
+4. **Test all modals**: Login, Register, Cart, Checkout, Order Tracking
+5. **Validate responsive**: Check mobile view maintains styling
+
 ## ?? **CRITICAL RULE: FUNCTIONALITY FIRST, NO IMAGES/ICONS**
 
 **FOCUS ON CORE FUNCTIONALITY ONLY - NO VISUAL ASSETS YET**
