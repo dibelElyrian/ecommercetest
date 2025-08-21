@@ -318,6 +318,54 @@ function showNotification(message) {
     setTimeout(() => notification.remove(), 3000);
 }
 
+function showGcashNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 25px;
+        border-radius: 15px;
+        z-index: 3000;
+        font-weight: 600;
+        font-family: monospace;
+        white-space: pre-line;
+        max-width: 400px;
+        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
+        border: 2px solid rgba(16, 185, 129, 0.6);
+        animation: slideInRight 0.5s ease;
+    `;
+    notification.textContent = message;
+
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '×';
+    closeBtn.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        background: none;
+        border: none;
+        color: white;
+        font-size: 24px;
+        cursor: pointer;
+        opacity: 0.7;
+    `;
+    closeBtn.onclick = () => notification.remove();
+    notification.appendChild(closeBtn);
+
+    document.body.appendChild(notification);
+    
+    // Keep GCash notification longer (10 seconds)
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 10000);
+}
+
 // Cart Functions
 function openCart() {
     document.getElementById('cartModal').style.display = 'block';
@@ -1066,6 +1114,8 @@ function setupEventHandlers() {
                     if (response.ok) {
                         const result = await response.json();
                         console.log('? Order processed successfully:', result);
+                        console.log('?? DEBUG: paymentMethod =', orderData.paymentMethod);
+                        console.log('?? DEBUG: result.paymentResult =', result.paymentResult);
                         
                         // Save order locally for tracking
                         saveOrderLocally(orderData);
@@ -1076,20 +1126,20 @@ function setupEventHandlers() {
                         closeCheckout();
                         
                         // RESTORE ORIGINAL: Check for GCash payment success and show appropriate notification
-                        if (orderData.paymentMethod === 'gcash' && result.paymentResult?.success) {
-                            // Show enhanced GCash success notification with payment details
-                            const gcashDetails = `
-?? Order ${orderData.orderId} confirmed! 
+                        if (orderData.paymentMethod === 'gcash') {
+                            // Enhanced GCash notification - always show for GCash payments
+                            const gcashDetails = `?? Order ${orderData.orderId} confirmed! 
 
 ?? GCash Payment Required:
-• Amount: ?${result.paymentResult.amount_php || orderData.total.toFixed(2)}
-• GCash Number: ${result.paymentResult.gcash_number || 'Check email'}
-• Reference: ${result.paymentResult.reference || orderData.orderId}
+• Amount: ?${orderData.total.toFixed(2)}
+• GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
+• Reference: ${result.paymentResult?.reference || orderData.orderId}
 
 ?? Email payment screenshot to: ${orderData.email}
 ?? We'll process your order within 1-24 hours!`;
                             
-                            showNotification(gcashDetails);
+                            // Show longer notification for GCash
+                            showGcashNotification(gcashDetails);
                         } else {
                             showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
                         }
