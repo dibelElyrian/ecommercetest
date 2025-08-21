@@ -1,13 +1,13 @@
 // IMMEDIATE DEBUG - Add at very start of file
-console.log('?? TRIOGEL DEBUG: Script file starting to load...');
+console.log('TRIOGEL DEBUG: Script file starting to load...');
 
 // Test basic functionality immediately
 window.addEventListener('load', function() {
-    console.log('?? TRIOGEL DEBUG: Window loaded event fired');
+    console.log('TRIOGEL DEBUG: Window loaded event fired');
 });
 
 // TRIOGEL JavaScript - Clean Version
-console.log('?? Loading TRIOGEL JavaScript...');
+console.log('Loading TRIOGEL JavaScript...');
 
 // Currency configuration
 const currencies = {
@@ -168,15 +168,15 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
 }
 
 function displayItems() {
-    console.log('?? Displaying items for filter:', currentFilter);
+    console.log('Displaying items for filter:', currentFilter);
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
-        console.error('? Items grid element not found!');
+        console.error('Items grid element not found!');
         return;
     }
     
     const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
-    console.log(`?? Items to display: ${filteredItems.length}`);
+    console.log(`Items to display: ${filteredItems.length}`);
 
     grid.innerHTML = filteredItems.map(item => `
         <div class="item-card ${item.game}-item" data-game="${item.game}">
@@ -206,7 +206,7 @@ function displayItems() {
 function addToCart(itemId) {
     const item = items.find(i => i.id === itemId);
     if (!item) {
-        console.error('? Item not found:', itemId);
+        console.error('Item not found:', itemId);
         return;
     }
     
@@ -230,7 +230,7 @@ function updateCartCount() {
 }
 
 function setCurrency(currencyCode) {
-    console.log('?? Changing currency to:', currencyCode);
+    console.log('Changing currency to:', currencyCode);
     selectedCurrency = currencyCode;
     updateCurrencySelector();
     displayItems();
@@ -259,11 +259,11 @@ function toggleCurrencySelector() {
 }
 
 function setupCurrencySelector() {
-    console.log('?? Setting up currency selector...');
+    console.log('Setting up currency selector...');
     
     const currencyDropdown = document.getElementById('currencyDropdown');
     if (!currencyDropdown) {
-        console.error('? currencyDropdown element not found');
+        console.error('currencyDropdown element not found');
         return;
     }
     
@@ -283,7 +283,7 @@ function setupCurrencySelector() {
         }
     });
     
-    console.log('? Currency selector setup complete');
+    console.log('Currency selector setup complete');
 }
 
 function setupFilters() {
@@ -381,7 +381,7 @@ function displayCartItems() {
     const cartTotalDiv = document.getElementById('cartTotal');
 
     if (!cartItemsDiv || !cartTotalDiv) {
-        console.error('? Cart elements not found');
+        console.error('Cart elements not found');
         return;
     }
 
@@ -415,21 +415,21 @@ function removeFromCart(itemId) {
     displayCartItems();
 }
 
-// Auth and Modal Functions - RESTORED
+// Auth and Modal Functions
 let currentUser = null;
 
 // Authentication Functions
 function initAuth() {
-    console.log('?? Initializing authentication...');
+    console.log('Initializing authentication...');
     
     const savedUser = localStorage.getItem('triogel-user');
     if (savedUser) {
         try {
             currentUser = JSON.parse(savedUser);
             showUserSection();
-            console.log('? User auto-logged in:', currentUser.username);
+            console.log('User auto-logged in:', currentUser.username);
         } catch (error) {
-            console.error('? Error loading saved user:', error);
+            console.error('Error loading saved user:', error);
             localStorage.removeItem('triogel-user');
         }
     }
@@ -477,7 +477,7 @@ function clearRegisterForm() {
 
 async function loginUser(email, password) {
     try {
-        console.log('?? Attempting login for:', email);
+        console.log('Attempting login for:', email);
         
         const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
         const user = users[email.toLowerCase()];
@@ -504,19 +504,19 @@ async function loginUser(email, password) {
         showUserSection();
         closeLoginModal();
         showNotification(`Welcome back, ${currentUser.username}!`);
-        console.log('? Login successful:', currentUser.username);
+        console.log('Login successful:', currentUser.username);
         
         return { success: true, user: currentUser };
         
     } catch (error) {
-        console.error('? Login error:', error);
+        console.error('Login error:', error);
         throw error;
     }
 }
 
 async function registerUser(userData) {
     try {
-        console.log('?? Attempting registration for:', userData.email);
+        console.log('Attempting registration for:', userData.email);
         
         if (userData.password !== userData.confirmPassword) {
             throw new Error('Passwords do not match!');
@@ -561,12 +561,12 @@ async function registerUser(userData) {
         showUserSection();
         closeRegisterModal();
         showNotification(`Welcome to TRIOGEL, ${currentUser.username}!`);
-        console.log('? Registration successful:', currentUser.username);
+        console.log('Registration successful:', currentUser.username);
         
         return { success: true, user: currentUser };
         
     } catch (error) {
-        console.error('? Registration error:', error);
+        console.error('Registration error:', error);
         throw error;
     }
 }
@@ -582,18 +582,18 @@ function showUserSection() {
         userSection.style.display = 'block';
         userName.textContent = currentUser.username;
         
-        const gameEmoji = currentUser.favoriteGame === 'ml' ? '??' : currentUser.favoriteGame === 'roblox' ? '??' : '??';
+        const gameIcon = currentUser.favoriteGame === 'ml' ? 'ML' : currentUser.favoriteGame === 'roblox' ? 'RBX' : 'GAME';
         if (userStats) {
             userStats.innerHTML = `
                 <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
                     <div style="margin-bottom: 8px;">
-                        ${gameEmoji} ${getGameName(currentUser.favoriteGame)} Player
+                        ${gameIcon} ${getGameName(currentUser.favoriteGame)} Player
                     </div>
                     <div style="margin-bottom: 8px;">
-                        ?? ${currentUser.orders.length} Orders
+                        Orders: ${currentUser.orders.length}
                     </div>
                     <div>
-                        ?? ${currentUser.wishlist.length} Wishlist Items
+                        Wishlist: ${currentUser.wishlist.length} Items
                     </div>
                 </div>
             `;
@@ -621,14 +621,14 @@ function getGameName(gameCode) {
 }
 
 function logoutUser() {
-    console.log('?? Logging out user:', currentUser?.username);
+    console.log('Logging out user:', currentUser?.username);
     currentUser = null;
     localStorage.removeItem('triogel-user');
     showLoginSection();
     showNotification('Logged out successfully!');
 }
 
-// Order Tracking Functions - RESTORED
+// Order Tracking Functions
 function openOrderTracking() {
     document.getElementById('orderTrackingModal').style.display = 'block';
     document.getElementById('orderId').value = '';
@@ -642,7 +642,7 @@ function closeOrderTracking() {
 
 async function trackOrderById(orderId) {
     try {
-        console.log('?? Tracking order:', orderId);
+        console.log('Tracking order:', orderId);
         
         const trackBtn = document.querySelector('.track-btn');
         const originalText = trackBtn.innerHTML;
@@ -658,11 +658,11 @@ async function trackOrderById(orderId) {
                 const result = await response.json();
                 if (result.success && result.orders && result.orders.length > 0) {
                     orderData = result.orders[0];
-                    console.log('? Order found in database:', orderData);
+                    console.log('Order found in database:', orderData);
                 }
             }
         } catch (netError) {
-            console.log('?? Database not available, checking local storage...');
+            console.log('Database not available, checking local storage...');
         }
 
         // Fallback to localStorage
@@ -679,7 +679,7 @@ async function trackOrderById(orderId) {
         trackBtn.innerHTML = originalText;
         trackBtn.disabled = false;
     } catch (error) {
-        console.error('? Error tracking order:', error);
+        console.error('Error tracking order:', error);
         showNotification('Error tracking order. Please try again.');
     }
 }
@@ -720,14 +720,14 @@ function findOrderInLocalStorage(orderId) {
             }
         }
     } catch (error) {
-        console.error('? Error searching localStorage:', error);
+        console.error('Error searching localStorage:', error);
     }
 
     return null;
 }
 
 function displayOrderTrackingResult(orderData) {
-    console.log('?? Displaying order result:', orderData);
+    console.log('Displaying order result:', orderData);
     
     const orderResult = document.getElementById('orderResult');
     const orderStatus = document.getElementById('orderStatus');
@@ -735,23 +735,23 @@ function displayOrderTrackingResult(orderData) {
     const customerSummary = document.getElementById('customerSummary');
 
     if (!orderResult || !orderStatus || !orderItemsList || !customerSummary) {
-        console.error('? Tracking modal elements not found');
+        console.error('Tracking modal elements not found');
         return;
     }
 
     orderResult.style.display = 'block';
 
     const status = orderData.status || 'pending';
-    const statusEmojis = {
-        'pending': '?',
-        'processing': '??',
-        'completed': '?',
-        'cancelled': '?'
+    const statusIcons = {
+        'pending': 'PENDING',
+        'processing': 'PROCESSING',
+        'completed': 'COMPLETED',
+        'cancelled': 'CANCELLED'
     };
     
     orderStatus.innerHTML = `
         <div class="order-status status-${status}">
-            ${statusEmojis[status] || '??'} ${status.charAt(0).toUpperCase() + status.slice(1)}
+            ${statusIcons[status] || 'UNKNOWN'} ${status.charAt(0).toUpperCase() + status.slice(1)}
         </div>
         <div style="margin-top: 15px; color: var(--text-secondary);">
             <strong>Order ID:</strong> ${orderData.orderId}<br>
@@ -803,7 +803,7 @@ function displayOrderNotFound(orderId) {
 
     orderStatus.innerHTML = `
         <div class="order-status status-cancelled">
-            ? Order Not Found
+            ORDER NOT FOUND
         </div>
     `;
 
@@ -840,7 +840,7 @@ function getDeliveryEstimate(status) {
     return estimates[status] || '1-24 hours';
 }
 
-// Additional placeholder functions for dropdown menus - DEFINE BEFORE USE
+// Additional placeholder functions for dropdown menus
 function toggleUserDropdown() {
     const dropdown = document.getElementById('userDropdown');
     if (dropdown) {
@@ -901,7 +901,7 @@ function displayOrderSummary() {
     
     const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-    // CRITICAL FIX: Update the currency display field when checkout opens
+    // Update the currency display field when checkout opens
     const currencyDisplayField = document.getElementById('selectedCurrencyDisplay');
     if (currencyDisplayField) {
         const currencyName = currencies[selectedCurrency]?.name || selectedCurrency;
@@ -929,23 +929,23 @@ function displayOrderSummary() {
     `;
 }
 
-// Validation Functions - DEFINE BEFORE USE
+// Validation Functions
 function validateItemsSystem() {
-    console.log('?? Validating items system...');
+    console.log('Validating items system...');
     
     if (!Array.isArray(items) || items.length === 0) {
-        console.error('? Items array missing or empty');
+        console.error('Items array missing or empty');
         return false;
     }
     
     if (typeof displayItems !== 'function') {
-        console.error('? displayItems function missing');
+        console.error('displayItems function missing');
         return false;
     }
     
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
-        console.error('? itemsGrid element missing');
+        console.error('itemsGrid element missing');
         return false;
     }
     
@@ -953,26 +953,26 @@ function validateItemsSystem() {
         displayItems();
         const itemCards = grid.querySelectorAll('.item-card');
         if (itemCards.length === 0) {
-            console.error('? Items not rendering to DOM');
+            console.error('Items not rendering to DOM');
             return false;
         }
-        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        console.log(`Items system validated: ${itemCards.length} items displayed`);
         return true;
     } catch (error) {
-        console.error('? Error in displayItems():', error);
+        console.error('Error in displayItems():', error);
         return false;
     }
 }
 
-// Initialize everything - DEFINE BEFORE USE
+// Initialize everything
 function init() {
-    console.log('?? TRIOGEL Initializing...');
+    console.log('TRIOGEL Initializing...');
     
     // Load saved currency
     const savedCurrency = localStorage.getItem('triogel-currency');
     if (savedCurrency && currencies[savedCurrency]) {
         selectedCurrency = savedCurrency;
-        console.log('?? Loaded saved currency:', savedCurrency);
+        console.log('Loaded saved currency:', savedCurrency);
     }
     
     // Initialize authentication
@@ -985,19 +985,19 @@ function init() {
     updateCurrencySelector();
     setupEventHandlers();
     
-    console.log('? TRIOGEL Initialized successfully!');
+    console.log('TRIOGEL Initialized successfully!');
 }
 
 // Event Handlers Setup
 function setupEventHandlers() {
-    console.log('?? Setting up event handlers...');
+    console.log('Setting up event handlers...');
     
     // Authentication form handlers
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
         loginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            console.log('?? Login form submitted');
+            console.log('Login form submitted');
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -1009,7 +1009,7 @@ function setupEventHandlers() {
                 const password = document.getElementById('loginPassword').value;
                 await loginUser(email, password);
             } catch (error) {
-                showNotification(`? Login failed: ${error.message}`);
+                showNotification(`Login failed: ${error.message}`);
             } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
@@ -1021,7 +1021,7 @@ function setupEventHandlers() {
     if (registerForm) {
         registerForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            console.log('?? Register form submitted');
+            console.log('Register form submitted');
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -1038,7 +1038,7 @@ function setupEventHandlers() {
                 };
                 await registerUser(userData);
             } catch (error) {
-                showNotification(`? Registration failed: ${error.message}`);
+                showNotification(`Registration failed: ${error.message}`);
             } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
@@ -1051,7 +1051,7 @@ function setupEventHandlers() {
     if (trackingForm) {
         trackingForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            console.log('?? Order tracking form submitted');
+            console.log('Order tracking form submitted');
 
             const orderId = document.getElementById('orderId').value.trim();
             if (!orderId) {
@@ -1062,12 +1062,12 @@ function setupEventHandlers() {
         });
     }
 
-    // CRITICAL FIX: Add missing checkout form handler
+    // Checkout form handler
     const checkoutForm = document.getElementById('checkoutForm');
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            console.log('?? Checkout form submitted');
+            console.log('Checkout form submitted');
 
             const submitBtn = e.target.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
@@ -1102,7 +1102,7 @@ function setupEventHandlers() {
                     timestamp: new Date().toISOString()
                 };
 
-                console.log('?? Processing order:', orderData);
+                console.log('Processing order:', orderData);
 
                 try {
                     const response = await fetch('/.netlify/functions/process-order', {
@@ -1113,9 +1113,9 @@ function setupEventHandlers() {
 
                     if (response.ok) {
                         const result = await response.json();
-                        console.log('? Order processed successfully:', result);
-                        console.log('?? DEBUG: paymentMethod =', orderData.paymentMethod);
-                        console.log('?? DEBUG: result.paymentResult =', result.paymentResult);
+                        console.log('Order processed successfully:', result);
+                        console.log('DEBUG: paymentMethod =', orderData.paymentMethod);
+                        console.log('DEBUG: result.paymentResult =', result.paymentResult);
                         
                         // Save order locally for tracking
                         saveOrderLocally(orderData);
@@ -1125,44 +1125,44 @@ function setupEventHandlers() {
                         updateCartCount();
                         closeCheckout();
                         
-                        // RESTORE ORIGINAL: Check for GCash payment success and show appropriate notification
+                        // Check for GCash payment success and show appropriate notification
                         if (orderData.paymentMethod === 'gcash') {
                             // Enhanced GCash notification - always show for GCash payments
-                            const gcashDetails = `?? Order ${orderData.orderId} confirmed!
+                            const gcashDetails = `Order ${orderData.orderId} confirmed!
 
-?? GCash Payment Required:
-?? Amount: ?${orderData.total.toFixed(2)}
-?? GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
-?? Reference: ${result.paymentResult?.reference || orderData.orderId}
+GCash Payment Required:
+Amount: ?${orderData.total.toFixed(2)}
+GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
+Reference: ${result.paymentResult?.reference || orderData.orderId}
 
-?? Email payment screenshot to:
+Email payment screenshot to:
 ${orderData.email}
-?? We'll process your order within 1-24 hours!`;
+We'll process your order within 1-24 hours!`;
                             
-                            console.log('?? DEBUG: About to call showGcashNotification');
-                            console.log('?? DEBUG: gcashDetails =', gcashDetails);
+                            console.log('DEBUG: About to call showGcashNotification');
+                            console.log('DEBUG: gcashDetails =', gcashDetails);
                             
                             // Test if the function exists
                             if (typeof showGcashNotification === 'function') {
-                                console.log('? showGcashNotification function exists');
+                                console.log('showGcashNotification function exists');
                                 // Show longer notification for GCash
                                 showGcashNotification(gcashDetails);
                             } else {
-                                console.error('? showGcashNotification function not found!');
+                                console.error('showGcashNotification function not found!');
                                 // Fallback to regular notification
                                 showNotification(gcashDetails);
                             }
                         } else {
-                            showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
+                            showNotification(`Order ${orderData.orderId} confirmed! Check your email for details.`);
                         }
                         
                     } else {
                         const errorData = await response.json().catch(() => ({}));
-                        console.error('? Server response error:', response.status, errorData);
+                        console.error('Server response error:', response.status, errorData);
                         throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
                     }
                 } catch (netError) {
-                    console.log('?? Server not available, using local fallback...', netError.message);
+                    console.log('Server not available, using local fallback...', netError.message);
                     
                     // Fallback: save order locally and show user
                     saveOrderLocally(orderData);
@@ -1173,12 +1173,12 @@ ${orderData.email}
                     closeCheckout();
                     
                     // Show local save notification
-                    showNotification(`?? Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
+                    showNotification(`Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
                 }
 
             } catch (error) {
-                console.error('? Checkout error:', error);
-                showNotification('? Order failed. Please try again.');
+                console.error('Checkout error:', error);
+                showNotification('Order failed. Please try again.');
             } finally {
                 submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
@@ -1193,10 +1193,10 @@ window.closeCheckout = closeCheckout;
 
 // Local Order Storage Functions
 function saveOrderLocally(orderData) {
-    console.log('?? Saving order locally:', orderData.orderId);
+    console.log('Saving order locally:', orderData.orderId);
     
     if (!currentUser) {
-        console.error('? Cannot save order locally - no user logged in');
+        console.error('Cannot save order locally - no user logged in');
         return;
     }
     
@@ -1212,7 +1212,7 @@ function saveOrderLocally(orderData) {
     });
     
     localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-    console.log('? Order saved locally to user data');
+    console.log('Order saved locally to user data');
 }
 
 // Close dropdowns when clicking outside
@@ -1238,40 +1238,40 @@ document.addEventListener('click', function (e) {
     }
 });
 
-// CRITICAL: Initialize when DOM is loaded
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('?? DOM loaded - Starting TRIOGEL...');
-    console.log('?? DEBUG: About to call init()...');
+    console.log('DOM loaded - Starting TRIOGEL...');
+    console.log('DEBUG: About to call init()...');
     
     // Emergency check - are all critical elements present?
     const itemsGrid = document.getElementById('itemsGrid');
-    console.log('?? DEBUG: itemsGrid element found:', itemsGrid ? 'YES' : 'NO');
+    console.log('DEBUG: itemsGrid element found:', itemsGrid ? 'YES' : 'NO');
     
     if (!itemsGrid) {
-        console.error('?? CRITICAL: itemsGrid element missing from HTML!');
+        console.error('CRITICAL: itemsGrid element missing from HTML!');
         alert('CRITICAL ERROR: itemsGrid element not found in HTML. Check the DOM.');
         return;
     }
     
     // Emergency check - is items array defined?
-    console.log('?? DEBUG: items array defined:', typeof items);
-    console.log('?? DEBUG: items array length:', Array.isArray(items) ? items.length : 'NOT ARRAY');
+    console.log('DEBUG: items array defined:', typeof items);
+    console.log('DEBUG: items array length:', Array.isArray(items) ? items.length : 'NOT ARRAY');
     
     if (!Array.isArray(items) || items.length === 0) {
-        console.error('?? CRITICAL: Items array missing or empty!');
+        console.error('CRITICAL: Items array missing or empty!');
         alert('CRITICAL ERROR: Items array not loaded. Check JavaScript.');
         return;
     }
     
     // Emergency direct item display test
-    console.log('?? DEBUG: Attempting direct item display...');
+    console.log('DEBUG: Attempting direct item display...');
     try {
         itemsGrid.innerHTML = '<div style="color: white; padding: 20px;">DEBUG: Direct HTML insertion test successful</div>';
         setTimeout(() => {
             displayItems();
         }, 100);
     } catch (error) {
-        console.error('?? CRITICAL: Error in direct display test:', error);
+        console.error('CRITICAL: Error in direct display test:', error);
         alert('CRITICAL ERROR: Direct display test failed. Check console.');
         return;
     }
@@ -1282,10 +1282,10 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => {
         const itemsValid = validateItemsSystem();
         if (!itemsValid) {
-            console.error('? CRITICAL: Items system failed validation');
+            console.error('CRITICAL: Items system failed validation');
             alert('CRITICAL ERROR: Items not loading. Check console for details.');
         } else {
-            console.log('? Items system working correctly');
+            console.log('Items system working correctly');
         }
         
         // Test currency dropdown
@@ -1293,30 +1293,30 @@ document.addEventListener('DOMContentLoaded', function () {
         const currencyDropdown = document.getElementById('currencyDropdown');
         
         if (currencyButton && currencyDropdown) {
-            console.log('? Currency selector elements found');
+            console.log('Currency selector elements found');
         } else {
-            console.error('? Currency selector elements missing');
+            console.error('Currency selector elements missing');
         }
         
-        console.log('?? TRIOGEL validation completed!');
+        console.log('TRIOGEL validation completed!');
     }, 500);
 });
 
-console.log('? TRIOGEL JavaScript loaded successfully!' );
+console.log('TRIOGEL JavaScript loaded successfully!');
 
 // EMERGENCY FALLBACK - Force items to load after 2 seconds if nothing else works
 setTimeout(() => {
     const grid = document.getElementById('itemsGrid');
     if (grid && (!grid.innerHTML || grid.innerHTML.trim() === '')) {
-        console.log('?? EMERGENCY: Force loading items after timeout...');
+        console.log('EMERGENCY: Force loading items after timeout...');
         
         // Emergency direct items loading
         if (Array.isArray(items) && items.length > 0) {
             try {
                 displayItems();
-                console.log('? EMERGENCY: Items force-loaded successfully');
+                console.log('EMERGENCY: Items force-loaded successfully');
             } catch (error) {
-                console.error('?? EMERGENCY: Force loading failed:', error);
+                console.error('EMERGENCY: Force loading failed:', error);
                 
                 // Last resort - manual HTML generation
                 const emergencyHTML = items.map(item => `
@@ -1329,13 +1329,13 @@ setTimeout(() => {
                 `).join('');
                 
                 grid.innerHTML = emergencyHTML;
-                console.log('? EMERGENCY: Manual HTML generation successful');
+                console.log('EMERGENCY: Manual HTML generation successful');
             }
         } else {
-            console.error('?? EMERGENCY: Items array still not available');
+            console.error('EMERGENCY: Items array still not available');
             grid.innerHTML = '<div style="color: red; padding: 40px; text-align: center; background: rgba(255,0,0,0.1); border-radius: 10px;"><h2>EMERGENCY ERROR</h2><p>Items array not loaded. Check JavaScript console for details.</p></div>';
         }
     } else {
-        console.log('? Items already loaded, emergency fallback not needed');
+        console.log('Items already loaded, emergency fallback not needed');
     }
 }, 2000);
