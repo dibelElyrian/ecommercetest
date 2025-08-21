@@ -1435,56 +1435,46 @@ body {
     justify-content: center;
 }
 
-@media (max-width: 480px) {
-    .header {
-        padding: 30px 20px;
-    }
-    
-    .header h1 {
-        font-size: 2.5rem;
-    }
-    
-    .container {
-        padding: 15px;
-    }
-    
-    .filter-btn {
-        padding: 12px 20px;
-        font-size: 0.9rem;
-    }
-    
-    .item-card {
-        padding: 20px;
-    }
-    
-    .item-name {
-        font-size: 1.3rem;
-    }
-    
-    .item-price {
-        font-size: 1.8rem;
-    }
-    
-    .auth-links button {
-        min-width: 180px;
-        font-size: 0.85rem;
-        padding: 9px 18px;
-    }
-    
-    .auth-form button[type="submit"] {
-        padding: 14px 28px;
-        font-size: 1rem;
-    }
-    
-    .tracking-form {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-    }
-    
-    .tracking-input {
-        max-width: 100%;
-        margin-right: 0;
-        margin-bottom: 10px;
-    }
+.remove-btn {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.2), rgba(239, 68, 68, 0.3));
+    border: 1px solid rgba(255, 107, 107, 0.5);
+    color: #ff6b6b;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.remove-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 107, 107, 0.2), transparent);
+    transition: left 0.4s ease;
+}
+
+.remove-btn:hover::before {
+    left: 100%;
+}
+
+.remove-btn:hover {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.3), rgba(239, 68, 68, 0.5));
+    color: #ff5555;
+    border-color: rgba(255, 107, 107, 0.7);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.3);
+}
+
+.remove-btn:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 12px rgba(255, 107, 107, 0.2);
 }
