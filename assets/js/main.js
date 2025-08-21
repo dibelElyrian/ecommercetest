@@ -341,7 +341,7 @@ function showGcashNotification(message) {
 
     // Add close button
     const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '×';
+    closeBtn.innerHTML = 'X';
     closeBtn.style.cssText = `
         position: absolute;
         top: 10px;
@@ -1131,7 +1131,7 @@ function setupEventHandlers() {
                             const gcashDetails = `Order ${orderData.orderId} confirmed!
 
 GCash Payment Required:
-Amount: ?${orderData.total.toFixed(2)}
+Amount: PHP ${orderData.total.toFixed(2)}
 GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
 Reference: ${result.paymentResult?.reference || orderData.orderId}
 

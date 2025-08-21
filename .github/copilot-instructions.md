@@ -6,6 +6,25 @@
 **Tech Stack**: HTML5, CSS3, Vanilla JavaScript, Netlify Functions, Supabase Database, Discord Integration
 **Project Type**: Static HTML website with serverless backend (no local build system)
 
+## ?? **CRITICAL RULE: NO EMOJIS OR UNICODE SYMBOLS**
+
+**NEVER USE EMOJIS OR SPECIAL UNICODE SYMBOLS IN THIS PROJECT**
+
+This rule applies to:
+- ? **Console logs**: No emojis in console.log, console.error messages
+- ? **User interface text**: No emojis in buttons, notifications, labels
+- ? **Currency symbols**: Use text codes (PHP, USD, EUR) instead of symbols (?, $, €)
+- ? **Special characters**: No diamonds ?, multiplication ×, arrows ??, etc.
+- ? **HTML content**: No emojis in any HTML elements or attributes
+- ? **JavaScript strings**: No emojis in any string literals
+
+**Why**: Emojis and special Unicode symbols cause encoding issues that display as question marks (?) in certain browsers and environments, breaking the user experience.
+
+**Use instead**:
+- ? **Text labels**: "PHP" instead of "?", "USD" instead of "$"
+- ? **Plain text**: "Order confirmed!" instead of "?? Order confirmed!"
+- ? **Simple characters**: "X" instead of "×", ">" instead of "?"
+
 ## Current Website Capabilities (Comprehensive Feature Documentation)
 
 ### ?? **Core E-commerce Features**
@@ -41,7 +60,7 @@
 ### ?? **Notification & Communication Systems**
 - **Discord Integration**: Rich embed notifications sent to Discord webhook on new orders
 - **GCash Payment Notifications**: Specialized green notification panel for GCash payment instructions
-- **Toast Notifications**: Success/error messages with emoji-based styling
+- **Toast Notifications**: Success/error messages with clean text (no emojis)
 - **Owner Notifications**: Alert system for new orders received
 
 ### ?? **Database Integration (Supabase)**
