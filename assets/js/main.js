@@ -709,7 +709,7 @@ function findOrderInLocalStorage(orderId) {
                 if (foundOrder) {
                     return {
                         orderId: foundOrder.orderId,
-                        status: foundFoundOrder.status || 'pending',
+                        status: foundOrder.status || 'pending',
                         totalAmount: foundOrder.total,
                         gameUsername: foundOrder.gameUsername || user.username,
                         customerEmail: email,
