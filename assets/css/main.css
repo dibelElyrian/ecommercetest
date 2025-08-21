@@ -1223,6 +1223,168 @@ body {
     }
 }
 
+/* Enhanced Modal Form Button Styling */
+.auth-form button[type="submit"] {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 100%;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.auth-form button[type="submit"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.auth-form button[type="submit"]:hover::before {
+    left: 100%;
+}
+
+.auth-form button[type="submit"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+
+.auth-form button[type="submit"]:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Auth Links Container */
+.auth-links {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 25px;
+}
+
+/* Link Buttons - Register, Login, Forgot Password */
+.auth-links button {
+    background: transparent;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    min-width: 200px;
+    text-align: center;
+}
+
+.auth-links button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+    transition: left 0.4s;
+}
+
+.auth-links button:hover::before {
+    left: 100%;
+}
+
+.auth-links button:hover {
+    background: rgba(102, 126, 234, 0.15);
+    color: var(--text-primary);
+    border-color: rgba(102, 126, 234, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+}
+
+.auth-links button:active {
+    transform: translateY(0) scale(0.98);
+    box-shadow: 0 3px 10px rgba(102, 126, 234, 0.15);
+}
+
+/* Track Order Form Button */
+.tracking-form button[type="submit"] {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-width: 140px;
+}
+
+.tracking-form button[type="submit"]::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.tracking-form button[type="submit"]:hover::before {
+    left: 100%;
+}
+
+.tracking-form button[type="submit"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.tracking-form button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tracking-form button[type="submit"]:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Checkout Form Button Override */
+#checkoutForm button[type="submit"] {
+    background: var(--success-green);
+    border-color: var(--success-green);
+    font-weight: 800;
+    font-size: 1.2rem;
+    padding: 18px 36px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+#checkoutForm button[type="submit"]:hover {
+    background: #00d46a;
+    box-shadow: 0 12px 35px rgba(0, 255, 136, 0.4);
+}
+
 @media (max-width: 480px) {
     .header {
         padding: 30px 20px;
@@ -1251,5 +1413,16 @@ body {
     
     .item-price {
         font-size: 1.8rem;
+    }
+    
+    .auth-links button {
+        min-width: 180px;
+        font-size: 0.85rem;
+        padding: 9px 18px;
+    }
+    
+    .auth-form button[type="submit"] {
+        padding: 14px 28px;
+        font-size: 1rem;
     }
 }
