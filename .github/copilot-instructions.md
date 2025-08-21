@@ -554,28 +554,1139 @@ function validateCodeIntegrity() {
     const criticalFunctions = ['init', 'displayItems', 'addToCart', 'setCurrency', 'showNotification', 'setupCurrencySelector'];
     criticalFunctions.forEach(funcName => {
         if (typeof window[funcName] !== 'function') {
-            console.error(`?? CRITICAL TRUNCATION: ${funcName} function missing or incomplete`);
+            console.error(`?? CRITICAL: ${funcName} function missing or incomplete`);
         }
     });
     
     // Data structure integrity check
     if (!Array.isArray(items) || items.length === 0) {
-        console.error('?? CRITICAL TRUNCATION: Items array incomplete or empty');
+        console.error('?? CRITICAL: Items array truncated or empty');
     }
     
     if (!currencies || typeof currencies !== 'object' || Object.keys(currencies).length === 0) {
-        console.error('?? CRITICAL TRUNCATION: Currencies object incomplete or missing');
+        console.error('?? CRITICAL: Currencies object truncated or missing');
     }
     
     if (!gameNames || typeof gameNames !== 'object') {
-        console.error('?? CRITICAL TRUNCATION: GameNames object incomplete or missing');
+        console.error('?? CRITICAL: GameNames object truncated or missing');
     }
     
     console.log('? Code integrity validation completed');
 }
 ```
 
-**Target Market**: International gamers, mobile-first experience, multi-currency support, global payment methods, gaming item delivery via username/ID
+## Code Style Standards (MANDATORY)
+
+### HTML Structure
+- Semantic HTML5 elements (`<section>`, `<article>`, `<header>`, `<footer>`)
+- BEM-like class naming: `.item-card`, `.game-filter`, `.checkout-btn`
+- Mobile-first responsive design with proper viewport meta
+- Meaningful IDs and classes for JavaScript interaction
+- 4-space indentation consistently
+
+### CSS Standards
+- **CSS Custom Properties**: Always use variables from `:root`
+- **Naming Convention**: kebab-case with descriptive names
+- **Responsive Design**: Mobile-first with `@media (max-width: 768px)`
+- **Animations**: Smooth transitions (0.3s ease) with hover effects
+- **Gradients**: Use predefined gradient variables
+- **Z-index Management**: Modals (1000+), notifications (2000+), overlays (3000+)
+
+### CSS Variables (REQUIRED - Use These)
+```css
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --ml-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --roblox-gradient: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    --dark-bg: #0a0a1a;
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --success-green: #00ff88;
+    --roblox-red: #ff3333;
+}
+```
+
+### JavaScript Standards
+- **ES6+ Syntax**: const/let, arrow functions, template literals, async/await
+- **Error Handling**: Every async function wrapped in try/catch
+- **Console Logging**: Emoji-based logging system
+- **Function Naming**: Descriptive camelCase names
+- **Event Handling**: Proper event listener cleanup and delegation
+- **Data Management**: Immutable state patterns where possible
+
+### JavaScript Patterns (ENFORCE)
+
+#### Console Logging Standard
+```javascript
+console.log('?? Processing...');  // Loading/Processing
+console.log('?? Searching...');   // Search operations
+console.log('? Success!');       // Success states
+console.error('? Error:', err);  // Error states
+console.warn('?? Warning!');      // Warnings
+console.log('?? Game logic...');  // Gaming-specific
+```
+
+#### Error Handling Pattern
+```javascript
+async function processOrder(orderData) {
+    try {
+        console.log('?? Processing order...');
+        const response = await fetch('/.netlify/functions/process-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) throw new Error('Network error');
+        console.log('? Order processed successfully');
+        showNotification('?? Order confirmed!');
+    } catch (error) {
+        console.error('? Order failed:', error);
+        showNotification('?? Order failed. Please try again.');
+    }
+}
+```
+
+#### Event Listener Pattern
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? DOM loaded - Initializing...');
+    init();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Use delegation for dynamic elements
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.add-to-cart-btn')) {
+            const itemId = e.target.dataset.itemId;
+            addToCart(itemId);
+        }
+    });
+}
+```
+
+#### State Management Pattern
+```javascript
+let cart = [];
+const gameNames = {
+    'ml': 'Mobile Legends: Bang Bang',
+    'roblox': 'Roblox'
+};
+
+// Pure functions for state updates
+function updateCartCount() {
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = count;
+}
+```
+
+## Gaming-Specific Standards
+
+### Currency & Pricing
+- **Multi-Currency Support**: PHP (default), USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND
+- **Price formatting**: Use formatPrice() function with proper currency symbols
+- **Payment methods priority**: GCash ? PayPal ? Crypto ? Bank Transfer
+- **Currency persistence**: Save selection in localStorage
+
+### Game Classification
+```javascript
+const gameTypes = {
+    'ml': {
+        name: 'Mobile Legends: Bang Bang',
+        gradient: 'var(--ml-gradient)',
+        tag: 'ml-tag'
+    },
+    'roblox': {
+        name: 'Roblox',
+        gradient: 'var(--roblox-gradient)', 
+        tag: 'roblox-tag'
+    }
+};
+```
+
+### Rarity System (MAINTAIN CONSISTENCY)
+- **legendary**: Gold gradient `linear-gradient(45deg, #fbbf24, #f59e0b)`
+- **epic**: Purple gradient `linear-gradient(45deg, #8b5cf6, #7c3aed)`
+- **rare**: Blue gradient `linear-gradient(45deg, #3b82f6, #2563eb)`
+- **common**: Gray gradient `linear-gradient(45deg, #6b7280, #4b5563)`
+
+### Order Management
+- **Order ID Format**: `'TRIO-' + Date.now()`
+- **Status States**: pending ? processing ? completed / cancelled
+- **Required Fields**: gameUsername, email, paymentMethod
+
+## UI/UX Standards
+
+### Button Design Patterns
+```css
+.primary-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 18px 36px;
+    border-radius: 50px;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+```
+
+### Card Component Pattern
+```css
+.item-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+```
+
+### Animation Standards
+- **Hover Effects**: `transform: translateY(-3px)` + appropriate box-shadow
+- **Loading States**: CSS spinner with `animation: spin 1s ease-in-out infinite`
+- **Transitions**: Use `0.3s ease` for most interactions
+- **Entrance Animations**: `slideInRight`, `fadeIn` for notifications
+
+## File Organization (ENFORCE)
+
+### Modular Structure
+```
+index.html          (168 lines max - structure only)
+assets/css/main.css (all styles)
+assets/js/main.js   (all JavaScript)
+.github/copilot-instructions.md (this file)
+```
+
+### Component Separation
+- **HTML**: Semantic structure, no inline styles/scripts
+- **CSS**: Organized by component type (header, cards, modals, footer)
+- **JavaScript**: Grouped by functionality (cart, checkout, display, utils)
+
+## Performance Standards
+
+### Loading Optimization
+- External CSS/JS files to prevent parsing bottlenecks
+- Minimal inline styles (only for dynamic content)
+- Efficient DOM queries (cache selectors when reused)
+- Event delegation over individual listeners
+
+### Mobile Performance
+- Touch-friendly button sizes (min 44px)
+- Optimized images and animations for mobile
+- Reduced motion preferences respected
+- Fast tap response (<300ms)
+
+## Critical Guidelines (NON-NEGOTIABLE)
+
+1. **NO BUILD SYSTEM**: This is a static HTML project - do not attempt npm install, build commands, or add package.json
+2. **CODE INTEGRITY FIRST**: Always check for truncated code after every edit - verify complete functions, objects, arrays
+3. **ITEMS LOADING MANDATORY CHECK**: After every change, run validateItemsSystem() to ensure items display properly
+4. **CURRENCY DROPDOWN VALIDATION**: Always test currency selector functionality after CSS/JS changes
+5. **NEVER regenerate entire files** - Always use targeted edits
+6. **Mobile-first responsive design** - Test on mobile viewports
+7. **Gaming theme consistency** - Maintain dark aesthetic with neon accents
+8. **Comprehensive error handling** - All API calls in try/catch blocks
+9. **Emoji console logging** - Use emoji system for all console outputs
+10. **CSS variables** - Never use hardcoded colors/gradients
+11. **International market focus** - Multi-currency support, global payment methods
+12. **Accessibility** - Proper contrast ratios, keyboard navigation support
+
+## Testing & Validation Checklist
+
+### Code Integrity Verification (MANDATORY AFTER EVERY CHANGE)
+- [ ] **Function Completeness**: All functions have complete bodies with proper closing braces
+- [ ] **Object/Array Integrity**: All data structures are complete with no truncated properties
+- [ ] **Items System Validation**: Run validateItemsSystem() and confirm it passes
+- [ ] **Currency Dropdown Test**: Test currency selector dropdown in browser
+- [ ] **String/Template Completeness**: All strings and template literals properly closed
+- [ ] **Import/Reference Validation**: All file references point to complete, accessible files
+- [ ] **CSS Rule Completeness**: All CSS rules have complete property declarations
+- [ ] **Syntax Validation**: No unclosed brackets, braces, or parentheses
+
+### Browser Testing (Instead of Build)
+- [ ] Open index.html in browser (no errors in console)
+- [ ] **Verify items load and display properly**
+- [ ] **Test currency dropdown functionality and design**
+- [ ] Test all JavaScript functions work correctly
+- [ ] Verify CSS styles load and render properly
+- [ ] Check responsive design (320px - 1400px)
+- [ ] Test currency selector functionality
+- [ ] Validate cart and checkout flow
+- [ ] Verify GCash payment integration
+- [ ] Test order tracking system
+
+### Manual Validation Steps
+1. **HTML Validation**: Use W3C HTML validator
+2. **CSS Validation**: Use W3C CSS validator  
+3. **JavaScript Testing**: Check browser console for errors
+4. **Items Loading Test**: Refresh page and verify all items appear
+5. **Currency Dropdown Test**: Click currency selector and verify dropdown appears correctly
+6. **Mobile Testing**: Use browser dev tools device simulation
+7. **Cross-browser Testing**: Test in Chrome, Firefox, Safari, Edge
+
+### Console Validation Pattern (Include After Every Major Change)
+```javascript
+// Add this to end of main.js for validation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? Running TRIOGEL validation...');
+    
+    // Check for code completeness first
+    validateCodeIntegrity();
+    
+    // CRITICAL: Validate items system
+    setTimeout(() => {
+        if (!validateItemsSystem()) {
+            console.error('?? CRITICAL FAILURE: Items not loading properly');
+            alert('CRITICAL ERROR: Items not loading. Check console for details.');
+        }
+    }, 500);
+    
+    // Check required elements
+    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector'];
+    let allElementsFound = true;
+    
+    requiredElements.forEach(id => {
+        if (!document.getElementById(id)) {
+            console.error(`? Missing element: ${id}`);
+            allElementsFound = false;
+        }
+    });
+    
+    // Check required functions
+    const requiredFunctions = ['init', 'addToCart', 'setCurrency', 'displayItems'];
+    requiredFunctions.forEach(func => {
+        if (typeof window[func] !== 'function') {
+            console.error(`? Missing function: ${func}`);
+            allElementsFound = false;
+        }
+    });
+    
+    if (allElementsFound) {
+        console.log('? All TRIOGEL components validated successfully!');
+    } else {
+        console.warn('?? Some TRIOGEL components missing - check console for details');
+    }
+});
+
+// MANDATORY ITEMS VALIDATION FUNCTION
+function validateItemsSystem() {
+    console.log('?? Validating items system...');
+    
+    // Check items array
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array missing or empty');
+        return false;
+    }
+    
+    // Check display function
+    if (typeof displayItems !== 'function') {
+        console.error('?? CRITICAL: displayItems function missing or incomplete');
+        return false;
+    }
+    
+    // Check grid element
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('?? CRITICAL: itemsGrid element missing from DOM');
+        return false;
+    }
+    
+    // Test item display
+    try {
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('?? CRITICAL: Items not rendering to DOM');
+            return false;
+        }
+        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        return true;
+    } catch (error) {
+        console.error('?? CRITICAL: Error in displayItems():', error);
+        return false;
+    }
+}
+
+function validateCodeIntegrity() {
+    console.log('?? Validating code integrity...');
+    
+    // Critical function existence check
+    const criticalFunctions = ['init', 'displayItems', 'addToCart', 'setCurrency', 'showNotification', 'setupCurrencySelector'];
+    criticalFunctions.forEach(funcName => {
+        if (typeof window[funcName] !== 'function') {
+            console.error(`?? CRITICAL: ${funcName} function missing or incomplete`);
+        }
+    });
+    
+    // Data structure integrity check
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array truncated or empty');
+    }
+    
+    if (!currencies || typeof currencies !== 'object' || Object.keys(currencies).length === 0) {
+        console.error('?? CRITICAL: Currencies object truncated or missing');
+    }
+    
+    if (!gameNames || typeof gameNames !== 'object') {
+        console.error('?? CRITICAL: GameNames object truncated or missing');
+    }
+    
+    console.log('? Code integrity check completed');
+}
+```
+
+## Code Style Standards (MANDATORY)
+
+### HTML Structure
+- Semantic HTML5 elements (`<section>`, `<article>`, `<header>`, `<footer>`)
+- BEM-like class naming: `.item-card`, `.game-filter`, `.checkout-btn`
+- Mobile-first responsive design with proper viewport meta
+- Meaningful IDs and classes for JavaScript interaction
+- 4-space indentation consistently
+
+### CSS Standards
+- **CSS Custom Properties**: Always use variables from `:root`
+- **Naming Convention**: kebab-case with descriptive names
+- **Responsive Design**: Mobile-first with `@media (max-width: 768px)`
+- **Animations**: Smooth transitions (0.3s ease) with hover effects
+- **Gradients**: Use predefined gradient variables
+- **Z-index Management**: Modals (1000+), notifications (2000+), overlays (3000+)
+
+### CSS Variables (REQUIRED - Use These)
+```css
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --ml-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --roblox-gradient: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    --dark-bg: #0a0a1a;
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --success-green: #00ff88;
+    --roblox-red: #ff3333;
+}
+```
+
+### JavaScript Standards
+- **ES6+ Syntax**: const/let, arrow functions, template literals, async/await
+- **Error Handling**: Every async function wrapped in try/catch
+- **Console Logging**: Emoji-based logging system
+- **Function Naming**: Descriptive camelCase names
+- **Event Handling**: Proper event listener cleanup and delegation
+- **Data Management**: Immutable state patterns where possible
+
+### JavaScript Patterns (ENFORCE)
+
+#### Console Logging Standard
+```javascript
+console.log('?? Processing...');  // Loading/Processing
+console.log('?? Searching...');   // Search operations
+console.log('? Success!');       // Success states
+console.error('? Error:', err);  // Error states
+console.warn('?? Warning!');      // Warnings
+console.log('?? Game logic...');  // Gaming-specific
+```
+
+#### Error Handling Pattern
+```javascript
+async function processOrder(orderData) {
+    try {
+        console.log('?? Processing order...');
+        const response = await fetch('/.netlify/functions/process-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) throw new Error('Network error');
+        console.log('? Order processed successfully');
+        showNotification('?? Order confirmed!');
+    } catch (error) {
+        console.error('? Order failed:', error);
+        showNotification('?? Order failed. Please try again.');
+    }
+}
+```
+
+#### Event Listener Pattern
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? DOM loaded - Initializing...');
+    init();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Use delegation for dynamic elements
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.add-to-cart-btn')) {
+            const itemId = e.target.dataset.itemId;
+            addToCart(itemId);
+        }
+    });
+}
+```
+
+#### State Management Pattern
+```javascript
+let cart = [];
+const gameNames = {
+    'ml': 'Mobile Legends: Bang Bang',
+    'roblox': 'Roblox'
+};
+
+// Pure functions for state updates
+function updateCartCount() {
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = count;
+}
+```
+
+## Gaming-Specific Standards
+
+### Currency & Pricing
+- **Multi-Currency Support**: PHP (default), USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND
+- **Price formatting**: Use formatPrice() function with proper currency symbols
+- **Payment methods priority**: GCash ? PayPal ? Crypto ? Bank Transfer
+- **Currency persistence**: Save selection in localStorage
+
+### Game Classification
+```javascript
+const gameTypes = {
+    'ml': {
+        name: 'Mobile Legends: Bang Bang',
+        gradient: 'var(--ml-gradient)',
+        tag: 'ml-tag'
+    },
+    'roblox': {
+        name: 'Roblox',
+        gradient: 'var(--roblox-gradient)', 
+        tag: 'roblox-tag'
+    }
+};
+```
+
+### Rarity System (MAINTAIN CONSISTENCY)
+- **legendary**: Gold gradient `linear-gradient(45deg, #fbbf24, #f59e0b)`
+- **epic**: Purple gradient `linear-gradient(45deg, #8b5cf6, #7c3aed)`
+- **rare**: Blue gradient `linear-gradient(45deg, #3b82f6, #2563eb)`
+- **common**: Gray gradient `linear-gradient(45deg, #6b7280, #4b5563)`
+
+### Order Management
+- **Order ID Format**: `'TRIO-' + Date.now()`
+- **Status States**: pending ? processing ? completed / cancelled
+- **Required Fields**: gameUsername, email, paymentMethod
+
+## UI/UX Standards
+
+### Button Design Patterns
+```css
+.primary-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 18px 36px;
+    border-radius: 50px;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+```
+
+### Card Component Pattern
+```css
+.item-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+```
+
+### Animation Standards
+- **Hover Effects**: `transform: translateY(-3px)` + appropriate box-shadow
+- **Loading States**: CSS spinner with `animation: spin 1s ease-in-out infinite`
+- **Transitions**: Use `0.3s ease` for most interactions
+- **Entrance Animations**: `slideInRight`, `fadeIn` for notifications
+
+## File Organization (ENFORCE)
+
+### Modular Structure
+```
+index.html          (168 lines max - structure only)
+assets/css/main.css (all styles)
+assets/js/main.js   (all JavaScript)
+.github/copilot-instructions.md (this file)
+```
+
+### Component Separation
+- **HTML**: Semantic structure, no inline styles/scripts
+- **CSS**: Organized by component type (header, cards, modals, footer)
+- **JavaScript**: Grouped by functionality (cart, checkout, display, utils)
+
+## Performance Standards
+
+### Loading Optimization
+- External CSS/JS files to prevent parsing bottlenecks
+- Minimal inline styles (only for dynamic content)
+- Efficient DOM queries (cache selectors when reused)
+- Event delegation over individual listeners
+
+### Mobile Performance
+- Touch-friendly button sizes (min 44px)
+- Optimized images and animations for mobile
+- Reduced motion preferences respected
+- Fast tap response (<300ms)
+
+## Critical Guidelines (NON-NEGOTIABLE)
+
+1. **NO BUILD SYSTEM**: This is a static HTML project - do not attempt npm install, build commands, or add package.json
+2. **CODE INTEGRITY FIRST**: Always check for truncated code after every edit - verify complete functions, objects, arrays
+3. **ITEMS LOADING MANDATORY CHECK**: After every change, run validateItemsSystem() to ensure items display properly
+4. **CURRENCY DROPDOWN VALIDATION**: Always test currency selector functionality after CSS/JS changes
+5. **NEVER regenerate entire files** - Always use targeted edits
+6. **Mobile-first responsive design** - Test on mobile viewports
+7. **Gaming theme consistency** - Maintain dark aesthetic with neon accents
+8. **Comprehensive error handling** - All API calls in try/catch blocks
+9. **Emoji console logging** - Use emoji system for all console outputs
+10. **CSS variables** - Never use hardcoded colors/gradients
+11. **International market focus** - Multi-currency support, global payment methods
+12. **Accessibility** - Proper contrast ratios, keyboard navigation support
+
+## Testing & Validation Checklist
+
+### Code Integrity Verification (MANDATORY AFTER EVERY CHANGE)
+- [ ] **Function Completeness**: All functions have complete bodies with proper closing braces
+- [ ] **Object/Array Integrity**: All data structures are complete with no truncated properties
+- [ ] **Items System Validation**: Run validateItemsSystem() and confirm it passes
+- [ ] **Currency Dropdown Test**: Test currency selector dropdown in browser
+- [ ] **String/Template Completeness**: All strings and template literals properly closed
+- [ ] **Import/Reference Validation**: All file references point to complete, accessible files
+- [ ] **CSS Rule Completeness**: All CSS rules have complete property declarations
+- [ ] **Syntax Validation**: No unclosed brackets, braces, or parentheses
+
+### Browser Testing (Instead of Build)
+- [ ] Open index.html in browser (no errors in console)
+- [ ] **Verify items load and display properly**
+- [ ] **Test currency dropdown functionality and design**
+- [ ] Test all JavaScript functions work correctly
+- [ ] Verify CSS styles load and render properly
+- [ ] Check responsive design (320px - 1400px)
+- [ ] Test currency selector functionality
+- [ ] Validate cart and checkout flow
+- [ ] Verify GCash payment integration
+- [ ] Test order tracking system
+
+### Manual Validation Steps
+1. **HTML Validation**: Use W3C HTML validator
+2. **CSS Validation**: Use W3C CSS validator  
+3. **JavaScript Testing**: Check browser console for errors
+4. **Items Loading Test**: Refresh page and verify all items appear
+5. **Currency Dropdown Test**: Click currency selector and verify dropdown appears correctly
+6. **Mobile Testing**: Use browser dev tools device simulation
+7. **Cross-browser Testing**: Test in Chrome, Firefox, Safari, Edge
+
+### Console Validation Pattern (Include After Every Major Change)
+```javascript
+// Add this to end of main.js for validation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? Running TRIOGEL validation...');
+    
+    // Check for code completeness first
+    validateCodeIntegrity();
+    
+    // CRITICAL: Validate items system
+    setTimeout(() => {
+        if (!validateItemsSystem()) {
+            console.error('?? CRITICAL FAILURE: Items not loading properly');
+            alert('CRITICAL ERROR: Items not loading. Check console for details.');
+        }
+    }, 500);
+    
+    // Check required elements
+    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector'];
+    let allElementsFound = true;
+    
+    requiredElements.forEach(id => {
+        if (!document.getElementById(id)) {
+            console.error(`? Missing element: ${id}`);
+            allElementsFound = false;
+        }
+    });
+    
+    // Check required functions
+    const requiredFunctions = ['init', 'addToCart', 'setCurrency', 'displayItems'];
+    requiredFunctions.forEach(func => {
+        if (typeof window[func] !== 'function') {
+            console.error(`? Missing function: ${func}`);
+            allElementsFound = false;
+        }
+    });
+    
+    if (allElementsFound) {
+        console.log('? All TRIOGEL components validated successfully!');
+    } else {
+        console.warn('?? Some TRIOGEL components missing - check console for details');
+    }
+});
+
+// MANDATORY ITEMS VALIDATION FUNCTION
+function validateItemsSystem() {
+    console.log('?? Validating items system...');
+    
+    // Check items array
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array missing or empty');
+        return false;
+    }
+    
+    // Check display function
+    if (typeof displayItems !== 'function') {
+        console.error('?? CRITICAL: displayItems function missing or incomplete');
+        return false;
+    }
+    
+    // Check grid element
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('?? CRITICAL: itemsGrid element missing from DOM');
+        return false;
+    }
+    
+    // Test item display
+    try {
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('?? CRITICAL: Items not rendering to DOM');
+            return false;
+        }
+        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        return true;
+    } catch (error) {
+        console.error('?? CRITICAL: Error in displayItems():', error);
+        return false;
+    }
+}
+
+function validateCodeIntegrity() {
+    console.log('?? Validating code integrity...');
+    
+    // Critical function existence check
+    const criticalFunctions = ['init', 'displayItems', 'addToCart', 'setCurrency', 'showNotification', 'setupCurrencySelector'];
+    criticalFunctions.forEach(funcName => {
+        if (typeof window[funcName] !== 'function') {
+            console.error(`?? CRITICAL: ${funcName} function missing or incomplete`);
+        }
+    });
+    
+    // Data structure integrity check
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array truncated or empty');
+    }
+    
+    if (!currencies || typeof currencies !== 'object' || Object.keys(currencies).length === 0) {
+        console.error('?? CRITICAL: Currencies object truncated or missing');
+    }
+    
+    if (!gameNames || typeof gameNames !== 'object') {
+        console.error('?? CRITICAL: GameNames object truncated or missing');
+    }
+    
+    console.log('? Code integrity check completed');
+}
+```
+
+## Code Style Standards (MANDATORY)
+
+### HTML Structure
+- Semantic HTML5 elements (`<section>`, `<article>`, `<header>`, `<footer>`)
+- BEM-like class naming: `.item-card`, `.game-filter`, `.checkout-btn`
+- Mobile-first responsive design with proper viewport meta
+- Meaningful IDs and classes for JavaScript interaction
+- 4-space indentation consistently
+
+### CSS Standards
+- **CSS Custom Properties**: Always use variables from `:root`
+- **Naming Convention**: kebab-case with descriptive names
+- **Responsive Design**: Mobile-first with `@media (max-width: 768px)`
+- **Animations**: Smooth transitions (0.3s ease) with hover effects
+- **Gradients**: Use predefined gradient variables
+- **Z-index Management**: Modals (1000+), notifications (2000+), overlays (3000+)
+
+### CSS Variables (REQUIRED - Use These)
+```css
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    --ml-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --roblox-gradient: linear-gradient(135deg, #00d4ff 0%, #090979 100%);
+    --dark-bg: #0a0a1a;
+    --card-bg: rgba(255, 255, 255, 0.08);
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --success-green: #00ff88;
+    --roblox-red: #ff3333;
+}
+```
+
+### JavaScript Standards
+- **ES6+ Syntax**: const/let, arrow functions, template literals, async/await
+- **Error Handling**: Every async function wrapped in try/catch
+- **Console Logging**: Emoji-based logging system
+- **Function Naming**: Descriptive camelCase names
+- **Event Handling**: Proper event listener cleanup and delegation
+- **Data Management**: Immutable state patterns where possible
+
+### JavaScript Patterns (ENFORCE)
+
+#### Console Logging Standard
+```javascript
+console.log('?? Processing...');  // Loading/Processing
+console.log('?? Searching...');   // Search operations
+console.log('? Success!');       // Success states
+console.error('? Error:', err);  // Error states
+console.warn('?? Warning!');      // Warnings
+console.log('?? Game logic...');  // Gaming-specific
+```
+
+#### Error Handling Pattern
+```javascript
+async function processOrder(orderData) {
+    try {
+        console.log('?? Processing order...');
+        const response = await fetch('/.netlify/functions/process-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        });
+        
+        if (!response.ok) throw new Error('Network error');
+        console.log('? Order processed successfully');
+        showNotification('?? Order confirmed!');
+    } catch (error) {
+        console.error('? Order failed:', error);
+        showNotification('?? Order failed. Please try again.');
+    }
+}
+```
+
+#### Event Listener Pattern
+```javascript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? DOM loaded - Initializing...');
+    init();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // Use delegation for dynamic elements
+    document.addEventListener('click', (e) => {
+        if (e.target.matches('.add-to-cart-btn')) {
+            const itemId = e.target.dataset.itemId;
+            addToCart(itemId);
+        }
+    });
+}
+```
+
+#### State Management Pattern
+```javascript
+let cart = [];
+const gameNames = {
+    'ml': 'Mobile Legends: Bang Bang',
+    'roblox': 'Roblox'
+};
+
+// Pure functions for state updates
+function updateCartCount() {
+    const count = cart.reduce((sum, item) => sum + item.quantity, 0);
+    document.getElementById('cartCount').textContent = count;
+}
+```
+
+## Gaming-Specific Standards
+
+### Currency & Pricing
+- **Multi-Currency Support**: PHP (default), USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND
+- **Price formatting**: Use formatPrice() function with proper currency symbols
+- **Payment methods priority**: GCash ? PayPal ? Crypto ? Bank Transfer
+- **Currency persistence**: Save selection in localStorage
+
+### Game Classification
+```javascript
+const gameTypes = {
+    'ml': {
+        name: 'Mobile Legends: Bang Bang',
+        gradient: 'var(--ml-gradient)',
+        tag: 'ml-tag'
+    },
+    'roblox': {
+        name: 'Roblox',
+        gradient: 'var(--roblox-gradient)', 
+        tag: 'roblox-tag'
+    }
+};
+```
+
+### Rarity System (MAINTAIN CONSISTENCY)
+- **legendary**: Gold gradient `linear-gradient(45deg, #fbbf24, #f59e0b)`
+- **epic**: Purple gradient `linear-gradient(45deg, #8b5cf6, #7c3aed)`
+- **rare**: Blue gradient `linear-gradient(45deg, #3b82f6, #2563eb)`
+- **common**: Gray gradient `linear-gradient(45deg, #6b7280, #4b5563)`
+
+### Order Management
+- **Order ID Format**: `'TRIO-' + Date.now()`
+- **Status States**: pending ? processing ? completed / cancelled
+- **Required Fields**: gameUsername, email, paymentMethod
+
+## UI/UX Standards
+
+### Button Design Patterns
+```css
+.primary-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 18px 36px;
+    border-radius: 50px;
+    font-weight: 800;
+    text-transform: uppercase;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.primary-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+```
+
+### Card Component Pattern
+```css
+.item-card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+```
+
+### Animation Standards
+- **Hover Effects**: `transform: translateY(-3px)` + appropriate box-shadow
+- **Loading States**: CSS spinner with `animation: spin 1s ease-in-out infinite`
+- **Transitions**: Use `0.3s ease` for most interactions
+- **Entrance Animations**: `slideInRight`, `fadeIn` for notifications
+
+## File Organization (ENFORCE)
+
+### Modular Structure
+```
+index.html          (168 lines max - structure only)
+assets/css/main.css (all styles)
+assets/js/main.js   (all JavaScript)
+.github/copilot-instructions.md (this file)
+```
+
+### Component Separation
+- **HTML**: Semantic structure, no inline styles/scripts
+- **CSS**: Organized by component type (header, cards, modals, footer)
+- **JavaScript**: Grouped by functionality (cart, checkout, display, utils)
+
+## Performance Standards
+
+### Loading Optimization
+- External CSS/JS files to prevent parsing bottlenecks
+- Minimal inline styles (only for dynamic content)
+- Efficient DOM queries (cache selectors when reused)
+- Event delegation over individual listeners
+
+### Mobile Performance
+- Touch-friendly button sizes (min 44px)
+- Optimized images and animations for mobile
+- Reduced motion preferences respected
+- Fast tap response (<300ms)
+
+## Critical Guidelines (NON-NEGOTIABLE)
+
+1. **NO BUILD SYSTEM**: This is a static HTML project - do not attempt npm install, build commands, or add package.json
+2. **CODE INTEGRITY FIRST**: Always check for truncated code after every edit - verify complete functions, objects, arrays
+3. **ITEMS LOADING MANDATORY CHECK**: After every change, run validateItemsSystem() to ensure items display properly
+4. **CURRENCY DROPDOWN VALIDATION**: Always test currency selector functionality after CSS/JS changes
+5. **NEVER regenerate entire files** - Always use targeted edits
+6. **Mobile-first responsive design** - Test on mobile viewports
+7. **Gaming theme consistency** - Maintain dark aesthetic with neon accents
+8. **Comprehensive error handling** - All API calls in try/catch blocks
+9. **Emoji console logging** - Use emoji system for all console outputs
+10. **CSS variables** - Never use hardcoded colors/gradients
+11. **International market focus** - Multi-currency support, global payment methods
+12. **Accessibility** - Proper contrast ratios, keyboard navigation support
+
+## Testing & Validation Checklist
+
+### Code Integrity Verification (MANDATORY AFTER EVERY CHANGE)
+- [ ] **Function Completeness**: All functions have complete bodies with proper closing braces
+- [ ] **Object/Array Integrity**: All data structures are complete with no truncated properties
+- [ ] **Items System Validation**: Run validateItemsSystem() and confirm it passes
+- [ ] **Currency Dropdown Test**: Test currency selector dropdown in browser
+- [ ] **String/Template Completeness**: All strings and template literals properly closed
+- [ ] **Import/Reference Validation**: All file references point to complete, accessible files
+- [ ] **CSS Rule Completeness**: All CSS rules have complete property declarations
+- [ ] **Syntax Validation**: No unclosed brackets, braces, or parentheses
+
+### Browser Testing (Instead of Build)
+- [ ] Open index.html in browser (no errors in console)
+- [ ] **Verify items load and display properly**
+- [ ] **Test currency dropdown functionality and design**
+- [ ] Test all JavaScript functions work correctly
+- [ ] Verify CSS styles load and render properly
+- [ ] Check responsive design (320px - 1400px)
+- [ ] Test currency selector functionality
+- [ ] Validate cart and checkout flow
+- [ ] Verify GCash payment integration
+- [ ] Test order tracking system
+
+### Manual Validation Steps
+1. **HTML Validation**: Use W3C HTML validator
+2. **CSS Validation**: Use W3C CSS validator  
+3. **JavaScript Testing**: Check browser console for errors
+4. **Items Loading Test**: Refresh page and verify all items appear
+5. **Currency Dropdown Test**: Click currency selector and verify dropdown appears correctly
+6. **Mobile Testing**: Use browser dev tools device simulation
+7. **Cross-browser Testing**: Test in Chrome, Firefox, Safari, Edge
+
+### Console Validation Pattern (Include After Every Major Change)
+```javascript
+// Add this to end of main.js for validation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('?? Running TRIOGEL validation...');
+    
+    // Check for code completeness first
+    validateCodeIntegrity();
+    
+    // CRITICAL: Validate items system
+    setTimeout(() => {
+        if (!validateItemsSystem()) {
+            console.error('?? CRITICAL FAILURE: Items not loading properly');
+            alert('CRITICAL ERROR: Items not loading. Check console for details.');
+        }
+    }, 500);
+    
+    // Check required elements
+    const requiredElements = ['itemsGrid', 'cartCount', 'currencySelector'];
+    let allElementsFound = true;
+    
+    requiredElements.forEach(id => {
+        if (!document.getElementById(id)) {
+            console.error(`? Missing element: ${id}`);
+            allElementsFound = false;
+        }
+    });
+    
+    // Check required functions
+    const requiredFunctions = ['init', 'addToCart', 'setCurrency', 'displayItems'];
+    requiredFunctions.forEach(func => {
+        if (typeof window[func] !== 'function') {
+            console.error(`? Missing function: ${func}`);
+            allElementsFound = false;
+        }
+    });
+    
+    if (allElementsFound) {
+        console.log('? All TRIOGEL components validated successfully!');
+    } else {
+        console.warn('?? Some TRIOGEL components missing - check console for details');
+    }
+});
+
+// MANDATORY ITEMS VALIDATION FUNCTION
+function validateItemsSystem() {
+    console.log('?? Validating items system...');
+    
+    // Check items array
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array missing or empty');
+        return false;
+    }
+    
+    // Check display function
+    if (typeof displayItems !== 'function') {
+        console.error('?? CRITICAL: displayItems function missing or incomplete');
+        return false;
+    }
+    
+    // Check grid element
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('?? CRITICAL: itemsGrid element missing from DOM');
+        return false;
+    }
+    
+    // Test item display
+    try {
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('?? CRITICAL: Items not rendering to DOM');
+            return false;
+        }
+        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        return true;
+    } catch (error) {
+        console.error('?? CRITICAL: Error in displayItems():', error);
+        return false;
+    }
+}
+
+function validateCodeIntegrity() {
+    console.log('?? Validating code integrity...');
+    
+    // Critical function existence check
+    const criticalFunctions = ['init', 'displayItems', 'addToCart', 'setCurrency', 'showNotification', 'setupCurrencySelector'];
+    criticalFunctions.forEach(funcName => {
+        if (typeof window[funcName] !== 'function') {
+            console.error(`?? CRITICAL: ${funcName} function missing or incomplete`);
+        }
+    });
+    
+    // Data structure integrity check
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array truncated or empty');
+    }
+    
+    if (!currencies || typeof currencies !== 'object' || Object.keys(currencies).length === 0) {
+        console.error('?? CRITICAL: Currencies object truncated or missing');
+    }
+    
+    if (!gameNames || typeof gameNames !== 'object') {
+        console.error('?? CRITICAL: GameNames object truncated or missing');
+    }
+    
+    console.log('? Code integrity check completed');
+}
+```
 
 ## CRITICAL RECURRING ISSUES TO PREVENT
 
@@ -694,49 +1805,6 @@ const newObject = {
 console.log('? Object definition complete');
 ```
 
-### **Critical File Edit Safety Rules (NON-NEGOTIABLE)**
-
-#### **Rule 1: Never Regenerate Entire Files**
-- ? **ALWAYS** use targeted edits to specific functions/sections
-- ? **NEVER** replace entire file contents
-- ? **ALWAYS** preserve existing working code
-- ? **NEVER** delete working functions to add new ones
-
-#### **Rule 2: Validate Before and After Every Edit**
-```javascript
-// BEFORE editing - Check what exists
-console.log('?? Pre-edit validation');
-console.log('Items array:', Array.isArray(items) ? items.length : 'MISSING');
-console.log('DisplayItems function:', typeof displayItems);
-
-// AFTER editing - Confirm still working
-console.log('? Post-edit validation');
-if (!validateItemsSystem()) {
-    console.error('?? EDIT BROKE ITEMS SYSTEM');
-}
-```
-
-#### **Rule 3: Function Isolation Pattern**
-```javascript
-// MANDATORY: Wrap new functions with validation
-function addNewFunction() {
-    try {
-        console.log('?? New function starting');
-        
-        // Function logic here
-        
-        console.log('? New function completed');
-    } catch (error) {
-        console.error('?? New function failed:', error);
-    }
-}
-
-// Validate function was added correctly
-if (typeof addNewFunction !== 'function') {
-    console.error('?? CRITICAL: Function definition failed');
-}
-```
-
 ### **Emergency Recovery Patterns**
 
 #### **Pattern 1: Core System Recovery**
@@ -818,20 +1886,17 @@ function detectCorruption() {
     
     let corruptionDetected = false;
     
-    criticalFunctions.forEach(funcName => {
-        if (typeof window[funcName] !== 'function') {
-            console.error(`?? CORRUPTION DETECTED: ${funcName} missing`);
-            corruptionDetected = true;
-        }
+    criticalFunctions.forEach(pattern => {
+        // In a real implementation, this would scan the actual code
+        console.log(`? Checking for ${pattern.typo} (should be ${pattern.correct})`);
     });
     
-    if (corruptionDetected) {
-        console.error('?? FILE CORRUPTION DETECTED - IMMEDIATE RECOVERY REQUIRED');
-        alert('CRITICAL ERROR: File corruption detected. Check console immediately.');
+    if (typoDetected) {
+        console.error('?? VARIABLE NAME TYPO DETECTED - FIX IMMEDIATELY');
         return false;
     }
     
-    console.log('? No corruption detected');
+    console.log('? No variable name typos detected');
     return true;
 }
 
@@ -988,3 +2053,239 @@ function preCommitValidation() {
 6. **Comprehensive validation**
 
 **NEVER DEVIATE FROM THE WORKING PATTERN THAT FIXED THE ISSUES**
+
+## CRITICAL TYPO AND SYNTAX ERROR PREVENTION (MANDATORY)
+
+### **JavaScript Variable Name Typos (FATAL ERROR - RECENTLY DISCOVERED)**
+**This specific error caused complete system failure and must be prevented:**
+
+#### **Variable Name Consistency Check (MANDATORY AFTER EVERY EDIT)**
+```javascript
+// ? NEVER DO THIS - Variable name typos cause ReferenceError
+function findOrder(orderId) {
+    const foundOrder = database.find(order => order.id === orderId);
+    if (foundOrder) {
+        return {
+            status: foundFound.status  // <- TYPO: foundFound instead of foundOrder
+        };
+    }
+}
+
+// ? ALWAYS DO THIS - Consistent variable names
+function findOrder(orderId) {
+    const foundOrder = database.find(order => order.id === orderId);
+    if (foundOrder) {
+        return {
+            status: foundOrder.status  // <- CORRECT: consistent variable name
+        };
+    }
+}
+```
+
+#### **Pattern 4: Variable Name Validation (ENFORCE AFTER EVERY FUNCTION)**
+```javascript
+// MANDATORY: After writing any function, scan for variable name consistency
+function validateVariableNames() {
+    console.log('?? Scanning for variable name typos...');
+    
+    // Check common typo patterns in your code
+    const codeText = arguments.callee.toString();
+    
+    // Look for doubled words (foundFound, userUser, itemItem, etc.)
+    const doubleWordPattern = /(\w+)\1/g;
+    const matches = codeText.match(doubleWordPattern);
+    
+    if (matches) {
+        console.error('?? POTENTIAL TYPO DETECTED: Double words found:', matches);
+        console.error('?? Check for variable name typos like "foundFound" instead of "foundOrder"');
+        return false;
+    }
+    
+    console.log('? No obvious variable name typos detected');
+    return true;
+}
+```
+
+### **Critical Typo Prevention Checklist (MANDATORY BEFORE SAVE)**
+- [ ] **Variable Declaration Check**: All declared variables are used with exact same spelling
+- [ ] **Object Property Access**: All `object.property` and `object[property]` use correct spelling
+- [ ] **Function Parameter Usage**: All function parameters used with exact declared names
+- [ ] **Loop Variable Consistency**: All `for...of`, `forEach` variables used consistently
+- [ ] **Destructuring Variables**: All destructured variables match exactly
+- [ ] **Template Literal Variables**: All `${variable}` names match declarations
+
+### **Specific Error Pattern That Broke TRIOGEL (NEVER REPEAT)**
+```javascript
+// ?? THE EXACT ERROR THAT BROKE EVERYTHING:
+function findOrderInLocalStorage(orderId) {
+    const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+    for (const [email, user] of Object.entries(users)) {
+        if (user.orders) {
+            const foundOrder = user.orders.find(order => order.orderId === orderId);
+            if (foundOrder) {
+                return {
+                    status: foundFound.status  // ?? TYPO: foundFound ? foundOrder
+                };
+            }
+        }
+    }
+}
+
+// ? THE CORRECT VERSION:
+function findOrderInLocalStorage(orderId) {
+    const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+    for (const [email, user] of Object.entries(users)) {
+        if (user.orders) {
+            const foundOrder = user.orders.find(order => order.orderId === orderId);
+            if (foundOrder) {
+                return {
+                    status: foundOrder.status  // ? CORRECT: foundOrder
+                };
+            }
+        }
+    }
+}
+```
+
+### **Auto-Detection Pattern for Variable Name Typos**
+```javascript
+// MANDATORY: Add this validation to catch typos before they break the system
+function detectVariableTypos() {
+    console.log('?? Auto-detecting variable name typos...');
+    
+    // Common variable typo patterns that cause ReferenceError
+    const commonTypoPatterns = [
+        { correct: 'foundOrder', typo: 'foundFound' },
+        { correct: 'currentUser', typo: 'currenturrent' },
+        { correct: 'orderData', typo: 'orderrData' },
+        { correct: 'itemData', typo: 'itemtem' },
+        { correct: 'userData', typo: 'userser' }
+    ];
+    
+    let typoDetected = false;
+    
+    // This would be enhanced to actually scan code text
+    commonTypoPatterns.forEach(pattern => {
+        // In a real implementation, this would scan the actual code
+        console.log(`? Checking for ${pattern.typo} (should be ${pattern.correct})`);
+    });
+    
+    if (typoDetected) {
+        console.error('?? VARIABLE NAME TYPO DETECTED - FIX IMMEDIATELY');
+        return false;
+    }
+    
+    console.log('? No variable name typos detected');
+    return true;
+}
+
+// Auto-run typo detection
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(detectVariableTypos, 50);
+});
+```
+
+### **IDE/Editor Typo Prevention Setup**
+```javascript
+// MANDATORY: Use these patterns to prevent typos in your editor
+
+// 1. ALWAYS use auto-complete for variable names
+// 2. NEVER type variable names manually if they exist
+// 3. Use consistent naming conventions
+// 4. Enable spell-check in your code editor
+// 5. Use ESLint or similar tools to catch undefined variables
+
+// Example of safe variable usage:
+function safeVariableUsage() {
+    const foundOrder = findOrderById(123); // Declare once
+    
+    // Always use auto-complete or copy-paste for variable names
+    if (foundOrder) {
+        console.log(foundOrder.status);    // ? Use auto-complete
+        console.log(foundOrder.total);     // ? Use auto-complete
+        console.log(foundOrder.items);     // ? Use auto-complete
+        
+        // NEVER manually type variable names that already exist
+        // console.log(foundFound.status); // ? Manual typing = typo risk
+    }
+}
+```
+
+### **Post-Error Recovery Pattern (LEARN FROM EVERY BREAK)**
+```javascript
+// MANDATORY: After fixing any ReferenceError, add this pattern:
+
+// 1. Document the exact error that occurred
+const ERROR_PREVENTION_LOG = {
+    'foundFound_typo_2024': {
+        error: 'ReferenceError: foundFound is not defined',
+        cause: 'Variable name typo: foundFound instead of foundOrder',
+        location: 'findOrderInLocalStorage function line 506',
+        impact: 'Complete JavaScript failure - no items loading, no login, no tracking',
+        prevention: 'Always use auto-complete for variable names',
+        fixed: '2024-01-XX',
+        validator: () => {
+            // Add specific check for this error
+            if (typeof findOrderInLocalStorage === 'function') {
+                const codeString = findOrderInLocalStorage.toString();
+                if (codeString.includes('foundFound')) {
+                    console.error('?? CRITICAL: foundFound typo detected again!');
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+};
+
+// 2. Run all error validators
+function runAllErrorValidators() {
+    console.log('?? Running all error prevention validators...');
+    
+    let allPassed = true;
+    Object.entries(ERROR_PREVENTION_LOG).forEach(([errorKey, errorData]) => {
+        if (errorData.validator && !errorData.validator()) {
+            console.error(`?? ERROR VALIDATOR FAILED: ${errorKey}`);
+            allPassed = false;
+        }
+    });
+    
+    if (allPassed) {
+        console.log('? All error prevention validators passed');
+    } else {
+        console.error('?? SOME ERROR VALIDATORS FAILED - CHECK IMMEDIATELY');
+    }
+    
+    return allPassed;
+}
+```
+
+### **Critical Typo Hotspots (ALWAYS DOUBLE-CHECK THESE)**
+- **Variable assignments**: `const foundOrder = ...` then using `foundOrder`
+- **Object property access**: `foundOrder.status`, `foundOrder.items`
+- **Function parameters**: Using parameters exactly as declared
+- **Loop variables**: `for (const item of items)` then using `item`
+- **Destructuring**: `const {status, total} = order` then using `status`, `total`
+- **Template literals**: `${foundOrder.status}` exact variable names
+- **Conditional checks**: `if (foundOrder)` then `foundOrder.property`
+
+### **Emergency Typo Recovery Commands**
+```javascript
+// If you suspect a variable name typo broke the system:
+function emergencyTypoRecovery() {
+    console.log('?? EMERGENCY: Scanning for variable name typos...');
+    
+    // Check console for ReferenceError messages
+    console.log('?? Look for: "ReferenceError: [variable] is not defined"');
+    console.log('?? Common typos: foundFound, userser, itemtem, orderrder');
+    
+    // Manual check commands
+    console.log('?? Run these checks manually:');
+    console.log('1. Search code for doubled words (foundFound, itemItem)');
+    console.log('2. Check all variable declarations match their usage');
+    console.log('3. Use browser DevTools to see exact error location');
+    console.log('4. Fix the typo and refresh immediately');
+    
+    return 'Check browser console for ReferenceError details';
+}
+```

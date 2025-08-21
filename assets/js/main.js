@@ -637,7 +637,7 @@ function findOrderInLocalStorage(orderId) {
                 orderId: userOrder.orderId,
                 status: userOrder.status || 'pending',
                 totalAmount: userOrder.total,
-                gameUsername: currentUser.username,
+                gameUsername: userOrder.username,
                 orderDate: userOrder.timestamp,
                 items: userOrder.items || []
             };
@@ -653,7 +653,7 @@ function findOrderInLocalStorage(orderId) {
                 if (foundOrder) {
                     return {
                         orderId: foundOrder.orderId,
-                        status: foundFound.status || 'pending',
+                        status: foundOrder.status || 'pending',
                         totalAmount: foundOrder.total,
                         gameUsername: foundOrder.gameUsername || user.username,
                         customerEmail: email,
@@ -866,187 +866,39 @@ function displayOrderSummary() {
     `;
 }
 
-// Initialize everything
-function init() {
-    console.log('?? TRIOGEL Initializing...');
+// Validation Functions
+function validateItemsSystem() {
+    console.log('?? Validating items system...');
     
-    // Load saved currency
-    const savedCurrency = localStorage.getItem('triogel-currency');
-    if (savedCurrency && currencies[savedCurrency]) {
-        selectedCurrency = savedCurrency;
-        console.log('?? Loaded saved currency:', savedCurrency);
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('? Items array missing or empty');
+        return false;
     }
     
-    // Initialize authentication
-    initAuth();
-    
-    displayItems();
-    updateCartCount();
-    setupFilters();
-    setupCurrencySelector();
-    updateCurrencySelector();
-    setupEventHandlers();
-    
-    console.log('? TRIOGEL Initialized successfully!');
-}
-
-// Event Handlers Setup
-function setupEventHandlers() {
-    console.log('?? Setting up event handlers...');
-    
-    // Authentication form handlers
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('?? Login form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Logging in...';
-            submitBtn.disabled = true;
-
-            try {
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                await loginUser(email, password);
-            } catch (error) {
-                showNotification(`? Login failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
+    if (typeof displayItems !== 'function') {
+        console.error('? displayItems function missing');
+        return false;
     }
-
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('?? Register form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Creating Account...';
-            submitBtn.disabled = true;
-
-            try {
-                const userData = {
-                    username: document.getElementById('registerUsername').value,
-                    email: document.getElementById('registerEmail').value,
-                    password: document.getElementById('registerPassword').value,
-                    confirmPassword: document.getElementById('confirmPassword').value,
-                    favoriteGame: document.getElementById('favoriteGame').value
-                };
-                await registerUser(userData);
-            } catch (error) {
-                showNotification(`? Registration failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
+    
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('? itemsGrid element missing');
+        return false;
     }
-
-    // Order tracking form handler
-    const trackingForm = document.getElementById('trackingForm');
-    if (trackingForm) {
-        trackingForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('?? Order tracking form submitted');
-
-            const orderId = document.getElementById('orderId').value.trim();
-            if (!orderId) {
-                showNotification('Please enter an Order ID');
-                return;
-            }
-            await trackOrderById(orderId);
-        });
+    
+    try {
+        displayItems();
+        const itemCards = grid.querySelectorAll('.item-card');
+        if (itemCards.length === 0) {
+            console.error('? Items not rendering to DOM');
+            return false;
+        }
+        console.log(`? Items system validated: ${itemCards.length} items displayed`);
+        return true;
+    } catch (error) {
+        console.error('? Error in displayItems():', error);
+        return false;
     }
 }
-
-// Make functions globally accessible
-window.addToCart = addToCart;
-window.removeFromCart = removeFromCart;
-window.openCart = openCart;
-window.closeCart = closeCart;
-window.toggleCurrencySelector = toggleCurrencySelector;
-window.setCurrency = setCurrency;
-window.validateItemsSystem = validateItemsSystem;
-
-// Authentication functions
-window.openLoginModal = openLoginModal;
-window.closeLoginModal = closeLoginModal;
-window.openRegisterModal = openRegisterModal;
-window.closeRegisterModal = closeRegisterModal;
-window.switchToRegister = switchToRegister;
-window.switchToLogin = switchToLogin;
-window.logoutUser = logoutUser;
-window.toggleUserDropdown = toggleUserDropdown;
-window.closeUserDropdown = closeUserDropdown;
-window.openProfileModal = openProfileModal;
-window.openOrderHistoryModal = openOrderHistoryModal;
-window.openWishlistModal = openWishlistModal;
-window.openForgotPassword = openForgotPassword;
-
-// Order tracking functions
-window.openOrderTracking = openOrderTracking;
-window.closeOrderTracking = closeOrderTracking;
-window.trackOrderById = trackOrderById;
-
-// Checkout functions
-window.proceedToCheckout = proceedToCheckout;
-window.closeCheckout = closeCheckout;
-
-// Close dropdowns when clicking outside
-document.addEventListener('click', function (e) {
-    // Close currency dropdown
-    if (!e.target.closest('#currencySelector') && !e.target.closest('#currencyDropdown')) {
-        const dropdown = document.getElementById('currencyDropdown');
-        const selector = document.getElementById('currencySelector');
-        if (dropdown && selector) {
-            dropdown.style.display = 'none';
-            selector.classList.remove('active');
-        }
-    }
-    
-    // Close user dropdown
-    if (!e.target.closest('.user-dropdown')) {
-        closeUserDropdown();
-    }
-    
-    // Close modals when clicking outside
-    if (e.target.classList.contains('modal')) {
-        e.target.style.display = 'none';
-    }
-});
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('?? DOM loaded - Starting TRIOGEL...');
-    
-    init();
-    
-    // Validate after initialization
-    setTimeout(() => {
-        const itemsValid = validateItemsSystem();
-        if (!itemsValid) {
-            console.error('? CRITICAL: Items system failed validation');
-            alert('CRITICAL ERROR: Items not loading. Check console for details.');
-        }
-        
-        // Test currency dropdown
-        const currencyButton = document.getElementById('currencySelector');
-        const currencyDropdown = document.getElementById('currencyDropdown');
-        
-        if (currencyButton && currencyDropdown) {
-            console.log('? Currency selector elements found');
-        } else {
-            console.error('? Currency selector elements missing');
-        }
-        
-        console.log('?? TRIOGEL validation completed!');
-    }, 500);
-});
 
 console.log('? TRIOGEL JavaScript loaded successfully!');
