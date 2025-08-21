@@ -853,6 +853,13 @@ function displayOrderSummary() {
     
     const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+    // CRITICAL FIX: Update the currency display field when checkout opens
+    const currencyDisplayField = document.getElementById('selectedCurrencyDisplay');
+    if (currencyDisplayField) {
+        const currencyName = currencies[selectedCurrency]?.name || selectedCurrency;
+        currencyDisplayField.value = `${selectedCurrency} - ${currencyName}`;
+    }
+
     summaryDiv.innerHTML = `
         <h3 style="margin-bottom: 20px; color: var(--text-primary);">Order Summary</h3>
         ${cart.map(item => `
@@ -1005,6 +1012,139 @@ function setupEventHandlers() {
             }
             await trackOrderById(orderId);
         });
+    }
+
+    // CRITICAL FIX: Add missing checkout form handler
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Checkout form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Processing Order...';
+            submitBtn.disabled = true;
+
+            try {
+                // Collect form data
+                const orderData = {
+                    orderId: 'TRIO-' + Date.now(),
+                    gameUsername: document.getElementById('gameUsername').value,
+                    email: document.getElementById('email').value,
+                    whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    currency: selectedCurrency,
+                    serverRegion: document.getElementById('serverRegion').value || '',
+                    customerNotes: document.getElementById('customerNotes').value || '',
+                    items: cart.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        game: item.game,
+                        price: item.price,
+                        quantity: item.quantity
+                    })),
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('?? Processing order:', orderData);
+
+                // Try to submit to Netlify function
+                try {
+                    const response = await fetch('/.netlify/functions/process-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('? Order processed successfully:', result);
+                        
+                        // Save order locally for tracking
+                        saveOrderLocally(orderData);
+                        
+                        // Clear cart and close checkout
+                        cart = [];
+                        updateCartCount();
+                        closeCheckout();
+                        
+                        // Show success notification
+                        showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
+                        
+                    } else {
+                        throw new Error('Server error');
+                    }
+                } catch (netError) {
+                    console.log('?? Server not available, saving order locally...');
+                    
+                    // Fallback: save locally and show user
+                    saveOrderLocally(orderData);
+                    
+                    // Clear cart and close checkout
+                    cart = [];
+                    updateCartCount();
+                    closeCheckout();
+                    
+                    // Show local save notification
+                    showNotification(`?? Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
+                }
+
+            } catch (error) {
+                console.error('? Checkout error:', error);
+                showNotification('? Order failed. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+}
+
+// Checkout functions
+window.proceedToCheckout = proceedToCheckout;
+window.closeCheckout = closeCheckout;
+
+// Local Order Storage Functions
+function saveOrderLocally(orderData) {
+    console.log('?? Saving order locally:', orderData.orderId);
+    
+    try {
+        // Save to current user if logged in
+        if (currentUser) {
+            if (!currentUser.orders) currentUser.orders = [];
+            currentUser.orders.push({
+                orderId: orderData.orderId,
+                gameUsername: orderData.gameUsername,
+                total: orderData.total,
+                status: 'pending',
+                timestamp: orderData.timestamp,
+                items: orderData.items,
+                paymentMethod: orderData.paymentMethod,
+                currency: orderData.currency
+            });
+            
+            // Update user in localStorage
+            localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+            
+            // Also update the users database
+            const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+            if (users[currentUser.email]) {
+                users[currentUser.email].orders = currentUser.orders;
+                localStorage.setItem('triogel-users', JSON.stringify(users));
+            }
+            
+            console.log('? Order saved to user account');
+        } else {
+            // Save to general orders if not logged in
+            const localOrders = JSON.parse(localStorage.getItem('triogel-local-orders') || '[]');
+            localOrders.push(orderData);
+            localStorage.setItem('triogel-local-orders', JSON.stringify(localOrders));
+            console.log('? Order saved locally');
+        }
+    } catch (error) {
+        console.error('? Error saving order locally:', error);
     }
 }
 

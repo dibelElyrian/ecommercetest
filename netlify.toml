@@ -1,11 +1,10 @@
 [build]
-  command = "npm run build"
   functions = "netlify/functions"
   publish = "."
-
+  
 [functions]
   node_bundler = "esbuild"
-
+  
 [[headers]]
   for = "/*"
   [headers.values]
@@ -13,8 +12,17 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
 
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  headers = {Access-Control-Allow-Origin = "*"}
