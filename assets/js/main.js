@@ -1,3 +1,11 @@
+// IMMEDIATE DEBUG - Add at very start of file
+console.log('?? TRIOGEL DEBUG: Script file starting to load...');
+
+// Test basic functionality immediately
+window.addEventListener('load', function() {
+    console.log('?? TRIOGEL DEBUG: Window loaded event fired');
+});
+
 // TRIOGEL JavaScript - Clean Version
 console.log('?? Loading TRIOGEL JavaScript...');
 
@@ -1024,6 +1032,40 @@ document.addEventListener('click', function (e) {
 // CRITICAL: Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     console.log('?? DOM loaded - Starting TRIOGEL...');
+    console.log('?? DEBUG: About to call init()...');
+    
+    // Emergency check - are all critical elements present?
+    const itemsGrid = document.getElementById('itemsGrid');
+    console.log('?? DEBUG: itemsGrid element found:', itemsGrid ? 'YES' : 'NO');
+    
+    if (!itemsGrid) {
+        console.error('?? CRITICAL: itemsGrid element missing from HTML!');
+        alert('CRITICAL ERROR: itemsGrid element not found in HTML. Check the DOM.');
+        return;
+    }
+    
+    // Emergency check - is items array defined?
+    console.log('?? DEBUG: items array defined:', typeof items);
+    console.log('?? DEBUG: items array length:', Array.isArray(items) ? items.length : 'NOT ARRAY');
+    
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? CRITICAL: Items array missing or empty!');
+        alert('CRITICAL ERROR: Items array not loaded. Check JavaScript.');
+        return;
+    }
+    
+    // Emergency direct item display test
+    console.log('?? DEBUG: Attempting direct item display...');
+    try {
+        itemsGrid.innerHTML = '<div style="color: white; padding: 20px;">DEBUG: Direct HTML insertion test successful</div>';
+        setTimeout(() => {
+            displayItems();
+        }, 100);
+    } catch (error) {
+        console.error('?? CRITICAL: Error in direct display test:', error);
+        alert('CRITICAL ERROR: Direct display test failed. Check console.');
+        return;
+    }
     
     init();
     
@@ -1052,3 +1094,39 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 console.log('? TRIOGEL JavaScript loaded successfully!');
+
+// EMERGENCY FALLBACK - Force items to load after 2 seconds if nothing else works
+setTimeout(() => {
+    const grid = document.getElementById('itemsGrid');
+    if (grid && (!grid.innerHTML || grid.innerHTML.trim() === '')) {
+        console.log('?? EMERGENCY: Force loading items after timeout...');
+        
+        // Emergency direct items loading
+        if (Array.isArray(items) && items.length > 0) {
+            try {
+                displayItems();
+                console.log('? EMERGENCY: Items force-loaded successfully');
+            } catch (error) {
+                console.error('?? EMERGENCY: Force loading failed:', error);
+                
+                // Last resort - manual HTML generation
+                const emergencyHTML = items.map(item => `
+                    <div style="background: rgba(255,255,255,0.1); padding: 20px; margin: 10px; border-radius: 10px; color: white;">
+                        <h3>${item.name}</h3>
+                        <p>${item.description}</p>
+                        <p><strong>Price: PHP ${item.price}</strong></p>
+                        <button onclick="alert('Emergency mode - cart disabled')" style="background: #667eea; color: white; border: none; padding: 10px 20px; border-radius: 5px;">Add to Cart (Debug)</button>
+                    </div>
+                `).join('');
+                
+                grid.innerHTML = emergencyHTML;
+                console.log('? EMERGENCY: Manual HTML generation successful');
+            }
+        } else {
+            console.error('?? EMERGENCY: Items array still not available');
+            grid.innerHTML = '<div style="color: red; padding: 40px; text-align: center; background: rgba(255,0,0,0.1); border-radius: 10px;"><h2>EMERGENCY ERROR</h2><p>Items array not loaded. Check JavaScript console for details.</p></div>';
+        }
+    } else {
+        console.log('? Items already loaded, emergency fallback not needed');
+    }
+}, 2000);
