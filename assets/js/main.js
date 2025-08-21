@@ -709,7 +709,7 @@ function findOrderInLocalStorage(orderId) {
                 if (foundOrder) {
                     return {
                         orderId: foundOrder.orderId,
-                        status: foundOrder.status || 'pending',
+                        status: foundFoundOrder.status || 'pending',
                         totalAmount: foundOrder.total,
                         gameUsername: foundOrder.gameUsername || user.username,
                         customerEmail: email,
@@ -1509,8 +1509,6 @@ function setupEventHandlers() {
                     if (response.ok) {
                         const result = await response.json();
                         console.log('Order processed successfully:', result);
-                        console.log('DEBUG: paymentMethod =', orderData.paymentMethod);
-                        console.log('DEBUG: result.paymentResult =', result.paymentResult);
                         
                         // Save order locally for tracking
                         saveOrderLocally(orderData);
@@ -1520,9 +1518,8 @@ function setupEventHandlers() {
                         updateCartCount();
                         closeCheckout();
                         
-                        // Check for GCash payment success and show appropriate notification
+                        // Check for GCash payment and show appropriate notification
                         if (orderData.paymentMethod === 'gcash') {
-                            // Enhanced GCash notification - always show for GCash payments
                             const gcashDetails = `Order ${orderData.orderId} confirmed!
 
 GCash Payment Required:
@@ -1530,21 +1527,12 @@ Amount: PHP ${orderData.total.toFixed(2)}
 GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
 Reference: ${result.paymentResult?.reference || orderData.orderId}
 
-Email payment screenshot to:
-${orderData.email}
+Email payment screenshot to: ${orderData.email}
 We'll process your order within 1-24 hours!`;
                             
-                            console.log('DEBUG: About to call showGcashNotification');
-                            console.log('DEBUG: gcashDetails =', gcashDetails);
-                            
-                            // Test if the function exists
                             if (typeof showGcashNotification === 'function') {
-                                console.log('showGcashNotification function exists');
-                                // Show longer notification for GCash
                                 showGcashNotification(gcashDetails);
                             } else {
-                                console.error('showGcashNotification function not found!');
-                                // Fallback to regular notification
                                 showNotification(gcashDetails);
                             }
                         } else {
