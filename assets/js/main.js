@@ -138,7 +138,6 @@ const gameNames = {
 
 let cart = [];
 let currentFilter = 'all';
-let currentUser = null;
 
 // Core Functions
 function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
@@ -360,44 +359,511 @@ function removeFromCart(itemId) {
     displayCartItems();
 }
 
-// Auth stub functions
-function openLoginModal() { showNotification('Login feature coming soon!'); }
-function openRegisterModal() { showNotification('Register feature coming soon!'); }
-function openOrderTracking() { showNotification('Order tracking coming soon!'); }
+// Auth and Modal Functions - RESTORED
+let currentUser = null;
 
-// Validation Functions
-function validateItemsSystem() {
-    console.log('?? Validating items system...');
+// Authentication Functions
+function initAuth() {
+    console.log('?? Initializing authentication...');
     
-    if (!Array.isArray(items) || items.length === 0) {
-        console.error('? Items array missing or empty');
-        return false;
-    }
-    
-    if (typeof displayItems !== 'function') {
-        console.error('? displayItems function missing');
-        return false;
-    }
-    
-    const grid = document.getElementById('itemsGrid');
-    if (!grid) {
-        console.error('? itemsGrid element missing');
-        return false;
-    }
-    
-    try {
-        displayItems();
-        const itemCards = grid.querySelectorAll('.item-card');
-        if (itemCards.length === 0) {
-            console.error('? Items not rendering to DOM');
-            return false;
+    const savedUser = localStorage.getItem('triogel-user');
+    if (savedUser) {
+        try {
+            currentUser = JSON.parse(savedUser);
+            showUserSection();
+            console.log('? User auto-logged in:', currentUser.username);
+        } catch (error) {
+            console.error('? Error loading saved user:', error);
+            localStorage.removeItem('triogel-user');
         }
-        console.log(`? Items system validated: ${itemCards.length} items displayed`);
-        return true;
-    } catch (error) {
-        console.error('? Error in displayItems():', error);
-        return false;
     }
+}
+
+function openLoginModal() {
+    document.getElementById('loginModal').style.display = 'block';
+    document.getElementById('loginEmail').focus();
+}
+
+function closeLoginModal() {
+    document.getElementById('loginModal').style.display = 'none';
+    clearLoginForm();
+}
+
+function openRegisterModal() {
+    document.getElementById('registerModal').style.display = 'block';
+    document.getElementById('registerUsername').focus();
+}
+
+function closeRegisterModal() {
+    document.getElementById('registerModal').style.display = 'none';
+    clearRegisterForm();
+}
+
+function switchToRegister() {
+    closeLoginModal();
+    openRegisterModal();
+}
+
+function switchToLogin() {
+    closeRegisterModal();
+    openLoginModal();
+}
+
+function clearLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.reset();
+}
+
+function clearRegisterForm() {
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) registerForm.reset();
+}
+
+async function loginUser(email, password) {
+    try {
+        console.log('?? Attempting login for:', email);
+        
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        const user = users[email.toLowerCase()];
+        
+        if (!user) {
+            throw new Error('Account not found. Please register first.');
+        }
+        
+        if (user.password !== password) {
+            throw new Error('Invalid password. Please try again.');
+        }
+        
+        currentUser = {
+            id: user.id,
+            username: user.username,
+            email: user.email.toLowerCase(),
+            favoriteGame: user.favoriteGame,
+            joinDate: user.joinDate,
+            orders: user.orders || [],
+            wishlist: user.wishlist || []
+        };
+        
+        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+        showUserSection();
+        closeLoginModal();
+        showNotification(`Welcome back, ${currentUser.username}!`);
+        console.log('? Login successful:', currentUser.username);
+        
+        return { success: true, user: currentUser };
+        
+    } catch (error) {
+        console.error('? Login error:', error);
+        throw error;
+    }
+}
+
+async function registerUser(userData) {
+    try {
+        console.log('?? Attempting registration for:', userData.email);
+        
+        if (userData.password !== userData.confirmPassword) {
+            throw new Error('Passwords do not match!');
+        }
+        
+        if (userData.password.length < 6) {
+            throw new Error('Password must be at least 6 characters long!');
+        }
+        
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        const email = userData.email.toLowerCase();
+        
+        if (users[email]) {
+            throw new Error('An account with this email already exists!');
+        }
+        
+        const newUser = {
+            id: Date.now().toString(),
+            username: userData.username,
+            email: email,
+            password: userData.password,
+            favoriteGame: userData.favoriteGame,
+            joinDate: new Date().toISOString(),
+            orders: [],
+            wishlist: []
+        };
+        
+        users[email] = newUser;
+        localStorage.setItem('triogel-users', JSON.stringify(users));
+        
+        currentUser = {
+            id: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            favoriteGame: newUser.favoriteGame,
+            joinDate: newUser.joinDate,
+            orders: [],
+            wishlist: []
+        };
+        
+        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+        showUserSection();
+        closeRegisterModal();
+        showNotification(`Welcome to TRIOGEL, ${currentUser.username}!`);
+        console.log('? Registration successful:', currentUser.username);
+        
+        return { success: true, user: currentUser };
+        
+    } catch (error) {
+        console.error('? Registration error:', error);
+        throw error;
+    }
+}
+
+function showUserSection() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    const userName = document.querySelector('.user-name');
+    const userStats = document.getElementById('userStats');
+    
+    if (loginSection && userSection && userName && currentUser) {
+        loginSection.style.display = 'none';
+        userSection.style.display = 'block';
+        userName.textContent = currentUser.username;
+        
+        const gameEmoji = currentUser.favoriteGame === 'ml' ? '??' : currentUser.favoriteGame === 'roblox' ? '??' : '??';
+        if (userStats) {
+            userStats.innerHTML = `
+                <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                    <div style="margin-bottom: 8px;">
+                        ${gameEmoji} ${getGameName(currentUser.favoriteGame)} Player
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        ?? ${currentUser.orders.length} Orders
+                    </div>
+                    <div>
+                        ?? ${currentUser.wishlist.length} Wishlist Items
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
+function showLoginSection() {
+    const loginSection = document.getElementById('loginSection');
+    const userSection = document.getElementById('userSection');
+    
+    if (loginSection && userSection) {
+        loginSection.style.display = 'flex';
+        userSection.style.display = 'none';
+    }
+}
+
+function getGameName(gameCode) {
+    const names = {
+        'ml': 'Mobile Legends',
+        'roblox': 'Roblox',
+        'other': 'Various Games'
+    };
+    return names[gameCode] || 'Gamer';
+}
+
+function logoutUser() {
+    console.log('?? Logging out user:', currentUser?.username);
+    currentUser = null;
+    localStorage.removeItem('triogel-user');
+    showLoginSection();
+    showNotification('Logged out successfully!');
+}
+
+// Order Tracking Functions - RESTORED
+function openOrderTracking() {
+    document.getElementById('orderTrackingModal').style.display = 'block';
+    document.getElementById('orderId').value = '';
+    const orderResult = document.getElementById('orderResult');
+    if (orderResult) orderResult.style.display = 'none';
+}
+
+function closeOrderTracking() {
+    document.getElementById('orderTrackingModal').style.display = 'none';
+}
+
+async function trackOrderById(orderId) {
+    try {
+        console.log('?? Tracking order:', orderId);
+        
+        const trackBtn = document.querySelector('.track-btn');
+        const originalText = trackBtn.innerHTML;
+        trackBtn.innerHTML = 'Tracking...';
+        trackBtn.disabled = true;
+
+        let orderData = null;
+        
+        // Try to fetch from Netlify function first
+        try {
+            const response = await fetch(`/.netlify/functions/track-order?orderId=${orderId}`);
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.orders && result.orders.length > 0) {
+                    orderData = result.orders[0];
+                    console.log('? Order found in database:', orderData);
+                }
+            }
+        } catch (netError) {
+            console.log('?? Database not available, checking local storage...');
+        }
+
+        // Fallback to localStorage
+        if (!orderData) {
+            orderData = findOrderInLocalStorage(orderId);
+        }
+
+        if (orderData) {
+            displayOrderTrackingResult(orderData);
+        } else {
+            displayOrderNotFound(orderId);
+        }
+
+        trackBtn.innerHTML = originalText;
+        trackBtn.disabled = false;
+    } catch (error) {
+        console.error('? Error tracking order:', error);
+        showNotification('Error tracking order. Please try again.');
+    }
+}
+
+function findOrderInLocalStorage(orderId) {
+    // Check if user is logged in and has orders
+    if (currentUser && currentUser.orders) {
+        const userOrder = currentUser.orders.find(order => order.orderId === orderId);
+        if (userOrder) {
+            return {
+                orderId: userOrder.orderId,
+                status: userOrder.status || 'pending',
+                totalAmount: userOrder.total,
+                gameUsername: currentUser.username,
+                orderDate: userOrder.timestamp,
+                items: userOrder.items || []
+            };
+        }
+    }
+
+    // Check all registered users for the order
+    try {
+        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
+        for (const [email, user] of Object.entries(users)) {
+            if (user.orders) {
+                const foundOrder = user.orders.find(order => order.orderId === orderId);
+                if (foundOrder) {
+                    return {
+                        orderId: foundOrder.orderId,
+                        status: foundFound.status || 'pending',
+                        totalAmount: foundOrder.total,
+                        gameUsername: foundOrder.gameUsername || user.username,
+                        customerEmail: email,
+                        orderDate: foundOrder.timestamp,
+                        items: foundOrder.items || []
+                    };
+                }
+            }
+        }
+    } catch (error) {
+        console.error('? Error searching localStorage:', error);
+    }
+
+    return null;
+}
+
+function displayOrderTrackingResult(orderData) {
+    console.log('?? Displaying order result:', orderData);
+    
+    const orderResult = document.getElementById('orderResult');
+    const orderStatus = document.getElementById('orderStatus');
+    const orderItemsList = document.getElementById('orderItemsList');
+    const customerSummary = document.getElementById('customerSummary');
+
+    if (!orderResult || !orderStatus || !orderItemsList || !customerSummary) {
+        console.error('? Tracking modal elements not found');
+        return;
+    }
+
+    orderResult.style.display = 'block';
+
+    const status = orderData.status || 'pending';
+    const statusEmojis = {
+        'pending': '?',
+        'processing': '??',
+        'completed': '?',
+        'cancelled': '?'
+    };
+    
+    orderStatus.innerHTML = `
+        <div class="order-status status-${status}">
+            ${statusEmojis[status] || '??'} ${status.charAt(0).toUpperCase() + status.slice(1)}
+        </div>
+        <div style="margin-top: 15px; color: var(--text-secondary);">
+            <strong>Order ID:</strong> ${orderData.orderId}<br>
+            <strong>Date:</strong> ${new Date(orderData.orderDate).toLocaleDateString()}<br>
+            <strong>Total:</strong> ${formatPrice(orderData.totalAmount)}
+        </div>
+    `;
+
+    if (orderData.items && orderData.items.length > 0) {
+        orderItemsList.innerHTML = `
+            <h4 style="color: var(--text-primary); margin-bottom: 15px;">Items Ordered:</h4>
+            ${orderData.items.map(item => `
+                <div class="order-item">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small style="color: var(--text-secondary);">Quantity: ${item.quantity}</small>
+                    </div>
+                    <div style="text-align: right; color: var(--success-green);">
+                        ${formatPrice(item.price * item.quantity)}
+                    </div>
+                </div>
+            `).join('')}
+        `;
+    } else {
+        orderItemsList.innerHTML = '<p style="color: var(--text-secondary);">No item details available</p>';
+    }
+
+    const deliveryEstimate = getDeliveryEstimate(status);
+    customerSummary.innerHTML = `
+        <h4 style="color: var(--text-primary); margin-bottom: 15px;">Delivery Information:</h4>
+        <div style="background: var(--card-bg); padding: 20px; border-radius: 15px;">
+            <p><strong>Game Username:</strong> ${orderData.gameUsername || 'N/A'}</p>
+            ${orderData.customerEmail ? `<p><strong>Email:</strong> ${orderData.customerEmail}</p>` : ''}
+            <p><strong>Status:</strong> ${getStatusDescription(status)}</p>
+            <p><strong>Estimated Delivery:</strong> ${deliveryEstimate}</p>
+        </div>
+    `;
+}
+
+function displayOrderNotFound(orderId) {
+    const orderResult = document.getElementById('orderResult');
+    const orderStatus = document.getElementById('orderStatus');
+    const orderItemsList = document.getElementById('orderItemsList');
+    const customerSummary = document.getElementById('customerSummary');
+
+    if (!orderResult) return;
+
+    orderResult.style.display = 'block';
+
+    orderStatus.innerHTML = `
+        <div class="order-status status-cancelled">
+            ? Order Not Found
+        </div>
+    `;
+
+    orderItemsList.innerHTML = `
+        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+            <h4>Order ${orderId} not found</h4>
+            <p style="margin-top: 15px;">Please check your order ID and try again.</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                Order IDs start with "TRIO-" and are sent to your email after purchase.
+            </p>
+        </div>
+    `;
+
+    customerSummary.innerHTML = '';
+}
+
+function getStatusDescription(status) {
+    const descriptions = {
+        'pending': 'Order received and awaiting payment verification',
+        'processing': 'Payment confirmed, preparing your items for delivery', 
+        'completed': 'Items delivered successfully to your game account',
+        'cancelled': 'Order has been cancelled or refunded'
+    };
+    return descriptions[status] || 'Status unknown';
+}
+
+function getDeliveryEstimate(status) {
+    const estimates = {
+        'pending': '1-24 hours after payment',
+        'processing': '1-6 hours', 
+        'completed': 'Delivered',
+        'cancelled': 'N/A'
+    };
+    return estimates[status] || '1-24 hours';
+}
+
+// Additional placeholder functions for dropdown menus
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) {
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+    }
+}
+
+function closeUserDropdown() {
+    const dropdown = document.getElementById('userDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+    }
+}
+
+function openProfileModal() {
+    closeUserDropdown();
+    showNotification('Profile settings coming soon!');
+}
+
+function openOrderHistoryModal() {
+    closeUserDropdown();
+    if (currentUser && currentUser.orders.length > 0) {
+        showNotification('Order history feature coming soon!');
+    } else {
+        showNotification('No orders found. Start shopping!');
+    }
+}
+
+function openWishlistModal() {
+    closeUserDropdown();
+    showNotification('Wishlist feature coming soon!');
+}
+
+function openForgotPassword() {
+    closeLoginModal();
+    showNotification('Password reset via email coming soon!');
+}
+
+function proceedToCheckout() {
+    if (cart.length === 0) {
+        alert('Your cart is empty!');
+        return;
+    }
+
+    document.getElementById('cartModal').style.display = 'none';
+    document.getElementById('checkoutModal').style.display = 'block';
+    displayOrderSummary();
+}
+
+function closeCheckout() {
+    document.getElementById('checkoutModal').style.display = 'none';
+}
+
+function displayOrderSummary() {
+    const summaryDiv = document.getElementById('orderSummary');
+    if (!summaryDiv) return;
+    
+    const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    summaryDiv.innerHTML = `
+        <h3 style="margin-bottom: 20px; color: var(--text-primary);">Order Summary</h3>
+        ${cart.map(item => `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                <span>${item.name} x${item.quantity}</span>
+                <span style="color: var(--success-green);">${formatPrice(item.price * item.quantity)}</span>
+            </div>
+        `).join('')}
+        <hr style="border: 1px solid rgba(255, 255, 255, 0.1); margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; font-size: 1.3rem; font-weight: 800;">
+            <span>Total:</span>
+            <span style="color: var(--success-green);">${formatPrice(totalInPHP)}</span>
+        </div>
+        ${selectedCurrency !== 'PHP' ? `
+            <div style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 10px; text-align: center;">
+                <em>Prices converted from PHP at current exchange rates</em>
+            </div>
+        ` : ''}
+    `;
 }
 
 // Initialize everything
@@ -411,13 +877,92 @@ function init() {
         console.log('?? Loaded saved currency:', savedCurrency);
     }
     
+    // Initialize authentication
+    initAuth();
+    
     displayItems();
     updateCartCount();
     setupFilters();
     setupCurrencySelector();
     updateCurrencySelector();
+    setupEventHandlers();
     
     console.log('? TRIOGEL Initialized successfully!');
+}
+
+// Event Handlers Setup
+function setupEventHandlers() {
+    console.log('?? Setting up event handlers...');
+    
+    // Authentication form handlers
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Login form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Logging in...';
+            submitBtn.disabled = true;
+
+            try {
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                await loginUser(email, password);
+            } catch (error) {
+                showNotification(`? Login failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Register form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const userData = {
+                    username: document.getElementById('registerUsername').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value,
+                    confirmPassword: document.getElementById('confirmPassword').value,
+                    favoriteGame: document.getElementById('favoriteGame').value
+                };
+                await registerUser(userData);
+            } catch (error) {
+                showNotification(`? Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Order tracking form handler
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('?? Order tracking form submitted');
+
+            const orderId = document.getElementById('orderId').value.trim();
+            if (!orderId) {
+                showNotification('Please enter an Order ID');
+                return;
+            }
+            await trackOrderById(orderId);
+        });
+    }
 }
 
 // Make functions globally accessible
@@ -427,13 +972,35 @@ window.openCart = openCart;
 window.closeCart = closeCart;
 window.toggleCurrencySelector = toggleCurrencySelector;
 window.setCurrency = setCurrency;
-window.openLoginModal = openLoginModal;
-window.openRegisterModal = openRegisterModal;
-window.openOrderTracking = openOrderTracking;
 window.validateItemsSystem = validateItemsSystem;
+
+// Authentication functions
+window.openLoginModal = openLoginModal;
+window.closeLoginModal = closeLoginModal;
+window.openRegisterModal = openRegisterModal;
+window.closeRegisterModal = closeRegisterModal;
+window.switchToRegister = switchToRegister;
+window.switchToLogin = switchToLogin;
+window.logoutUser = logoutUser;
+window.toggleUserDropdown = toggleUserDropdown;
+window.closeUserDropdown = closeUserDropdown;
+window.openProfileModal = openProfileModal;
+window.openOrderHistoryModal = openOrderHistoryModal;
+window.openWishlistModal = openWishlistModal;
+window.openForgotPassword = openForgotPassword;
+
+// Order tracking functions
+window.openOrderTracking = openOrderTracking;
+window.closeOrderTracking = closeOrderTracking;
+window.trackOrderById = trackOrderById;
+
+// Checkout functions
+window.proceedToCheckout = proceedToCheckout;
+window.closeCheckout = closeCheckout;
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', function (e) {
+    // Close currency dropdown
     if (!e.target.closest('#currencySelector') && !e.target.closest('#currencyDropdown')) {
         const dropdown = document.getElementById('currencyDropdown');
         const selector = document.getElementById('currencySelector');
@@ -441,6 +1008,16 @@ document.addEventListener('click', function (e) {
             dropdown.style.display = 'none';
             selector.classList.remove('active');
         }
+    }
+    
+    // Close user dropdown
+    if (!e.target.closest('.user-dropdown')) {
+        closeUserDropdown();
+    }
+    
+    // Close modals when clicking outside
+    if (e.target.classList.contains('modal')) {
+        e.target.style.display = 'none';
     }
 });
 

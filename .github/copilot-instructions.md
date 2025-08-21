@@ -596,3 +596,395 @@ function validateCodeIntegrity() {
 - **JavaScript Integration**: Ensure dropdown logic is not broken by other functions
 
 **MANDATORY AFTER EVERY EDIT: Test these specific issues in browser immediately**
+
+## CRITICAL CODE CORRUPTION PREVENTION (MANDATORY)
+
+### JavaScript File Corruption Prevention (HIGHEST PRIORITY)
+**The following patterns MUST BE AVOIDED to prevent complete system failure:**
+
+#### **1. Multiple DOMContentLoaded Listeners (FATAL ERROR)**
+```javascript
+// ? NEVER DO THIS - Causes complete system failure
+document.addEventListener('DOMContentLoaded', function() {
+    // First listener
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Second listener - BREAKS EVERYTHING
+});
+
+// ? ALWAYS DO THIS - Single initialization point
+document.addEventListener('DOMContentLoaded', function() {
+    init(); // Single entry point
+});
+```
+
+#### **2. Function Duplication (FATAL ERROR)**
+```javascript
+// ? NEVER DO THIS - Causes function conflicts
+function displayItems() {
+    // First definition
+}
+
+function displayItems() {
+    // Duplicate definition - BREAKS EVERYTHING
+}
+
+// ? ALWAYS DO THIS - Single function definitions
+function displayItems() {
+    // Single, complete definition
+}
+```
+
+#### **3. Incomplete Code Appending (FATAL ERROR)**
+```javascript
+// ? NEVER DO THIS - Causes truncation
+function criticalFunction() {
+    // Incomplete function without closing brace
+    console.log('incomplete'
+
+// ? ALWAYS DO THIS - Complete functions
+function criticalFunction() {
+    console.log('complete');
+} // Proper closing
+```
+
+### **Mandatory Code Integrity Patterns (ENFORCE AFTER EVERY EDIT)**
+
+#### **Pattern 1: Single File Validation**
+```javascript
+// Add at END of main.js - MANDATORY after every edit
+console.log('?? File integrity check - End of main.js reached');
+
+// Validate core systems
+if (typeof items === 'undefined' || !Array.isArray(items)) {
+    console.error('?? CRITICAL: Items array corrupted or missing');
+}
+
+if (typeof displayItems !== 'function') {
+    console.error('?? CRITICAL: displayItems function corrupted or missing');
+}
+
+if (typeof toggleCurrencySelector !== 'function') {
+    console.error('?? CRITICAL: toggleCurrencySelector function corrupted or missing');
+}
+```
+
+#### **Pattern 2: Function Completion Validation**
+```javascript
+// MANDATORY: Add after every function definition
+function newFunction() {
+    // Function body
+    console.log('? Function completed successfully');
+} // <- VERIFY this closing brace exists
+console.log('? newFunction definition complete');
+```
+
+#### **Pattern 3: Object/Array Completion Validation**
+```javascript
+// MANDATORY: Validate data structure completion
+const newArray = [
+    // Array items
+]; // <- VERIFY this closing bracket exists
+console.log('? Array definition complete:', newArray.length, 'items');
+
+const newObject = {
+    // Object properties
+}; // <- VERIFY this closing brace exists
+console.log('? Object definition complete');
+```
+
+### **Critical File Edit Safety Rules (NON-NEGOTIABLE)**
+
+#### **Rule 1: Never Regenerate Entire Files**
+- ? **ALWAYS** use targeted edits to specific functions/sections
+- ? **NEVER** replace entire file contents
+- ? **ALWAYS** preserve existing working code
+- ? **NEVER** delete working functions to add new ones
+
+#### **Rule 2: Validate Before and After Every Edit**
+```javascript
+// BEFORE editing - Check what exists
+console.log('?? Pre-edit validation');
+console.log('Items array:', Array.isArray(items) ? items.length : 'MISSING');
+console.log('DisplayItems function:', typeof displayItems);
+
+// AFTER editing - Confirm still working
+console.log('? Post-edit validation');
+if (!validateItemsSystem()) {
+    console.error('?? EDIT BROKE ITEMS SYSTEM');
+}
+```
+
+#### **Rule 3: Function Isolation Pattern**
+```javascript
+// MANDATORY: Wrap new functions with validation
+function addNewFunction() {
+    try {
+        console.log('?? New function starting');
+        
+        // Function logic here
+        
+        console.log('? New function completed');
+    } catch (error) {
+        console.error('?? New function failed:', error);
+    }
+}
+
+// Validate function was added correctly
+if (typeof addNewFunction !== 'function') {
+    console.error('?? CRITICAL: Function definition failed');
+}
+```
+
+### **Emergency Recovery Patterns**
+
+#### **Pattern 1: Core System Recovery**
+```javascript
+// If items stop loading - IMMEDIATE RECOVERY
+function emergencyItemsRecovery() {
+    console.log('?? EMERGENCY: Attempting items recovery');
+    
+    // Check if items array exists
+    if (!Array.isArray(items) || items.length === 0) {
+        console.error('?? Items array missing - system failure');
+        return false;
+    }
+    
+    // Check if display function exists
+    if (typeof displayItems !== 'function') {
+        console.error('?? DisplayItems function missing - system failure');
+        return false;
+    }
+    
+    // Check if DOM element exists
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('?? Items grid DOM element missing - HTML issue');
+        return false;
+    }
+    
+    // Attempt recovery
+    try {
+        displayItems();
+        console.log('? Emergency recovery successful');
+        return true;
+    } catch (error) {
+        console.error('?? Emergency recovery failed:', error);
+        return false;
+    }
+}
+```
+
+#### **Pattern 2: Currency System Recovery**
+```javascript
+// If currency dropdown breaks - IMMEDIATE RECOVERY
+function emergencyCurrencyRecovery() {
+    console.log('?? EMERGENCY: Attempting currency recovery');
+    
+    // Check if toggle function exists
+    if (typeof toggleCurrencySelector !== 'function') {
+        console.error('?? Toggle function missing - system failure');
+        return false;
+    }
+    
+    // Check if DOM elements exist
+    const button = document.getElementById('currencySelector');
+    const dropdown = document.getElementById('currencyDropdown');
+    
+    if (!button || !dropdown) {
+        console.error('?? Currency DOM elements missing - HTML issue');
+        return false;
+    }
+    
+    console.log('? Currency system recovery successful');
+    return true;
+}
+```
+
+### **File Corruption Detection Patterns (RUN AFTER EVERY SAVE)**
+
+#### **Detection Pattern 1: Function Existence Check**
+```javascript
+// MANDATORY: Run after every file save
+function detectCorruption() {
+    console.log('?? Corruption detection starting...');
+    
+    const criticalFunctions = [
+        'init', 'displayItems', 'addToCart', 'updateCartCount',
+        'setCurrency', 'toggleCurrencySelector', 'setupCurrencySelector',
+        'formatPrice', 'showNotification', 'validateItemsSystem'
+    ];
+    
+    let corruptionDetected = false;
+    
+    criticalFunctions.forEach(funcName => {
+        if (typeof window[funcName] !== 'function') {
+            console.error(`?? CORRUPTION DETECTED: ${funcName} missing`);
+            corruptionDetected = true;
+        }
+    });
+    
+    if (corruptionDetected) {
+        console.error('?? FILE CORRUPTION DETECTED - IMMEDIATE RECOVERY REQUIRED');
+        alert('CRITICAL ERROR: File corruption detected. Check console immediately.');
+        return false;
+    }
+    
+    console.log('? No corruption detected');
+    return true;
+}
+
+// Auto-run corruption detection
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(detectCorruption, 100);
+});
+```
+
+#### **Detection Pattern 2: Data Structure Integrity Check**
+```javascript
+// MANDATORY: Validate data structures after every edit
+function validateDataStructures() {
+    console.log('?? Data structure validation...');
+    
+    // Check items array
+    if (!Array.isArray(items)) {
+        console.error('?? Items is not an array');
+        return false;
+    }
+    
+    if (items.length === 0) {
+        console.error('?? Items array is empty');
+        return false;
+    }
+    
+    // Validate each item structure
+    const requiredFields = ['id', 'name', 'game', 'price', 'icon', 'rarity'];
+    let structureValid = true;
+    
+    items.forEach((item, index) => {
+        requiredFields.forEach(field => {
+            if (!(field in item)) {
+                console.error(`?? Item ${index} missing field: ${field}`);
+                structureValid = false;
+            }
+        });
+    });
+    
+    // Check currencies object
+    if (!currencies || typeof currencies !== 'object') {
+        console.error('?? Currencies object corrupted');
+        return false;
+    }
+    
+    if (Object.keys(currencies).length === 0) {
+        console.error('?? Currencies object empty');
+        return false;
+    }
+    
+    console.log('? Data structures validated');
+    return structureValid;
+}
+```
+
+### **Safe Code Addition Patterns (MANDATORY FOR NEW CODE)**
+
+#### **Pattern 1: Incremental Addition**
+```javascript
+// MANDATORY: Always add code incrementally with validation
+
+// Step 1: Add function stub with validation
+function newFeature() {
+    console.log('?? New feature stub added');
+}
+console.log('? Function stub validation:', typeof newFeature);
+
+// Step 2: Add core logic with try/catch
+function newFeature() {
+    try {
+        console.log('?? New feature starting');
+        
+        // Add logic here incrementally
+        
+        console.log('? New feature completed');
+    } catch (error) {
+        console.error('?? New feature error:', error);
+    }
+}
+
+// Step 3: Validate system still works
+setTimeout(() => {
+    if (!validateItemsSystem()) {
+        console.error('?? New feature broke items system');
+    }
+}, 100);
+```
+
+#### **Pattern 2: Feature Toggle Pattern**
+```javascript
+// MANDATORY: Use feature flags for new additions
+const FEATURE_FLAGS = {
+    newFeature: true,
+    experimentalFeature: false
+};
+
+function safeNewFeature() {
+    if (!FEATURE_FLAGS.newFeature) {
+        console.log('?? New feature disabled');
+        return;
+    }
+    
+    try {
+        // New feature code
+        console.log('? New feature executed safely');
+    } catch (error) {
+        console.error('?? New feature error:', error);
+        FEATURE_FLAGS.newFeature = false; // Auto-disable on error
+    }
+}
+```
+
+### **Code Quality Enforcement Patterns**
+
+#### **Pattern 1: Mandatory Code Review Checklist**
+```javascript
+// BEFORE committing any changes - MANDATORY CHECK:
+function preCommitValidation() {
+    console.log('?? Pre-commit validation...');
+    
+    const validationChecks = [
+        () => Array.isArray(items) && items.length > 0,
+        () => typeof displayItems === 'function',
+        () => typeof toggleCurrencySelector === 'function',
+        () => typeof addToCart === 'function',
+        () => document.getElementById('itemsGrid') !== null,
+        () => document.getElementById('currencySelector') !== null
+    ];
+    
+    let allChecksPass = true;
+    validationChecks.forEach((check, index) => {
+        if (!check()) {
+            console.error(`?? Validation check ${index + 1} FAILED`);
+            allChecksPass = false;
+        }
+    });
+    
+    if (allChecksPass) {
+        console.log('? All pre-commit validations passed');
+        return true;
+    } else {
+        console.error('?? PRE-COMMIT VALIDATION FAILED - DO NOT COMMIT');
+        return false;
+    }
+}
+```
+
+**CRITICAL SUCCESS PATTERN**: The clean rewrite that fixed everything used:
+1. **Single DOMContentLoaded listener**
+2. **No function duplication**  
+3. **Complete function definitions**
+4. **Proper global function exposure**
+5. **Clean initialization sequence**
+6. **Comprehensive validation**
+
+**NEVER DEVIATE FROM THE WORKING PATTERN THAT FIXED THE ISSUES**
