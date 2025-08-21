@@ -1075,9 +1075,21 @@ function setupEventHandlers() {
                         updateCartCount();
                         closeCheckout();
                         
-                        // Show success notification with more details
-                        if (result.paymentResult?.success && result.paymentResult.payment_type === 'manual_gcash') {
-                            showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for GCash payment instructions.`);
+                        // RESTORE ORIGINAL: Check for GCash payment success and show appropriate notification
+                        if (orderData.paymentMethod === 'gcash' && result.paymentResult?.success) {
+                            // Show enhanced GCash success notification with payment details
+                            const gcashDetails = `
+?? Order ${orderData.orderId} confirmed! 
+
+?? GCash Payment Required:
+• Amount: ?${result.paymentResult.amount_php || orderData.total.toFixed(2)}
+• GCash Number: ${result.paymentResult.gcash_number || 'Check email'}
+• Reference: ${result.paymentResult.reference || orderData.orderId}
+
+?? Email payment screenshot to: ${orderData.email}
+?? We'll process your order within 1-24 hours!`;
+                            
+                            showNotification(gcashDetails);
                         } else {
                             showNotification(`?? Order ${orderData.orderId} confirmed! Check your email for details.`);
                         }
@@ -1090,7 +1102,7 @@ function setupEventHandlers() {
                 } catch (netError) {
                     console.log('?? Server not available, using local fallback...', netError.message);
                     
-                    // Fallback: save locally and show user
+                    // Fallback: save order locally and show user
                     saveOrderLocally(orderData);
                     
                     // Clear cart and close checkout
@@ -1121,76 +1133,25 @@ window.closeCheckout = closeCheckout;
 function saveOrderLocally(orderData) {
     console.log('?? Saving order locally:', orderData.orderId);
     
-    try {
-        // Save to current user if logged in
-        if (currentUser) {
-            if (!currentUser.orders) currentUser.orders = [];
-            currentUser.orders.push({
-                orderId: orderData.orderId,
-                gameUsername: orderData.gameUsername,
-                total: orderData.total,
-                status: 'pending',
-                timestamp: orderData.timestamp,
-                items: orderData.items,
-                paymentMethod: orderData.paymentMethod,
-                currency: orderData.currency
-            });
-            
-            // Update user in localStorage
-            localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-            
-            // Also update the users database
-            const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-            if (users[currentUser.email]) {
-                users[currentUser.email].orders = currentUser.orders;
-                localStorage.setItem('triogel-users', JSON.stringify(users));
-            }
-            
-            console.log('? Order saved to user account');
-        } else {
-            // Save to general orders if not logged in
-            const localOrders = JSON.parse(localStorage.getItem('triogel-local-orders') || '[]');
-            localOrders.push(orderData);
-            localStorage.setItem('triogel-local-orders', JSON.stringify(localOrders));
-            console.log('? Order saved locally');
-        }
-    } catch (error) {
-        console.error('? Error saving order locally:', error);
+    if (!currentUser) {
+        console.error('? Cannot save order locally - no user logged in');
+        return;
     }
+    
+    // Add order to user's order history
+    currentUser.orders = currentUser.orders || [];
+    currentUser.orders.push({
+        orderId: orderData.orderId,
+        status: 'pending',
+        total: orderData.total,
+        username: orderData.gameUsername,
+        timestamp: orderData.timestamp,
+        items: orderData.items
+    });
+    
+    localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+    console.log('? Order saved locally to user data');
 }
-
-// Make functions globally accessible
-window.addToCart = addToCart;
-window.removeFromCart = removeFromCart;
-window.openCart = openCart;
-window.closeCart = closeCart;
-window.toggleCurrencySelector = toggleCurrencySelector;
-window.setCurrency = setCurrency;
-window.validateItemsSystem = validateItemsSystem;
-
-// Authentication functions
-window.openLoginModal = openLoginModal;
-window.closeLoginModal = closeLoginModal;
-window.openRegisterModal = openRegisterModal;
-window.closeRegisterModal = closeRegisterModal;
-window.switchToRegister = switchToRegister;
-window.switchToLogin = switchToLogin;
-window.logoutUser = logoutUser;
-window.toggleUserDropdown = toggleUserDropdown;
-window.closeUserDropdown = closeUserDropdown;
-window.openProfileModal = openProfileModal;
-window.openOrderHistoryModal = openOrderHistoryModal;
-window.openWishlistModal = openWishlistModal;
-window.openForgotPassword = openForgotPassword;
-
-// Order tracking functions
-window.openOrderTracking = openOrderTracking;
-window.closeOrderTracking = closeOrderTracking;
-window.trackOrderById = trackOrderById;
-
-// Checkout functions
-window.proceedToCheckout = proceedToCheckout;
-window.closeCheckout = closeCheckout;
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', function (e) {
