@@ -311,11 +311,21 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 4rem;
     position: relative;
     overflow: hidden;
+}
+
+.item-emoji {
+    font-size: 4rem;
     line-height: 1;
-    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols";
+    font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Android Emoji", "EmojiSymbols", serif;
+    text-align: center;
+    display: block;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .item-image.ml-bg {

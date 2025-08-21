@@ -36,7 +36,7 @@ const items = [
         game: "ml",
         description: "Fanny's epic skin with enhanced animations and unique recall effects.",
         price: 1924.45,
-        emoji: "?????",
+        emoji: "??",
         rarity: "epic",
         stats: { hero: "Fanny", type: "Epic", recall: "Custom" }
     },
@@ -107,7 +107,7 @@ const items = [
         game: "roblox",
         description: "Exclusive golden wings accessory with sparkling effects. Limited edition item.",
         price: 4399.45,
-        emoji: "??",
+        emoji: "???",
         rarity: "rare",
         stats: { color: "Golden", effects: "Sparkle", edition: "Limited" }
     },
@@ -159,8 +159,7 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         return `?${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
     }
     
-    // Ensure currency symbol displays properly with explicit styling
-    const symbol = currencyConfig.symbol;
+    // Use simple string concatenation instead of HTML for better compatibility
     let formattedAmount;
     
     // Special formatting for different currencies
@@ -171,7 +170,8 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         formattedAmount = convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
     }
     
-    return `<span style="font-family: Arial, sans-serif; font-weight: 800;">${symbol}</span>${formattedAmount}`;
+    // Return plain text instead of HTML
+    return `${currencyConfig.symbol}${formattedAmount}`;
 }
 
 function setCurrency(currencyCode) {
@@ -202,9 +202,8 @@ function updateCurrencySelector() {
     
     if (selectedOption) {
         const currencyConfig = currencies[selectedCurrency];
-        // Force UTF-8 encoding for currency symbols
-        const symbol = currencyConfig.symbol;
-        selectedOption.innerHTML = `<span style="font-family: Arial, sans-serif; font-weight: 800;">${symbol}</span> ${selectedCurrency}`;
+        // Use plain text instead of HTML
+        selectedOption.textContent = `${currencyConfig.symbol} ${selectedCurrency}`;
     }
 }
 
@@ -276,6 +275,45 @@ function setupFilters() {
     });
 }
 
+// Test emoji support and provide fallbacks
+function testEmojiSupport() {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.textBaseline = 'top';
+    ctx.font = '32px Arial';
+    ctx.fillText('??', 0, 0);
+    
+    return ctx.getImageData(0, 0, 1, 1).data[3] > 0;
+}
+
+// Enhanced items array with fallback images
+const itemFallbacks = {
+    1: { emoji: "?", fallback: "?", text: "SKIN" },
+    2: { emoji: "??", fallback: "?", text: "EPIC" },
+    3: { emoji: "?", fallback: "?", text: "STAR" },
+    4: { emoji: "??", fallback: "?", text: "GEM" },
+    5: { emoji: "??", fallback: "?", text: "RANK" },
+    6: { emoji: "??", fallback: "?", text: "CROWN" },
+    7: { emoji: "??", fallback: "§", text: "ROBUX" },
+    8: { emoji: "??", fallback: "?", text: "GAME" },
+    9: { emoji: "???", fallback: "?", text: "WING" },
+    10: { emoji: "??", fallback: "?", text: "PET" },
+    11: { emoji: "??", fallback: "?", text: "TEST" }
+};
+
+function getItemEmoji(itemId, originalEmoji) {
+    const hasEmojiSupport = testEmojiSupport();
+    const fallback = itemFallbacks[itemId];
+    
+    if (!hasEmojiSupport && fallback) {
+        return fallback.fallback;
+    }
+    
+    return originalEmoji;
+}
+
 function displayItems() {
     console.log('?? Displaying items for filter:', currentFilter);
     const grid = document.getElementById('itemsGrid');
@@ -290,13 +328,18 @@ function displayItems() {
 
     console.log('?? Items to display:', filteredItems.length);
 
-    grid.innerHTML = filteredItems.map(item => `
+    grid.innerHTML = filteredItems.map(item => {
+        // Use fallback emoji if needed
+        const displayEmoji = getItemEmoji(item.id, item.emoji);
+        const emojiElement = `<div class="item-emoji">${displayEmoji}</div>`;
+        
+        return `
         <div class="item-card ${item.game}-item" data-game="${item.game}">
             <div class="item-header">
                 <div class="game-tag ${item.game}-tag">${gameNames[item.game]}</div>
                 <div class="rarity-badge rarity-${item.rarity}">${item.rarity}</div>
             </div>
-            <div class="item-image ${item.game}-bg">${item.emoji}</div>
+            <div class="item-image ${item.game}-bg">${emojiElement}</div>
             <div class="item-name">${item.name}</div>
             <div class="item-description">${item.description}</div>
             <div class="item-stats">
@@ -312,7 +355,8 @@ function displayItems() {
                 Add to Cart
             </button>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function addToCart(itemId) {
