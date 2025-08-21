@@ -6,6 +6,31 @@
 **Tech Stack**: HTML5, CSS3, Vanilla JavaScript, Netlify Functions, Supabase Database, Discord Integration
 **Project Type**: Static HTML website with serverless backend (no local build system)
 
+## ?? **CRITICAL RULE: FUNCTIONALITY FIRST, NO IMAGES/ICONS**
+
+**FOCUS ON CORE FUNCTIONALITY ONLY - NO VISUAL ASSETS YET**
+
+This rule applies to:
+- ? **No favicon.ico**: Don't add favicon files (causes 404 errors in console)
+- ? **No images**: No product images, logos, or graphics
+- ? **No icon fonts**: No Font Awesome, Material Icons, or similar
+- ? **No SVGs**: No SVG graphics or icons
+- ? **No background images**: Stick to CSS gradients and colors only
+- ? **No external assets**: No loading of external image resources
+
+**Why**: Focus on building robust functionality first. Images and visual assets can be distracting, cause 404 errors, slow down development, and aren't needed for core e-commerce functionality.
+
+**Use instead**:
+- ? **Text-based icons**: Use simple text like "SKIN", "HERO", "STAR" for item icons
+- ? **CSS styling**: Use gradients, colors, and text styling for visual appeal
+- ? **Unicode text**: Simple characters like ">" for arrows, "X" for close buttons
+- ? **CSS pseudo-elements**: Use ::before and ::after for decorative elements
+- ? **Focus on UX**: Perfect the user experience and functionality flow first
+
+**Common 404 errors to ignore for now**:
+- `favicon.ico` not found - this is expected and not critical
+- Image loading errors - we're not using images yet
+
 ## ?? **CRITICAL RULE: NO EMOJIS OR UNICODE SYMBOLS**
 
 **NEVER USE EMOJIS OR SPECIAL UNICODE SYMBOLS IN THIS PROJECT**
