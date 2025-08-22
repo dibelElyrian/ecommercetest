@@ -1238,3 +1238,76 @@ body {
     transform: translateY(0) scale(0.98);
     box-shadow: 0 3px 12px rgba(255, 107, 107, 0.2);
 }
+
+/* Account Buttons - Login & Register in Header - ENHANCED VERSION */
+.account-btn {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border: none !important;
+    padding: 14px 28px !important;
+    border-radius: 25px !important;
+    cursor: pointer !important;
+    font-weight: 700 !important;
+    font-size: 1rem !important;
+    margin: 0 6px !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2) !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+/* Specific targeting for login and register buttons */
+.account-btn.login-btn,
+.account-btn.register-btn,
+button.account-btn {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.account-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent) !important;
+    transition: left 0.5s ease !important;
+    z-index: 1 !important;
+}
+
+.account-btn:hover::before {
+    left: 100% !important;
+}
+
+.account-btn:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    background: var(--primary-gradient) !important;
+}
+
+.account-btn:active {
+    transform: translateY(-1px) scale(0.98) !important;
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3) !important;
+}
+
+/* Alternative styling for secondary account button if needed */
+.account-btn.secondary {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(15px) !important;
+    color: var(--text-primary) !important;
+    border: 2px solid rgba(102, 126, 234, 0.3) !important;
+}
+
+.account-btn.secondary:hover {
+    background: var(--primary-gradient) !important;
+    color: white !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
