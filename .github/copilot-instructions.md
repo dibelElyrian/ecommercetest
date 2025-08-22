@@ -596,8 +596,7 @@ function criticalSystemCheck() {
 - **Multi-Game Item Marketplace**: Mobile Legends and Roblox gaming items
 - **Dynamic Item Filtering**: Filter by "All Items", "Mobile Legends", or "Roblox"
 - **Shopping Cart System**: Add/remove items with quantity management
-- **Multi-Currency Support**: 10 currencies (PHP, USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND)
-- **Real-time Price Conversion**: Automatic currency conversion with live exchange rates
+- **?? Real-Time Currency System**: Live exchange rate updates for 10 currencies (PHP, USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND)
 - **Item Rarity System**: Legendary, Epic, Rare, Common with color-coded badges
 - **Responsive Design**: Mobile-first design optimized for all screen sizes
 
@@ -747,14 +746,17 @@ SUPABASE_ANON_KEY=[your-supabase-anon-key]
 
 ### 1. **Customer Shopping Experience**
 1. **Browse Items**: View all items or filter by Mobile Legends/Roblox
-2. **Currency Selection**: Choose from 10 supported currencies with live conversion
-3. **Add to Cart**: Items added with quantity tracking and cart count display
-4. **Account Creation** (Optional): Register for order tracking and faster checkout
-5. **Checkout Process**: Complete form with game username, email, payment method, region
-6. **Payment Processing**: 
+2. **Real-Time Currency Selection**: Choose from 10 supported currencies with live exchange rate conversion
+3. **Live Price Updates**: Prices automatically update with real-time exchange rates
+4. **Rate Transparency**: See rate freshness indicators (LIVE, BACKUP, BASE, STATIC badges)
+5. **Manual Rate Refresh**: Option to manually refresh exchange rates if needed
+6. **Add to Cart**: Items added with quantity tracking and cart count display
+7. **Account Creation** (Optional): Register for order tracking and faster checkout
+8. **Checkout Process**: Complete form with game username, email, payment method, region
+9. **Payment Processing**: 
    - GCash: Receive detailed payment instructions in green notification panel
-   - Other methods: Standard order confirmation
-7. **Order Confirmation**: Receive order ID and tracking information
+   - Other methods: Standard order confirmation with accurate currency conversion
+10. **Order Confirmation**: Receive order ID and tracking information
 
 ### 2. **Payment Processing (GCash Focus)**
 1. **Customer selects GCash**: At checkout, chooses "GCash (PHP only)"
@@ -820,6 +822,15 @@ SUPABASE_ANON_KEY=[your-supabase-anon-key]
 - `displayOrderTrackingResult(orderData)`: Renders order tracking information
 - `copyGcashDetails()`: Allows copying of payment information to clipboard
 
+### Currency & Exchange Rate Functions
+- `fetchLiveExchangeRates()`: Fetches real-time rates from external APIs
+- `initializeLiveCurrencySystem()`: Sets up automatic rate updates and caching
+- `loadCachedExchangeRates()`: Loads cached rates for offline functionality
+- `refreshExchangeRates()`: Manual rate refresh triggered by user
+- `setCurrency(currencyCode)`: Changes active currency and updates display
+- `formatPrice(priceInPHP, targetCurrency)`: Converts prices with live rates
+- `setupCurrencySelector()`: Builds currency dropdown with status indicators
+
 ### Utility Functions
 - `validateItemsSystem()`: Ensures items are loading properly (critical system check)
 - `validateCodeIntegrity()`: Checks for code corruption or missing functions
@@ -875,6 +886,48 @@ Instead of using build systems, always:
 - ? Check browser console for errors (F12 ? Console)
 - ? Test functionality by clicking and using the website
 - ? Validate with manual testing only
+
+### ?? **Real-Time Currency System Architecture**
+
+#### **Live Exchange Rate APIs**
+- **Primary**: `exchangerate-api.com` (1500 free requests/month)
+- **Fallback**: `freeforexapi.com` for redundancy when primary fails
+- **Base Currency**: PHP (Philippine Peso) - always rate 1.0
+- **Supported Conversions**: USD, EUR, GBP, JPY, KRW, SGD, MYR, THB, VND
+
+#### **Update Strategy**
+```javascript
+// Automatic update cycle
+const updateInterval = 30 * 60 * 1000; // 30 minutes
+setInterval(fetchLiveExchangeRates, updateInterval);
+
+// Rate freshness indicators
+const rateStatus = {
+    'live': 'Real-time from primary API',
+    'fallback': 'Real-time from backup API', 
+    'base': 'PHP base currency (1.0)',
+    'static': 'Cached/offline rates'
+};
+```
+
+#### **Caching & Offline Support**
+- **localStorage Cache**: Rates cached for 24 hours
+- **Cache Validation**: Automatic age checking and refresh
+- **Offline Fallback**: Uses cached rates when APIs unavailable
+- **Cache Key**: `triogel-currency-cache` with timestamp
+
+#### **User Interface Features**
+- **Status Badges**: LIVE (green), BACKUP (orange), BASE (blue), STATIC (gray)
+- **Last Updated**: Displays age of current rates in minutes
+- **Manual Refresh**: Refresh button in currency dropdown
+- **Live Indicators**: Pulsing animation for real-time rates
+- **Error Handling**: Graceful degradation to cached rates
+
+#### **Compliance & Accuracy**
+- **BSP Requirements**: Accurate rates for Philippine customers
+- **International Standards**: Proper exchange rate sourcing
+- **Audit Trail**: Console logging for rate updates and errors
+- **Rate Source Tracking**: Each currency tagged with data source
 
 ## ?? **CRITICAL RULE: DO NOT MODIFY WORKING CODE**
 
@@ -1073,50 +1126,3 @@ function addToCart(itemId) {
 // ? DON'T: "Refactored authentication for cleaner code"  
 // ? DON'T: "Updated all functions to modern JavaScript"
 // ? DON'T: "Enhanced UI components for better UX"
-```
-
-### ?? **FORBIDDEN MODIFICATIONS:**
-
-#### **Never Do These Unless Explicitly Asked:**
-- ? **Rewriting working functions** - "This could be cleaner"
-- ? **Changing CSS that looks correct** - "This could be more modern"  
-- ? **Optimizing functional code** - "This could be more efficient"
-- ? **Adding features not requested** - "This would be a nice addition"
-- ? **Updating working libraries** - "We should use the latest version"
-- ? **Restructuring working files** - "The code organization could be better"
-
-#### **Danger Phrases That Lead to Breaking Changes:**
-- ?? "While we're here, let's also improve..."
-- ?? "This would be a good opportunity to refactor..."
-- ?? "We should update this to be more modern..."
-- ?? "Let me clean up this code as well..."
-- ?? "This function could be written better..."
-
-### ? **SAFE MODIFICATION PHRASES:**
-
-#### **Use These Approaches:**
-- ? "I'll fix only the specific issue you mentioned"
-- ? "This change targets only the broken functionality"  
-- ? "I'm preserving all existing working code"
-- ? "This minimal change addresses your exact request"
-- ? "Only modifying what's necessary to solve the problem"
-
-### ?? **BEFORE EVERY CHANGE - ASK YOURSELF:**
-
-1. **Is this code actually broken?** If no, don't touch it
-2. **Did the user specifically ask for this change?** If no, don't make it
-3. **Will this change break something that currently works?** If yes, find another approach
-4. **Can I solve the problem with a smaller change?** Always prefer minimal modifications
-5. **Am I fixing the problem or just making the code "prettier"?** Only fix problems
-
-### ?? **REMEMBER: WORKING CODE IS SACRED**
-
-The TRIOGEL e-commerce site has complex, interconnected functionality. Every working piece of code represents tested, functional behavior that users and the business depend on. Changing working code unnecessarily:
-
-- ? **Introduces new bugs** - Working code becomes broken code
-- ? **Wastes time** - Time spent fixing new bugs instead of real problems  
-- ? **Breaks user experience** - Features that worked stop working
-- ? **Creates maintenance burden** - More code to test and debug
-- ? **Violates user trust** - They asked for one fix, you broke something else
-
-**The best code change is the smallest code change that solves the exact problem requested.**

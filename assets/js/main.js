@@ -252,6 +252,185 @@ function validateOnclickFunctions() {
 setTimeout(() => validateOnclickFunctions(), 100);
 
 // Currency configuration with real-time exchange rates
+let currencies = {
+    'PHP': { symbol: 'PHP', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
+    'USD': { symbol: 'USD', name: 'US Dollar', code: 'USD', rate: 0.018 },
+    'EUR': { symbol: 'EUR', name: 'Euro', code: 'EUR', rate: 0.016 },
+    'GBP': { symbol: 'GBP', name: 'British Pound', code: 'GBP', rate: 0.014 },
+    'JPY': { symbol: 'JPY', name: 'Japanese Yen', code: 'JPY', rate: 2.65 },
+    'KRW': { symbol: 'KRW', name: 'Korean Won', code: 'KRW', rate: 23.5 },
+    'SGD': { symbol: 'SGD', name: 'Singapore Dollar', code: 'SGD', rate: 0.024 },
+    'MYR': { symbol: 'MYR', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
+    'THB': { symbol: 'THB', name: 'Thai Baht', code: 'THB', rate: 0.63 },
+    'VND': { symbol: 'VND', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
+};
+
+let lastCurrencyUpdate = null;
+let currencyUpdateInterval = null;
+
+// Real-time currency fetching system
+async function fetchLiveExchangeRates() {
+    try {
+        console.log('Fetching live exchange rates from API...');
+        
+        // Using exchangerate-api.com (free tier: 1500 requests/month)
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PHP');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('Exchange rate data received:', data);
+        
+        if (data && data.rates) {
+            // Update currency rates with live data
+            const supportedCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'KRW', 'SGD', 'MYR', 'THB', 'VND'];
+            
+            supportedCurrencies.forEach(code => {
+                if (data.rates[code] && currencies[code]) {
+                    currencies[code].rate = data.rates[code];
+                    currencies[code].lastUpdate = new Date().toISOString();
+                    currencies[code].source = 'live';
+                }
+            });
+            
+            // PHP rate is always 1.0 (base currency)
+            currencies['PHP'].rate = 1.0;
+            currencies['PHP'].lastUpdate = new Date().toISOString();
+            currencies['PHP'].source = 'base';
+            
+            lastCurrencyUpdate = new Date();
+            
+            // Save to localStorage as cache
+            localStorage.setItem('triogel-currency-cache', JSON.stringify({
+                rates: currencies,
+                lastUpdate: lastCurrencyUpdate.toISOString()
+            }));
+            
+            console.log('Live exchange rates updated successfully');
+            
+            // Update UI if currency selector is visible
+            if (typeof setupCurrencySelector === 'function') {
+                setupCurrencySelector();
+            }
+            
+            // Refresh item prices if items are displayed
+            if (typeof displayItems === 'function') {
+                displayItems();
+            }
+            
+            // Show success notification
+            if (typeof showNotification === 'function') {
+                showNotification('Exchange rates updated with live data');
+            }
+            
+            return true;
+        } else {
+            throw new Error('Invalid response format from exchange rate API');
+        }
+        
+    } catch (error) {
+        console.error('Failed to fetch live exchange rates:', error);
+        
+        // Try fallback API (freeforexapi.com)
+        try {
+            console.log('Trying fallback exchange rate API...');
+            const fallbackResponse = await fetch(`https://api.freeforexapi.com/v1/latest?base_currency=PHP&currencies=USD,EUR,GBP,JPY,KRW,SGD,MYR,THB,VND`);
+            
+            if (!fallbackResponse.ok) {
+                throw new Error('Fallback API also failed');
+            }
+            
+            const fallbackData = await fallbackResponse.json();
+            
+            if (fallbackData && fallbackData.data) {
+                Object.keys(fallbackData.data).forEach(code => {
+                    if (currencies[code] && fallbackData.data[code]) {
+                        currencies[code].rate = fallbackData.data[code].value;
+                        currencies[code].lastUpdate = new Date().toISOString();
+                        currencies[code].source = 'fallback';
+                    }
+                });
+                
+                lastCurrencyUpdate = new Date();
+                console.log('Fallback exchange rates updated successfully');
+                return true;
+            }
+        } catch (fallbackError) {
+            console.error('Fallback API also failed:', fallbackError);
+        }
+        
+        // Load from cache if available
+        loadCachedExchangeRates();
+        
+        if (typeof showNotification === 'function') {
+            showNotification('Using cached exchange rates (offline mode)');
+        }
+        
+        return false;
+    }
+}
+
+// Load cached exchange rates from localStorage
+function loadCachedExchangeRates() {
+    try {
+        const cached = localStorage.getItem('triogel-currency-cache');
+        if (cached) {
+            const cacheData = JSON.parse(cached);
+            const cacheAge = new Date() - new Date(cacheData.lastUpdate);
+            const maxCacheAge = 24 * 60 * 60 * 1000; // 24 hours
+            
+            if (cacheAge < maxCacheAge) {
+                currencies = { ...currencies, ...cacheData.rates };
+                lastCurrencyUpdate = new Date(cacheData.lastUpdate);
+                console.log('Loaded cached exchange rates (age: ' + Math.round(cacheAge / 1000 / 60) + ' minutes)');
+                return true;
+            } else {
+                console.log('Cached exchange rates are too old, ignoring cache');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load cached exchange rates:', error);
+    }
+    return false;
+}
+
+// Initialize real-time currency system
+function initializeLiveCurrencySystem() {
+    console.log('Initializing live currency system...');
+    
+    // Load cached rates first for immediate display
+    loadCachedExchangeRates();
+    
+    // Fetch live rates immediately
+    fetchLiveExchangeRates();
+    
+    // Set up automatic updates every 30 minutes
+    if (currencyUpdateInterval) {
+        clearInterval(currencyUpdateInterval);
+    }
+    
+    currencyUpdateInterval = setInterval(() => {
+        console.log('Automatic currency rate update...');
+        fetchLiveExchangeRates();
+    }, 30 * 60 * 1000); // 30 minutes
+    
+    console.log('Live currency system initialized - updates every 30 minutes');
+}
+
+// Manual refresh function for currency rates
+window.refreshExchangeRates = function() {
+    console.log('Manual currency rate refresh requested...');
+    
+    if (typeof showNotification === 'function') {
+        showNotification('Updating exchange rates...');
+    }
+    
+    fetchLiveExchangeRates();
+}
+
+// Currency configuration with real-time exchange rates
 const currencies = {
     'PHP': { symbol: '', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
     'USD': { symbol: '', name: 'US Dollar', code: 'USD', rate: 0.018 },
@@ -506,19 +685,52 @@ function setupCurrencySelector() {
         return;
     }
     
-    currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => {
-        return `
-            <div class="currency-option" data-currency="${code}">
-                <div class="currency-main">
-                    <span class="currency-code">${code}</span>
-                    <span class="currency-name">${config.name}</span>
+    // Add header with refresh button
+    const currentTime = new Date();
+    const updateAge = lastCurrencyUpdate ? 
+        Math.round((currentTime - lastCurrencyUpdate) / 1000 / 60) : 'Never';
+    
+    currencyDropdown.innerHTML = `
+        <div class="currency-dropdown-header">
+            <div class="currency-dropdown-title">Select Currency</div>
+            <button class="currency-refresh-btn" onclick="refreshExchangeRates()">
+                Refresh
+            </button>
+        </div>
+        ${Object.entries(currencies).map(([code, config]) => {
+            const isLive = config.source === 'live';
+            const isFallback = config.source === 'fallback';
+            const isBase = config.source === 'base';
+            const isStatic = !config.source;
+            
+            let statusBadge = '';
+            if (isLive) {
+                statusBadge = '<span class="rate-badge live">LIVE</span>';
+            } else if (isFallback) {
+                statusBadge = '<span class="rate-badge fallback">BACKUP</span>';
+            } else if (isBase) {
+                statusBadge = '<span class="rate-badge base">BASE</span>';
+            } else {
+                statusBadge = '<span class="rate-badge static">STATIC</span>';
+            }
+            
+            return `
+                <div class="currency-option" data-currency="${code}">
+                    <div class="currency-main">
+                        <span class="currency-code">${code}</span>
+                        <span class="currency-name">${config.name}</span>
+                    </div>
+                    <div class="currency-meta">
+                        <span class="currency-rate">1 PHP = ${config.rate.toFixed(code === 'JPY' || code === 'KRW' || code === 'VND' ? 0 : 4)} ${code}</span>
+                        ${statusBadge}
+                    </div>
                 </div>
-                <div class="currency-meta">
-                    <span class="currency-rate">1 PHP = ${config.rate.toFixed(code === 'JPY' || code === 'KRW' || code === 'VND' ? 0 : 4)} ${code}</span>
-                </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('')}
+        <div class="rate-timestamp">
+            Last updated: ${updateAge === 'Never' ? 'Never' : updateAge + ' minutes ago'}
+        </div>
+    `;
     
     currencyDropdown.addEventListener('click', (e) => {
         const option = e.target.closest('.currency-option');
@@ -535,6 +747,9 @@ function setupCurrencySelector() {
 // Initialize everything
 function init() {
     console.log('TRIOGEL Initializing...');
+    
+    // Initialize live currency system first
+    initializeLiveCurrencySystem();
     
     displayItems();
     updateCartCount();
@@ -1109,4 +1324,12 @@ document.addEventListener('DOMContentLoaded', function () {
     init();
     
     console.log('TRIOGEL startup completed!');
+});
+
+// Clean up currency update interval when page is closed
+window.addEventListener('beforeunload', function() {
+    if (currencyUpdateInterval) {
+        clearInterval(currencyUpdateInterval);
+        console.log('Currency update interval cleared');
+    }
 });

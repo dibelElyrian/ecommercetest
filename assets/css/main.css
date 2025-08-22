@@ -832,6 +832,18 @@ body {
     animation: livePulse 2s infinite;
 }
 
+.rate-badge.fallback {
+    background: linear-gradient(45deg, #f59e0b, #d97706);
+    color: white;
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+}
+
+.rate-badge.base {
+    background: linear-gradient(45deg, var(--accent-blue), #0891b2);
+    color: white;
+    box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
+}
+
 .rate-badge.static {
     background: linear-gradient(45deg, #6b7280, #4b5563);
     color: #d1d5db;
