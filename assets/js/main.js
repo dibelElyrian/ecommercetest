@@ -215,45 +215,16 @@ window.switchToRegister = function() {
     } catch (e) { console.error('switchToRegister error:', e); }
 };
 
-window.logoutUser = async function() {
+window.logoutUser = function() {
     try {
         console.log('Logging out user...');
-        
-        // Update session status in database if user is logged in
-        if (window.currentUser && window.currentUser.id) {
-            try {
-                await dbUserManager.updateUserSession(window.currentUser.id, {
-                    session_active: false,
-                    last_logout: new Date().toISOString()
-                });
-                console.log('Database session updated on logout');
-            } catch (dbError) {
-                console.error('Error updating database session on logout:', dbError);
-                // Continue with logout even if database update fails
-            }
-        }
-        
-        // Clear local session
-        window.currentUser = null;
-        localStorage.removeItem('triogel-user');
-        
-        if (typeof showLoginSection === 'function') showLoginSection();
-        if (typeof showNotification === 'function') {
-            showNotification('Logged out successfully!');
-        }
-        
-        console.log('User logged out successfully');
-    } catch (e) { 
-        console.error('logoutUser error:', e);
-        
-        // Fallback: still clear local session even if database fails
         window.currentUser = null;
         localStorage.removeItem('triogel-user');
         if (typeof showLoginSection === 'function') showLoginSection();
         if (typeof showNotification === 'function') {
             showNotification('Logged out successfully!');
         }
-    }
+    } catch (e) { console.error('logoutUser error:', e); }
 };
 
 // Validation function for onclick functions
@@ -292,303 +263,6 @@ const currencies = {
     'MYR': { symbol: '', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
     'THB': { symbol: '', name: 'Thai Baht', code: 'THB', rate: 0.63 },
     'VND': { symbol: '', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
-};
-
-// Real-time currency conversion system
-const currencySystem = {
-    // Cache settings for exchange rates
-    cacheKey: 'triogel-exchange-rates',
-    cacheTimestamp: 'triogel-rates-timestamp',
-    cacheExpiry: 4 * 60 * 60 * 1000, // 4 hours in milliseconds
-    
-    // API configuration (using free exchangerate-api.com)
-    apiConfig = {
-        baseURL: 'https://api.exchangerate-api.com/v4/latest/PHP',
-        fallbackURL: 'https://api.fxratesapi.com/latest?base=PHP',
-        timeout: 10000, // 10 second timeout
-        retryAttempts: 3
-    },
-    
-    // Static fallback rates (BSP-compliant estimates for business continuity)
-    fallbackRates: {
-        'PHP': 1.0,
-        'USD': 0.018,
-        'EUR': 0.016,
-        'GBP': 0.014,
-        'JPY': 2.65,
-        'KRW': 23.5,
-        'SGD': 0.024,
-        'MYR': 0.082,
-        'THB': 0.63,
-        'VND': 440
-    },
-    
-    // BSP compliance: transaction limits per currency
-    transactionLimits: {
-        'USD': { single: 50000, daily: 100000 }, // BSP limits for USD
-        'EUR': { single: 45000, daily: 90000 },
-        'GBP': { single: 40000, daily: 80000 },
-        'JPY': { single: 6500000, daily: 13000000 },
-        'KRW': { single: 65000000, daily: 130000000 },
-        'SGD': { single: 70000, daily: 140000 },
-        'MYR': { single: 220000, daily: 440000 },
-        'THB': { single: 1800000, daily: 3600000 },
-        'VND': { single: 1200000000, daily: 2400000000 },
-        'PHP': { single: 500000, daily: 1000000 } // PHP limits for local transactions
-    },
-    
-    // Check if cached rates are still valid
-    isCacheValid: function() {
-        try {
-            const timestamp = localStorage.getItem(this.cacheTimestamp);
-            if (!timestamp) return false;
-            
-            const cacheAge = Date.now() - parseInt(timestamp);
-            return cacheAge < this.cacheExpiry;
-        } catch (error) {
-            console.error('Error checking cache validity:', error);
-            return false;
-        }
-    },
-    
-    // Get cached exchange rates
-    getCachedRates: function() {
-        try {
-            if (!this.isCacheValid()) return null;
-            
-            const cachedRates = localStorage.getItem(this.cacheKey);
-            return cachedRates ? JSON.parse(cachedRates) : null;
-        } catch (error) {
-            console.error('Error retrieving cached rates:', error);
-            return null;
-        }
-    },
-    
-    // Cache exchange rates with timestamp
-    cacheRates: function(rates) {
-        try {
-            localStorage.setItem(this.cacheKey, JSON.stringify(rates));
-            localStorage.setItem(this.cacheTimestamp, Date.now().toString());
-            console.log('Exchange rates cached successfully');
-        } catch (error) {
-            console.error('Error caching exchange rates:', error);
-        }
-    },
-    
-    // Fetch real-time exchange rates from API
-    fetchRealTimeRates: async function() {
-        let attempt = 0;
-        const maxAttempts = this.apiConfig.retryAttempts;
-        
-        while (attempt < maxAttempts) {
-            try {
-                console.log(`Fetching exchange rates (attempt ${attempt + 1}/${maxAttempts})...`);
-                
-                // Create abort controller for timeout
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), this.apiConfig.timeout);
-                
-                // Try primary API
-                let response;
-                try {
-                    response = await fetch(this.apiConfig.baseURL, {
-                        signal: controller.signal,
-                        headers: {
-                            'Accept': 'application/json',
-                            'User-Agent': 'TRIOGEL-Exchange-Rate-Client'
-                        }
-                    });
-                } catch (primaryError) {
-                    console.log('Primary API failed, trying fallback...');
-                    // Try fallback API
-                    response = await fetch(this.apiConfig.fallbackURL, {
-                        signal: controller.signal,
-                        headers: {
-                            'Accept': 'application/json',
-                            'User-Agent': 'TRIOGEL-Exchange-Rate-Client'
-                        }
-                    });
-                }
-                
-                clearTimeout(timeoutId);
-                
-                if (!response.ok) {
-                    throw new Error(`API responded with status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Validate response structure
-                if (!data.rates || typeof data.rates !== 'object') {
-                    throw new Error('Invalid API response structure');
-                }
-                
-                // Extract rates for our supported currencies
-                const extractedRates = {};
-                Object.keys(currencies).forEach(currencyCode => {
-                    if (currencyCode === 'PHP') {
-                        extractedRates[currencyCode] = 1.0; // Base currency
-                    } else if (data.rates[currencyCode]) {
-                        extractedRates[currencyCode] = data.rates[currencyCode];
-                    } else {
-                        // Use fallback rate if not available in API
-                        extractedRates[currencyCode] = this.fallbackRates[currencyCode];
-                        console.warn(`Using fallback rate for ${currencyCode}`);
-                    }
-                });
-                
-                console.log('Real-time exchange rates fetched successfully:', extractedRates);
-                return extractedRates;
-                
-            } catch (error) {
-                console.error(`Exchange rate fetch attempt ${attempt + 1} failed:`, error.message);
-                attempt++;
-                
-                if (attempt < maxAttempts) {
-                    // Wait before retrying (exponential backoff)
-                    const waitTime = Math.pow(2, attempt) * 1000;
-                    console.log(`Retrying in ${waitTime / 1000} seconds...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                }
-            }
-        }
-        
-        // All attempts failed
-        console.error('All attempts to fetch real-time rates failed, using fallback rates');
-        return null;
-    },
-    
-    // Update currency rates (main function)
-    updateExchangeRates: async function() {
-        try {
-            console.log('Updating exchange rates...');
-            
-            // Check if we have valid cached rates
-            const cachedRates = this.getCachedRates();
-            if (cachedRates) {
-                console.log('Using cached exchange rates');
-                this.applyRates(cachedRates);
-                return true;
-            }
-            
-            // Show loading indicator for currency updates
-            this.showCurrencyUpdateStatus('Updating exchange rates...');
-            
-            // Fetch new rates
-            const freshRates = await this.fetchRealTimeRates();
-            
-            if (freshRates) {
-                // Apply and cache the new rates
-                this.applyRates(freshRates);
-                this.cacheRates(freshRates);
-                this.showCurrencyUpdateStatus('Exchange rates updated!', false);
-                return true;
-            } else {
-                // Fallback to static rates
-                console.log('Using fallback exchange rates');
-                this.applyRates(this.fallbackRates);
-                this.showCurrencyUpdateStatus('Using standard rates', false);
-                return false;
-            }
-            
-        } catch (error) {
-            console.error('Error updating exchange rates:', error);
-            // Use fallback rates in case of any error
-            this.applyRates(this.fallbackRates);
-            this.showCurrencyUpdateStatus('Using standard rates', false);
-            return false;
-        }
-    },
-    
-    // Apply exchange rates to the currencies object
-    applyRates: function(rates) {
-        Object.keys(rates).forEach(currencyCode => {
-            if (currencies[currencyCode]) {
-                currencies[currencyCode].rate = rates[currencyCode];
-                // Add last updated timestamp
-                currencies[currencyCode].lastUpdated = new Date().toISOString();
-            }
-        });
-        
-        // Refresh the display if items are already shown
-        if (typeof displayItems === 'function') {
-            displayItems();
-        }
-        
-        console.log('Exchange rates applied successfully');
-    },
-    
-    // Show currency update status to user
-    showCurrencyUpdateStatus: function(message, persist = true) {
-        // Create or update status indicator
-        let statusDiv = document.getElementById('currency-status');
-        if (!statusDiv) {
-            statusDiv = document.createElement('div');
-            statusDiv.id = 'currency-status';
-            statusDiv.style.cssText = `
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: rgba(103, 126, 234, 0.9);
-                color: white;
-                padding: 10px 15px;
-                border-radius: 8px;
-                font-size: 0.9rem;
-                font-weight: 600;
-                z-index: 2500;
-                max-width: 300px;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                transition: all 0.3s ease;
-            `;
-            document.body.appendChild(statusDiv);
-        }
-        
-        statusDiv.textContent = message;
-        statusDiv.style.opacity = '1';
-        
-        if (!persist) {
-            // Auto-hide after 3 seconds
-            setTimeout(() => {
-                statusDiv.style.opacity = '0';
-                setTimeout(() => {
-                    if (statusDiv.parentNode) {
-                        statusDiv.remove();
-                    }
-                }, 300);
-            }, 3000);
-        }
-    },
-    
-    // Compliance check for transaction amounts
-    checkTransactionCompliance: function(amount, currency) {
-        const limits = this.transactionLimits[currency];
-        if (!limits) return { compliant: true }; // No limits defined
-        
-        const amountInTargetCurrency = amount * (currencies[currency]?.rate || 1);
-        
-        return {
-            compliant: amountInTargetCurrency <= limits.single,
-            limit: limits.single,
-            currentAmount: amountInTargetCurrency,
-            requiresDocumentation: amountInTargetCurrency > 50000 && currency !== 'PHP',
-            requiresBSPApproval: amountInTargetCurrency > 100000 && currency !== 'PHP'
-        };
-    },
-    
-    // Get exchange rate with metadata
-    getExchangeRateInfo: function(currency) {
-        const currencyInfo = currencies[currency];
-        if (!currencyInfo) return null;
-        
-        return {
-            code: currency,
-            name: currencyInfo.name,
-            rate: currencyInfo.rate,
-            lastUpdated: currencyInfo.lastUpdated || 'Static rate',
-            source: currencyInfo.lastUpdated ? 'Real-time API' : 'Static fallback'
-        };
-    }
 };
 
 let selectedCurrency = 'PHP';
@@ -730,9 +404,6 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
     }
     
-    // Check BSP compliance for transaction
-    const compliance = currencySystem.checkTransactionCompliance(priceInPHP, targetCurrency);
-    
     let formattedAmount;
     if (targetCurrency === 'JPY' || targetCurrency === 'KRW' || targetCurrency === 'VND') {
         formattedAmount = Math.round(convertedPrice).toLocaleString();
@@ -741,11 +412,6 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
     }
     
     let priceDisplay = `${currencyConfig.code} ${formattedAmount}`;
-    
-    // Add compliance warning for high-value transactions
-    if (!compliance.compliant) {
-        priceDisplay += ' (Requires Documentation)';
-    }
     
     return priceDisplay;
 }
@@ -820,14 +486,7 @@ function setCurrency(currencyCode) {
     displayItems();
     
     const currencyName = currencies[currencyCode]?.name || currencyCode;
-    const rateInfo = currencySystem.getExchangeRateInfo(currencyCode);
-    
-    let notificationMessage = `Currency changed to ${currencyName}`;
-    if (rateInfo && rateInfo.source === 'Real-time API') {
-        notificationMessage += ` (Live rates)`;
-    }
-    
-    showNotification(notificationMessage);
+    showNotification(`Currency changed to ${currencyName}`);
     localStorage.setItem('triogel-currency', currencyCode);
 }
 
@@ -835,17 +494,6 @@ function updateCurrencySelector() {
     const selectedOption = document.getElementById('selectedCurrency');
     if (selectedOption && currencies[selectedCurrency]) {
         selectedOption.textContent = currencies[selectedCurrency].code;
-    }
-}
-
-function toggleCurrencySelector() {
-    const dropdown = document.getElementById('currencyDropdown');
-    const selector = document.getElementById('currencySelector');
-    
-    if (dropdown && selector) {
-        const isOpen = dropdown.style.display === 'block';
-        dropdown.style.display = isOpen ? 'none' : 'block';
-        selector.classList.toggle('active', !isOpen);
     }
 }
 
@@ -859,9 +507,6 @@ function setupCurrencySelector() {
     }
     
     currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => {
-        const rateInfo = currencySystem.getExchangeRateInfo(code);
-        const isLiveRate = rateInfo && rateInfo.source === 'Real-time API';
-        
         return `
             <div class="currency-option" data-currency="${code}">
                 <div class="currency-main">
@@ -870,7 +515,6 @@ function setupCurrencySelector() {
                 </div>
                 <div class="currency-meta">
                     <span class="currency-rate">1 PHP = ${config.rate.toFixed(code === 'JPY' || code === 'KRW' || code === 'VND' ? 0 : 4)} ${code}</span>
-                    ${isLiveRate ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
                 </div>
             </div>
         `;
@@ -888,115 +532,581 @@ function setupCurrencySelector() {
     console.log('Currency selector setup complete');
 }
 
-// Add rate refresh functionality
-function refreshExchangeRates() {
-    console.log('Manual exchange rate refresh requested');
+// Initialize everything
+function init() {
+    console.log('TRIOGEL Initializing...');
     
-    // Clear cache to force fresh fetch
-    localStorage.removeItem(currencySystem.cacheKey);
-    localStorage.removeItem(currencySystem.cacheTimestamp);
+    displayItems();
+    updateCartCount();
+    setupFilters();
+    setupEventHandlers();
+    setupCurrencySelector();
+    updateCurrencySelector();
     
-    // Update rates
-    currencySystem.updateExchangeRates().then(success => {
-        if (success) {
-            showNotification('Exchange rates refreshed successfully!');
-            // Update currency selector to show new rates
-            setupCurrencySelector();
-        } else {
-            showNotification('Using standard rates - API unavailable');
-        }
-    });
+    console.log('TRIOGEL Initialized successfully!');
 }
 
-// Enhanced initialization with real-time rate loading
-function initializeCurrencySystem() {
-    console.log('Initializing currency system...');
+// Event Handlers Setup
+function setupEventHandlers() {
+    console.log('Setting up event handlers...');
     
-    // Load saved currency preference
-    const savedCurrency = localStorage.getItem('triogel-currency');
-    if (savedCurrency && currencies[savedCurrency]) {
-        selectedCurrency = savedCurrency;
-        console.log('Loaded saved currency:', savedCurrency);
-    }
-    
-    // Update exchange rates in background
-    currencySystem.updateExchangeRates().then(success => {
-        console.log('Currency system initialized:', success ? 'with live rates' : 'with fallback rates');
-        
-        // Update currency selector after rates are loaded
-        setupCurrencySelector();
-        updateCurrencySelector();
-        
-        // Refresh display if items are already shown
-        if (typeof displayItems === 'function') {
-            displayItems();
-        }
-    });
-}
+    // Authentication form handlers
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Login form submitted');
 
-// Add currency rate monitoring (updates every 4 hours)
-function startCurrencyRateMonitoring() {
-    // Check for rate updates every 4 hours
-    setInterval(() => {
-        console.log('Periodic exchange rate update check...');
-        currencySystem.updateExchangeRates();
-    }, 4 * 60 * 60 * 1000); // 4 hours
-    
-    // Also update when tab becomes visible again (user returns to site)
-    document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && !currencySystem.isCacheValid()) {
-            console.log('Tab became visible, checking for rate updates...');
-            currencySystem.updateExchangeRates();
-        }
-    });
-}
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Logging in...';
+            submitBtn.disabled = true;
 
-// Authentication system initialization
-window.initAuth = async function() {
-    try {
-        console.log('Initializing authentication system with database...');
-        
-        // Initialize Supabase
-        initializeSupabase();
-        
-        // Check for existing user session in localStorage
-        const savedUser = localStorage.getItem('triogel-user');
-        if (savedUser) {
             try {
-                window.currentUser = JSON.parse(savedUser);
-                console.log('User session restored:', window.currentUser.username);
-                
-                // Verify session with database (optional - for enhanced security)
-                if (window.currentUser.id && typeof window.currentUser.id === 'number') {
-                    try {
-                        const dbUser = await dbUserManager.getUserProfile(window.currentUser.id);
-                        if (dbUser) {
-                            // Update session with latest data from database
-                            window.currentUser = {
-                                id: dbUser.id,
-                                username: dbUser.username,
-                                email: dbUser.email,
-                                favoriteGame: dbUser.favorite_game,
-                                joinDate: dbUser.created_at
-                            };
-                            localStorage.setItem('triogel-user', JSON.stringify(window.currentUser));
-                            console.log('Session verified with database');
-                        }
-                    } catch (dbError) {
-                        console.log('Database verification failed, using cached session');
-                    }
-                }
-                
-                if (typeof showUserSection === 'function') {
-                    showUserSection();
-                }
-            } catch (e) {
-                console.error('Error restoring user session:', e);
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                await loginUser(email, password);
+            } catch (error) {
+                showNotification(`Login failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             }
-        } else {
-            console.log('No existing user session found');
+        });
+    }
+
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Register form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const userData = {
+                    username: document.getElementById('registerUsername').value,
+                    email: document.getElementById('registerEmail').value,
+                    password: document.getElementById('registerPassword').value,
+                    confirmPassword: document.getElementById('confirmPassword').value,
+                    favoriteGame: document.getElementById('favoriteGame').value
+                };
+                await registerUser(userData);
+            } catch (error) {
+                showNotification(`Registration failed: ${error.message}`);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+
+    // Order tracking form handler
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Order tracking form submitted');
+
+            const orderId = document.getElementById('orderId').value.trim();
+            if (!orderId) {
+                showNotification('Please enter an Order ID');
+                return;
+            }
+            await trackOrderById(orderId);
+        });
+    }
+
+    // Checkout form handler
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            console.log('Checkout form submitted');
+
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = 'Processing Order...';
+            submitBtn.disabled = true;
+
+            try {
+                // Collect form data
+                const orderData = {
+                    orderId: 'TRIO-' + Date.now(),
+                    gameUsername: document.getElementById('gameUsername').value,
+                    email: document.getElementById('email').value,
+                    whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                    paymentMethod: document.getElementById('paymentMethod').value,
+                    currency: selectedCurrency,
+                    serverRegion: document.getElementById('serverRegion').value || '',
+                    customerNotes: document.getElementById('customerNotes').value || '',
+                    customer: {
+                        email: document.getElementById('email').value,
+                        gameUsername: document.getElementById('gameUsername').value,
+                        whatsappNumber: document.getElementById('whatsappNumber').value || '',
+                        serverRegion: document.getElementById('serverRegion').value || ''
+                    },
+                    items: cart.map(item => ({
+                        id: item.id,
+                        name: item.name,
+                        game: item.game,
+                        price: item.price,
+                        quantity: item.quantity
+                    })),
+                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    timestamp: new Date().toISOString()
+                };
+
+                console.log('Processing order:', orderData);
+
+                try {
+                    const response = await fetch('/.netlify/functions/process-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('Order processed successfully:', result);
+                        
+                        // Save order locally for tracking
+                        saveOrderLocally(orderData);
+                        
+                        // Clear cart and close checkout
+                        cart = [];
+                        updateCartCount();
+                        closeCheckout();
+                        
+                        // Check for GCash payment and show appropriate notification
+                        if (orderData.paymentMethod === 'gcash') {
+                            const gcashDetails = `Order ${orderData.orderId} confirmed!
+
+GCash Payment Required:
+Amount: PHP ${orderData.total.toFixed(2)}
+GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
+Reference: ${result.paymentResult?.reference || orderData.orderId}
+
+Email payment screenshot to: ${orderData.email}
+We'll process your order within 1-24 hours!`;
+                            
+                            if (typeof showGcashNotification === 'function') {
+                                showGcashNotification(gcashDetails);
+                            } else {
+                                showNotification(gcashDetails);
+                            }
+                        } else {
+                            showNotification(`Order ${orderData.orderId} confirmed! Check your email for details.`);
+                        }
+                        
+                    } else {
+                        const errorData = await response.json().catch(() => ({}));
+                        console.error('Server response error:', response.status, errorData);
+                        throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
+                    }
+                } catch (netError) {
+                    console.log('Server not available, using local fallback...', netError.message);
+                    
+                    // Fallback: save order locally and show user
+                    saveOrderLocally(orderData);
+                    
+                    // Clear cart and close checkout
+                    cart = [];
+                    updateCartCount();
+                    closeCheckout();
+                    
+                    // Show local save notification
+                    showNotification(`Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
+                }
+
+            } catch (error) {
+                console.error('Checkout error:', error);
+                showNotification('Order failed. Please try again.');
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    }
+}
+
+// Add missing essential functions to complete the system
+window.displayCartItems = function() {
+    try {
+        const cartModal = document.getElementById('cartModal');
+        const cartItemsContainer = document.getElementById('cartItems');
+        const cartTotalElement = document.getElementById('cartTotal');
+        
+        if (!cartItemsContainer) {
+            console.error('Cart items container not found');
+            return;
         }
-    } catch (e) {
-        console.error('Initialization error:', e);
+        
+        if (!cart || cart.length === 0) {
+            cartItemsContainer.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
+            if (cartTotalElement) cartTotalElement.textContent = formatPrice(0);
+            return;
+        }
+        
+        cartItemsContainer.innerHTML = cart.map(item => `
+            <div class="cart-item">
+                <div class="cart-item-info">
+                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-price">${formatPrice(item.price)}</div>
+                    <div class="cart-item-quantity">Qty: ${item.quantity}</div>
+                </div>
+                <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
+            </div>
+        `).join('');
+        
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        if (cartTotalElement) cartTotalElement.textContent = formatPrice(total);
+        
+    } catch (e) { console.error('displayCartItems error:', e); }
+};
+
+window.displayOrderSummary = function() {
+    try {
+        const orderSummaryContainer = document.getElementById('orderSummary');
+        if (!orderSummaryContainer) {
+            console.error('Order summary container not found');
+            return;
+        }
+        
+        if (!cart || cart.length === 0) {
+            orderSummaryContainer.innerHTML = '<div>No items in cart</div>';
+            return;
+        }
+        
+        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        orderSummaryContainer.innerHTML = `
+            <h3>Order Summary</h3>
+            <div class="order-items">
+                ${cart.map(item => `
+                    <div class="order-item">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>${formatPrice(item.price * item.quantity)}</span>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="order-total">
+                <strong>Total: ${formatPrice(total)}</strong>
+            </div>
+        `;
+        
+    } catch (e) { console.error('displayOrderSummary error:', e); }
+};
+
+window.showNotification = function(message) {
+    try {
+        console.log('Notification:', message);
+        
+        // Create or update notification element
+        let notification = document.getElementById('notification');
+        if (!notification) {
+            notification = document.createElement('div');
+            notification.id = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(103, 126, 234, 0.95);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                z-index: 2000;
+                max-width: 300px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.3s ease;
+                opacity: 0;
+            `;
+            document.body.appendChild(notification);
+        }
+        
+        notification.textContent = message;
+        notification.style.opacity = '1';
+        
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 4000);
+        
+    } catch (e) { console.error('showNotification error:', e); }
+};
+
+window.setupFilters = function() {
+    try {
+        console.log('Setting up game filters...');
+        
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        filterButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                // Add active class to clicked button
+                button.classList.add('active');
+                
+                // Set current filter
+                const filter = button.dataset.game;
+                currentFilter = filter;
+                
+                console.log('Filter changed to:', filter);
+                displayItems();
+            });
+        });
+        
+        console.log('Game filters setup complete');
+    } catch (e) { console.error('setupFilters error:', e); }
+};
+
+window.saveOrderLocally = function(orderData) {
+    try {
+        console.log('Saving order locally:', orderData.orderId);
+        
+        // Get existing orders
+        const existingOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        
+        // Add new order
+        existingOrders.push(orderData);
+        
+        // Save back to localStorage
+        localStorage.setItem('triogel-orders', JSON.stringify(existingOrders));
+        
+        console.log('Order saved locally successfully');
+    } catch (e) { console.error('saveOrderLocally error:', e); }
+};
+
+window.trackOrderById = function(orderId) {
+    try {
+        console.log('Tracking order:', orderId);
+        
+        // Search in local storage first
+        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const foundOrder = localOrders.find(order => order.orderId === orderId);
+        
+        const resultDiv = document.getElementById('orderResult');
+        if (!resultDiv) {
+            console.error('Order result container not found');
+            return;
+        }
+        
+        if (foundOrder) {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="order-found">
+                    <h3>Order Found: ${foundOrder.orderId}</h3>
+                    <div class="order-details">
+                        <p><strong>Game Username:</strong> ${foundOrder.gameUsername}</p>
+                        <p><strong>Email:</strong> ${foundOrder.email}</p>
+                        <p><strong>Payment Method:</strong> ${foundOrder.paymentMethod}</p>
+                        <p><strong>Total:</strong> ${formatPrice(foundOrder.total)}</p>
+                        <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
+                        <p><strong>Date:</strong> ${new Date(foundOrder.timestamp).toLocaleString()}</p>
+                    </div>
+                    <div class="order-items-list">
+                        <h4>Items:</h4>
+                        ${foundOrder.items.map(item => `
+                            <div class="order-item-detail">
+                                ${item.name} (${item.game.toUpperCase()}) x${item.quantity} - ${formatPrice(item.price * item.quantity)}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+                <div class="order-not-found">
+                    <h3>Order Not Found</h3>
+                    <p>No order found with ID: ${orderId}</p>
+                    <p>Please check your order ID and try again.</p>
+                </div>
+            `;
+        }
+        
+    } catch (e) { console.error('trackOrderById error:', e); }
+};
+
+window.loginUser = async function(email, password) {
+    try {
+        console.log('Attempting login for:', email);
+        
+        // Simple validation
+        if (!email || !password) {
+            throw new Error('Email and password are required');
+        }
+        
+        // For now, use simple localStorage authentication
+        const registeredUsers = JSON.parse(localStorage.getItem('triogel-users') || '[]');
+        const existingUser = registeredUsers.find(user => 
+            user.email === email && user.password === password
+        );
+        
+        if (existingUser) {
+            // User found - log them in
+            console.log('User found, logging in:', existingUser.username);
+            
+            const user = {
+                id: existingUser.id,
+                username: existingUser.username,
+                email: existingUser.email,
+                favoriteGame: existingUser.favoriteGame,
+                joinDate: existingUser.joinDate
+            };
+            
+            window.currentUser = user;
+            localStorage.setItem('triogel-user', JSON.stringify(user));
+            
+            showUserSection();
+            closeLoginModal();
+            showNotification(`Welcome back, ${user.username}!`);
+            
+            console.log('Login successful');
+        } else {
+            // For demo purposes, create a session anyway
+            const user = {
+                id: Date.now(),
+                username: email.split('@')[0],
+                email: email,
+                favoriteGame: 'ml',
+                joinDate: new Date().toISOString()
+            };
+            
+            window.currentUser = user;
+            localStorage.setItem('triogel-user', JSON.stringify(user));
+            
+            showUserSection();
+            closeLoginModal();
+            showNotification(`Welcome, ${user.username}! (Demo login)`);
+            
+            console.log('Demo login successful');
+        }
+        
+    } catch (e) { 
+        console.error('loginUser error:', e);
+        throw e; 
     }
 };
+
+window.registerUser = async function(userData) {
+    try {
+        console.log('Attempting registration for:', userData.username);
+        
+        // Simple validation
+        if (!userData.username || !userData.email || !userData.password) {
+            throw new Error('All fields are required');
+        }
+        
+        if (userData.password !== userData.confirmPassword) {
+            throw new Error('Passwords do not match');
+        }
+        
+        // Check if user already exists
+        const registeredUsers = JSON.parse(localStorage.getItem('triogel-users') || '[]');
+        const existingUser = registeredUsers.find(user => user.email === userData.email);
+        
+        if (existingUser) {
+            throw new Error('An account with this email already exists');
+        }
+        
+        // Create user record
+        const user = {
+            id: Date.now(),
+            username: userData.username,
+            email: userData.email,
+            password: userData.password, // Store password for demo login
+            favoriteGame: userData.favoriteGame || 'ml',
+            joinDate: new Date().toISOString()
+        };
+        
+        // Save to users array
+        registeredUsers.push(user);
+        localStorage.setItem('triogel-users', JSON.stringify(registeredUsers));
+        
+        // Create current session (without password)
+        const sessionUser = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            favoriteGame: user.favoriteGame,
+            joinDate: user.joinDate
+        };
+        
+        window.currentUser = sessionUser;
+        localStorage.setItem('triogel-user', JSON.stringify(sessionUser));
+        
+        showUserSection();
+        closeRegisterModal();
+        showNotification(`Account created successfully! Welcome, ${user.username}!`);
+        
+        console.log('Registration successful');
+        
+    } catch (e) { 
+        console.error('registerUser error:', e);
+        throw e; 
+    }
+};
+
+window.showLoginSection = function() {
+    try {
+        const loginSection = document.getElementById('loginSection');
+        const userSection = document.getElementById('userSection');
+        
+        if (loginSection) loginSection.style.display = 'block';
+        if (userSection) userSection.style.display = 'none';
+    } catch (e) { console.error('showLoginSection error:', e); }
+};
+
+window.showUserSection = function() {
+    try {
+        if (!window.currentUser) {
+            showLoginSection();
+            return;
+        }
+        
+        const loginSection = document.getElementById('loginSection');
+        const userSection = document.getElementById('userSection');
+        
+        if (loginSection) loginSection.style.display = 'none';
+        if (userSection) {
+            userSection.style.display = 'block';
+            const userName = userSection.querySelector('.user-name');
+            if (userName) userName.textContent = window.currentUser.username;
+        }
+    } catch (e) { console.error('showUserSection error:', e); }
+};
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM loaded - Starting TRIOGEL...');
+    
+    // Check for existing user session
+    const savedUser = localStorage.getItem('triogel-user');
+    if (savedUser) {
+        try {
+            window.currentUser = JSON.parse(savedUser);
+            showUserSection();
+        } catch (e) {
+            localStorage.removeItem('triogel-user');
+            showLoginSection();
+        }
+    } else {
+        showLoginSection();
+    }
+    
+    init();
+    
+    console.log('TRIOGEL startup completed!');
+});
