@@ -100,6 +100,13 @@ window.proceedToCheckout = function() {
         }
         document.getElementById('cartModal').style.display = 'none';
         document.getElementById('checkoutModal').style.display = 'block';
+        
+        // FIXED: Update the preferred currency field with current selected currency
+        const selectedCurrencyDisplay = document.getElementById('selectedCurrencyDisplay');
+        if (selectedCurrencyDisplay && currencies[selectedCurrency]) {
+            selectedCurrencyDisplay.value = `${currencies[selectedCurrency].code} - ${currencies[selectedCurrency].name}`;
+        }
+        
         if (typeof displayOrderSummary === 'function') displayOrderSummary();
     } catch (e) { console.error('proceedToCheckout error:', e); }
 };
@@ -208,16 +215,45 @@ window.switchToRegister = function() {
     } catch (e) { console.error('switchToRegister error:', e); }
 };
 
-window.logoutUser = function() {
+window.logoutUser = async function() {
     try {
         console.log('Logging out user...');
+        
+        // Update session status in database if user is logged in
+        if (window.currentUser && window.currentUser.id) {
+            try {
+                await dbUserManager.updateUserSession(window.currentUser.id, {
+                    session_active: false,
+                    last_logout: new Date().toISOString()
+                });
+                console.log('Database session updated on logout');
+            } catch (dbError) {
+                console.error('Error updating database session on logout:', dbError);
+                // Continue with logout even if database update fails
+            }
+        }
+        
+        // Clear local session
+        window.currentUser = null;
+        localStorage.removeItem('triogel-user');
+        
+        if (typeof showLoginSection === 'function') showLoginSection();
+        if (typeof showNotification === 'function') {
+            showNotification('Logged out successfully!');
+        }
+        
+        console.log('User logged out successfully');
+    } catch (e) { 
+        console.error('logoutUser error:', e);
+        
+        // Fallback: still clear local session even if database fails
         window.currentUser = null;
         localStorage.removeItem('triogel-user');
         if (typeof showLoginSection === 'function') showLoginSection();
         if (typeof showNotification === 'function') {
             showNotification('Logged out successfully!');
         }
-    } catch (e) { console.error('logoutUser error:', e); }
+    }
 };
 
 // Validation function for onclick functions
@@ -266,7 +302,7 @@ const currencySystem = {
     cacheExpiry: 4 * 60 * 60 * 1000, // 4 hours in milliseconds
     
     // API configuration (using free exchangerate-api.com)
-    apiConfig: {
+    apiConfig = {
         baseURL: 'https://api.exchangerate-api.com/v4/latest/PHP',
         fallbackURL: 'https://api.fxratesapi.com/latest?base=PHP',
         timeout: 10000, // 10 second timeout
@@ -916,9 +952,12 @@ function startCurrencyRateMonitoring() {
 }
 
 // Authentication system initialization
-window.initAuth = function() {
+window.initAuth = async function() {
     try {
-        console.log('Initializing authentication system...');
+        console.log('Initializing authentication system with database...');
+        
+        // Initialize Supabase
+        initializeSupabase();
         
         // Check for existing user session in localStorage
         const savedUser = localStorage.getItem('triogel-user');
@@ -926,829 +965,38 @@ window.initAuth = function() {
             try {
                 window.currentUser = JSON.parse(savedUser);
                 console.log('User session restored:', window.currentUser.username);
+                
+                // Verify session with database (optional - for enhanced security)
+                if (window.currentUser.id && typeof window.currentUser.id === 'number') {
+                    try {
+                        const dbUser = await dbUserManager.getUserProfile(window.currentUser.id);
+                        if (dbUser) {
+                            // Update session with latest data from database
+                            window.currentUser = {
+                                id: dbUser.id,
+                                username: dbUser.username,
+                                email: dbUser.email,
+                                favoriteGame: dbUser.favorite_game,
+                                joinDate: dbUser.created_at
+                            };
+                            localStorage.setItem('triogel-user', JSON.stringify(window.currentUser));
+                            console.log('Session verified with database');
+                        }
+                    } catch (dbError) {
+                        console.log('Database verification failed, using cached session');
+                    }
+                }
+                
                 if (typeof showUserSection === 'function') {
                     showUserSection();
                 }
             } catch (e) {
-                console.error('Error parsing saved user data:', e);
-                localStorage.removeItem('triogel-user');
-                if (typeof showLoginSection === 'function') {
-                    showLoginSection();
-                }
+                console.error('Error restoring user session:', e);
             }
         } else {
             console.log('No existing user session found');
-            if (typeof showLoginSection === 'function') {
-                showLoginSection();
-            }
         }
     } catch (e) {
-        console.error('initAuth error:', e);
+        console.error('Initialization error:', e);
     }
 };
-
-// Currency system initialization
-window.initializeCurrencySystem = function() {
-    try {
-        console.log('Initializing currency system with live rates...');
-        
-        // Initialize currency system with default currency
-        if (typeof setCurrency === 'function') {
-            setCurrency('PHP'); // Default currency
-        }
-        
-        // Setup currency selector if available
-        if (typeof setupCurrencySelector === 'function') {
-            setupCurrencySelector();
-        }
-        
-        console.log('Currency system initialized successfully');
-    } catch (e) {
-        console.error('initializeCurrencySystem error:', e);
-    }
-};
-
-// Recovery function to restore essential functions in case of fallback
-function recoverEssentialFunctions() {
-    essentialFunctions.forEach(funcName => {
-        if (typeof window[funcName] !== 'function') {
-            window[funcName] = function(...args) {
-                console.log(`Recovered ${funcName} (placeholder)`, args);
-            };
-        }
-    });
-}
-
-// Validation Functions
-function validateItemsSystem() {
-    console.log('Validating items system...');
-    
-    if (!Array.isArray(items) || items.length === 0) {
-        console.error('Items array missing or empty');
-        return false;
-    }
-    
-    if (typeof displayItems !== 'function') {
-        console.error('displayItems function missing');
-        return false;
-    }
-    
-    const grid = document.getElementById('itemsGrid');
-    if (!grid) {
-        console.error('itemsGrid element missing');
-        return false;
-    }
-    
-    try {
-        displayItems();
-        const itemCards = grid.querySelectorAll('.item-card');
-        if (itemCards.length === 0) {
-            console.error('Items not rendering to DOM');
-            return false;
-        }
-        console.log(`Items system validated: ${itemCards.length} items displayed`);
-        return true;
-    } catch (error) {
-        console.error('Error in displayItems():', error);
-        return false;
-    }
-}
-
-// Initialize everything
-function init() {
-    console.log('TRIOGEL Initializing...');
-    
-    // Initialize currency system with real-time rates
-    initializeCurrencySystem();
-    
-    // Start currency rate monitoring
-    startCurrencyRateMonitoring();
-    
-    // Initialize authentication
-    initAuth();
-    
-    displayItems();
-    updateCartCount();
-    setupFilters();
-    setupEventHandlers();
-    
-    console.log('TRIOGEL Initialized successfully!');
-}
-
-// Event Handlers Setup
-function setupEventHandlers() {
-    console.log('Setting up event handlers...');
-    
-    // Authentication form handlers
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Login form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Logging in...';
-            submitBtn.disabled = true;
-
-            try {
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                await loginUser(email, password);
-            } catch (error) {
-                showNotification(`Login failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-    }
-
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Register form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Creating Account...';
-            submitBtn.disabled = true;
-
-            try {
-                const userData = {
-                    username: document.getElementById('registerUsername').value,
-                    email: document.getElementById('registerEmail').value,
-                    password: document.getElementById('registerPassword').value,
-                    confirmPassword: document.getElementById('confirmPassword').value,
-                    favoriteGame: document.getElementById('favoriteGame').value
-                };
-                await registerUser(userData);
-            } catch (error) {
-                showNotification(`Registration failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-    }
-
-    // Order tracking form handler
-    const trackingForm = document.getElementById('trackingForm');
-    if (trackingForm) {
-        trackingForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Order tracking form submitted');
-
-            const orderId = document.getElementById('orderId').value.trim();
-            if (!orderId) {
-                showNotification('Please enter an Order ID');
-                return;
-            }
-            await trackOrderById(orderId);
-        });
-    }
-
-    // Checkout form handler
-    const checkoutForm = document.getElementById('checkoutForm');
-    if (checkoutForm) {
-        checkoutForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Checkout form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Processing Order...';
-            submitBtn.disabled = true;
-
-            try {
-                // Collect form data
-                const orderData = {
-                    orderId: 'TRIO-' + Date.now(),
-                    gameUsername: document.getElementById('gameUsername').value,
-                    email: document.getElementById('email').value,
-                    whatsappNumber: document.getElementById('whatsappNumber').value || '',
-                    paymentMethod: document.getElementById('paymentMethod').value,
-                    currency: selectedCurrency,
-                    serverRegion: document.getElementById('serverRegion').value || '',
-                    customerNotes: document.getElementById('customerNotes').value || '',
-                    customer: {
-                        email: document.getElementById('email').value,
-                        gameUsername: document.getElementById('gameUsername').value,
-                        whatsappNumber: document.getElementById('whatsappNumber').value || '',
-                        serverRegion: document.getElementById('serverRegion').value || ''
-                    },
-                    items: cart.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        game: item.game,
-                        price: item.price,
-                        quantity: item.quantity
-                    })),
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-                    timestamp: new Date().toISOString()
-                };
-
-                console.log('Processing order:', orderData);
-
-                try {
-                    const response = await fetch('/.netlify/functions/process-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(orderData)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('Order processed successfully:', result);
-                        
-                        // Save order locally for tracking
-                        saveOrderLocally(orderData);
-                        
-                        // Clear cart and close checkout
-                        cart = [];
-                        updateCartCount();
-                        closeCheckout();
-                        
-                        // Check for GCash payment and show appropriate notification
-                        if (orderData.paymentMethod === 'gcash') {
-                            const gcashDetails = `Order ${orderData.orderId} confirmed!
-
-GCash Payment Required:
-Amount: PHP ${orderData.total.toFixed(2)}
-GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
-Reference: ${result.paymentResult?.reference || orderData.orderId}
-
-Email payment screenshot to: ${orderData.email}
-We'll process your order within 1-24 hours!`;
-                            
-                            if (typeof showGcashNotification === 'function') {
-                                showGcashNotification(gcashDetails);
-                            } else {
-                                showNotification(gcashDetails);
-                            }
-                        } else {
-                            showNotification(`Order ${orderData.orderId} confirmed! Check your email for details.`);
-                        }
-                        
-                    } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error('Server response error:', response.status, errorData);
-                        throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
-                    }
-                } catch (netError) {
-                    console.log('Server not available, using local fallback...', netError.message);
-                    
-                    // Fallback: save order locally and show user
-                    saveOrderLocally(orderData);
-                    
-                    // Clear cart and close checkout
-                    cart = [];
-                    updateCartCount();
-                    closeCheckout();
-                    
-                    // Show local save notification
-                    showNotification(`Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
-                }
-
-            } catch (error) {
-                console.error('Checkout error:', error);
-                showNotification('Order failed. Please try again.');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-    }
-}
-
-currencySystem.updateExchangeRates();
-
-// Demo and testing functions for real-time currency conversion
-const currencyDemo = {
-    // Demo function to show currency conversion in action
-    demonstrateRealTimeRates: function() {
-        console.log('=== TRIOGEL Real-Time Currency Demo ===');
-        
-        // Show current rates
-        console.log('Current Exchange Rates:');
-        Object.entries(currencies).forEach(([code, config]) => {
-            const rateInfo = currencySystem.getExchangeRateInfo(code);
-            console.log(`${code}: ${config.rate.toFixed(6)} (${rateInfo.source})`);
-        });
-        
-        // Demo price conversions
-        const testPricesPHP = [100, 1000, 5000, 10000];
-        console.log('\nPrice Conversion Examples:');
-        
-        testPricesPHP.forEach(price => {
-            console.log(`PHP ${price}:`);
-            Object.keys(currencies).forEach(currency => {
-                if (currency !== 'PHP') {
-                    const formatted = formatPrice(price, currency);
-                    console.log(`  ? ${formatted}`);
-                }
-            });
-            console.log('');
-        });
-        
-        // Show compliance information
-        console.log('BSP Compliance Check for PHP 100,000:');
-        Object.keys(currencies).forEach(currency => {
-            if (currency !== 'PHP') {
-                const compliance = currencySystem.checkTransactionCompliance(100000, currency);
-                console.log(`${currency}: ${compliance.compliant ? 'COMPLIANT' : 'REQUIRES DOCUMENTATION'}`);
-            }
-        });
-    },
-    
-    // Test function to simulate API failure and fallback
-    testFallbackRates: function() {
-        console.log('=== Testing Fallback Rate System ===');
-        
-        // Clear cache to force API call
-        localStorage.removeItem(currencySystem.cacheKey);
-        localStorage.removeItem(currencySystem.cacheTimestamp);
-        
-        // Temporarily disable API to test fallback
-        const originalURL = currencySystem.apiConfig.baseURL;
-        currencySystem.apiConfig.baseURL = 'https://invalid-api-url.com/fail';
-        currencySystem.apiConfig.fallbackURL = 'https://another-invalid-url.com/fail';
-        
-        // Attempt to update rates (should fail and use fallback)
-        currencySystem.updateExchangeRates().then(success => {
-            console.log(`Fallback test result: ${success ? 'API Success' : 'Using Fallback Rates'}`);
-            
-            // Restore original URL
-            currencySystem.apiConfig.baseURL = originalURL;
-            currencySystem.apiConfig.fallbackURL = 'https://api.fxratesapi.com/latest?base=PHP';
-        });
-    },
-    
-    // Function to manually update rates (useful for testing)
-    forceRateUpdate: function() {
-        console.log('Forcing exchange rate update...');
-        refreshExchangeRates();
-    }
-};
-
-// Add demo functions to global scope for easy testing
-window.currencyDemo = currencyDemo;
-
-// Remove these duplicated regular function definitions that conflict with window functions
-
-// Additional placeholder functions for dropdown menus
-// function toggleUserDropdown() - REMOVED DUPLICATE
-// function closeUserDropdown() - REMOVED DUPLICATE
-
-// Add missing essential functions to complete the system
-window.displayCartItems = function() {
-    try {
-        const cartModal = document.getElementById('cartModal');
-        const cartItemsContainer = document.getElementById('cartItems');
-        const cartTotalElement = document.getElementById('cartTotal');
-        
-        if (!cartItemsContainer) {
-            console.error('Cart items container not found');
-            return;
-        }
-        
-        if (!cart || cart.length === 0) {
-            cartItemsContainer.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
-            if (cartTotalElement) cartTotalElement.textContent = formatPrice(0);
-            return;
-        }
-        
-        cartItemsContainer.innerHTML = cart.map(item => `
-            <div class="cart-item">
-                <div class="cart-item-info">
-                    <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-price">${formatPrice(item.price)}</div>
-                    <div class="cart-item-quantity">Qty: ${item.quantity}</div>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
-            </div>
-        `).join('');
-        
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        if (cartTotalElement) cartTotalElement.textContent = formatPrice(total);
-        
-    } catch (e) { console.error('displayCartItems error:', e); }
-};
-
-window.displayOrderSummary = function() {
-    try {
-        const orderSummaryContainer = document.getElementById('orderSummary');
-        if (!orderSummaryContainer) {
-            console.error('Order summary container not found');
-            return;
-        }
-        
-        if (!cart || cart.length === 0) {
-            orderSummaryContainer.innerHTML = '<div>No items in cart</div>';
-            return;
-        }
-        
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        orderSummaryContainer.innerHTML = `
-            <h3>Order Summary</h3>
-            <div class="order-items">
-                ${cart.map(item => `
-                    <div class="order-item">
-                        <span>${item.name} x${item.quantity}</span>
-                        <span>${formatPrice(item.price * item.quantity)}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="order-total">
-                <strong>Total: ${formatPrice(total)}</strong>
-            </div>
-        `;
-        
-    } catch (e) { console.error('displayOrderSummary error:', e); }
-};
-
-window.showNotification = function(message) {
-    try {
-        console.log('Notification:', message);
-        
-        // Create or update notification element
-        let notification = document.getElementById('notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(103, 126, 234, 0.95);
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                font-size: 0.9rem;
-                font-weight: 600;
-                z-index: 2000;
-                max-width: 300px;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                transition: all 0.3s ease;
-                opacity: 0;
-            `;
-            document.body.appendChild(notification);
-        }
-        
-        notification.textContent = message;
-        notification.style.opacity = '1';
-        
-        // Auto-hide after 4 seconds
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, 4000);
-        
-    } catch (e) { console.error('showNotification error:', e); }
-};
-
-window.showGcashNotification = function(message) {
-    try {
-        console.log('GCash Notification:', message);
-        
-        // Create specialized GCash notification
-        let gcashNotification = document.getElementById('gcash-notification');
-        if (!gcashNotification) {
-            gcashNotification = document.createElement('div');
-            gcashNotification.id = 'gcash-notification';
-            gcashNotification.style.cssText = `
-                position: fixed;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                background: linear-gradient(135deg, #10b981, #059669);
-                color: white;
-                padding: 25px 30px;
-                border-radius: 15px;
-                font-size: 0.95rem;
-                font-weight: 600;
-                z-index: 3000;
-                max-width: 450px;
-                backdrop-filter: blur(20px);
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-                white-space: pre-line;
-                text-align: left;
-            `;
-            document.body.appendChild(gcashNotification);
-        }
-        
-        gcashNotification.innerHTML = `
-            <div style="margin-bottom: 15px; font-size: 1.1rem; font-weight: 800;">
-                GCash Payment Instructions
-            </div>
-            <div style="line-height: 1.6;">
-                ${message.replace(/\n/g, '<br>')}
-            </div>
-            <button onclick="this.parentNode.remove()" style="
-                background: rgba(255, 255, 255, 0.2);
-                border: 1px solid rgba(255, 255, 255, 0.3);
-                color: white;
-                padding: 8px 16px;
-                border-radius: 6px;
-                cursor: pointer;
-                margin-top: 15px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-            " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
-                Close
-            </button>
-        `;
-        
-    } catch (e) { console.error('showGcashNotification error:', e); }
-};
-
-window.setupFilters = function() {
-    try {
-        console.log('Setting up game filters...');
-        
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                button.classList.add('active');
-                
-                // Set current filter
-                const filter = button.dataset.filter;
-                currentFilter = filter;
-                
-                console.log('Filter changed to:', filter);
-                displayItems();
-            });
-        });
-        
-        console.log('Game filters setup complete');
-    } catch (e) { console.error('setupFilters error:', e); }
-};
-
-window.saveOrderLocally = function(orderData) {
-    try {
-        console.log('Saving order locally:', orderData.orderId);
-        
-        // Get existing orders
-        const existingOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        
-        // Add new order
-        existingOrders.push(orderData);
-        
-        // Save back to localStorage
-        localStorage.setItem('triogel-orders', JSON.stringify(existingOrders));
-        
-        console.log('Order saved locally successfully');
-    } catch (e) { console.error('saveOrderLocally error:', e); }
-};
-
-window.trackOrderById = function(orderId) {
-    try {
-        console.log('Tracking order:', orderId);
-        
-        // Search in local storage first
-        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        const foundOrder = localOrders.find(order => order.orderId === orderId);
-        
-        const resultDiv = document.getElementById('orderResult');
-        if (!resultDiv) {
-            console.error('Order result container not found');
-            return;
-        }
-        
-        if (foundOrder) {
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `
-                <div class="order-found">
-                    <h3>Order Found: ${foundOrder.orderId}</h3>
-                    <div class="order-details">
-                        <p><strong>Game Username:</strong> ${foundOrder.gameUsername}</p>
-                        <p><strong>Email:</strong> ${foundOrder.email}</p>
-                        <p><strong>Payment Method:</strong> ${foundOrder.paymentMethod}</p>
-                        <p><strong>Total:</strong> ${formatPrice(foundOrder.total)}</p>
-                        <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
-                        <p><strong>Date:</strong> ${new Date(foundOrder.timestamp).toLocaleString()}</p>
-                    </div>
-                    <div class="order-items-list">
-                        <h4>Items:</h4>
-                        ${foundOrder.items.map(item => `
-                            <div class="order-item-detail">
-                                ${item.name} (${item.game.toUpperCase()}) x${item.quantity} - ${formatPrice(item.price * item.quantity)}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        } else {
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `
-                <div class="order-not-found">
-                    <h3>Order Not Found</h3>
-                    <p>No order found with ID: ${orderId}</p>
-                    <p>Please check your order ID and try again.</p>
-                </div>
-            `;
-        }
-        
-    } catch (e) { console.error('trackOrderById error:', e); }
-};
-
-window.showLoginSection = function() {
-    try {
-        console.log('Showing login section');
-        
-        const accountSection = document.getElementById('accountSection');
-        if (accountSection) {
-            accountSection.innerHTML = `
-                <button class="account-btn" onclick="openLoginModal()">Login</button>
-                <button class="account-btn" onclick="openRegisterModal()">Register</button>
-            `;
-        }
-        
-    } catch (e) { console.error('showLoginSection error:', e); }
-};
-
-window.showUserSection = function() {
-    try {
-        console.log('Showing user section');
-        
-        if (!window.currentUser) {
-            showLoginSection();
-            return;
-        }
-        
-        const accountSection = document.getElementById('accountSection');
-        if (accountSection) {
-            accountSection.innerHTML = `
-                <div class="user-info">
-                    <button class="user-info-btn" onclick="toggleUserDropdown()">
-                        ${window.currentUser.username}
-                    </button>
-                    <div class="user-dropdown" id="userDropdown" style="display: none;">
-                        <div class="user-dropdown-item">
-                            <strong>Orders:</strong> 0
-                        </div>
-                        <div class="user-dropdown-item">
-                            <strong>Wishlist:</strong> 0
-                        </div>
-                        <hr style="border-color: rgba(255,255,255,0.2);">
-                        <button class="user-dropdown-btn" onclick="logoutUser()">Logout</button>
-                    </div>
-                </div>
-            `;
-        }
-        
-    } catch (e) { console.error('showUserSection error:', e); }
-};
-
-window.loginUser = function(email, password) {
-    try {
-        console.log('Attempting login for:', email);
-        
-        // Simple validation for demo
-        if (!email || !password) {
-            throw new Error('Email and password are required');
-        }
-        
-        // Create mock user session
-        const user = {
-            id: Date.now(),
-            username: email.split('@')[0],
-            email: email,
-            favoriteGame: 'ml',
-            joinDate: new Date().toISOString()
-        };
-        
-        window.currentUser = user;
-        localStorage.setItem('triogel-user', JSON.stringify(user));
-        
-        showUserSection();
-        closeLoginModal();
-        showNotification(`Welcome back, ${user.username}!`);
-        
-        console.log('Login successful');
-        
-    } catch (e) { 
-        console.error('loginUser error:', e);
-        throw e; 
-    }
-};
-
-window.registerUser = function(userData) {
-    try {
-        console.log('Attempting registration for:', userData.username);
-        
-        // Simple validation
-        if (!userData.username || !userData.email || !userData.password) {
-            throw new Error('All fields are required');
-        }
-        
-        if (userData.password !== userData.confirmPassword) {
-            throw new Error('Passwords do not match');
-        }
-        
-        // Create user session
-        const user = {
-            id: Date.now(),
-            username: userData.username,
-            email: userData.email,
-            favoriteGame: userData.favoriteGame || 'ml',
-            joinDate: new Date().toISOString()
-        };
-        
-        window.currentUser = user;
-        localStorage.setItem('triogel-user', JSON.stringify(user));
-        
-        showUserSection();
-        closeRegisterModal();
-        showNotification(`Account created successfully! Welcome, ${user.username}!`);
-        
-        console.log('Registration successful');
-        
-    } catch (e) { 
-        console.error('registerUser error:', e);
-        throw e; 
-    }
-};
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM loaded - Starting TRIOGEL...');
-    console.log('DEBUG: About to call init()...');
-    
-    // Validate onclick functions first
-    setTimeout(() => {
-        const functionsValid = validateOnclickFunctions();
-        if (!functionsValid) {
-            console.error('CRITICAL: onclick functions validation failed');
-            // Don't alert, just log and continue with emergency recovery
-            recoverEssentialFunctions();
-        } else {
-            console.log('onclick functions validation passed');
-        }
-    }, 500);
-    
-    // Emergency check - are all critical elements present?
-    const itemsGrid = document.getElementById('itemsGrid');
-    console.log('DEBUG: itemsGrid element found:', itemsGrid ? 'YES' : 'NO');
-    
-    if (!itemsGrid) {
-        console.error('CRITICAL: itemsGrid element missing from HTML!');
-        return;
-    }
-    
-    // Emergency check - is items array defined?
-    console.log('DEBUG: items array defined:', typeof items);
-    console.log('DEBUG: items array length:', Array.isArray(items) ? items.length : 'NOT ARRAY');
-    
-    if (!Array.isArray(items) || items.length === 0) {
-        console.error('CRITICAL: Items array missing or empty!');
-        return;
-    }
-    
-    // Emergency direct item display test
-    console.log('DEBUG: Attempting direct item display...');
-    try {
-        itemsGrid.innerHTML = '<div style="color: white; padding: 20px;">DEBUG: Direct HTML insertion test successful</div>';
-        setTimeout(() => {
-            displayItems();
-        }, 100);
-    } catch (error) {
-        console.error('CRITICAL: Error in direct display test:', error);
-        return;
-    }
-    
-    init();
-    
-    // Validate after initialization
-    setTimeout(() => {
-        const itemsValid = validateItemsSystem();
-        if (!itemsValid) {
-            console.error('CRITICAL: Items system failed validation');
-        } else {
-            console.log('Items system working correctly');
-        }
-        
-        // Test currency dropdown
-        const currencyButton = document.getElementById('currencySelector');
-        const currencyDropdown = document.getElementById('currencyDropdown');
-        
-        if (currencyButton && currencyDropdown) {
-            console.log('Currency selector elements found');
-        } else {
-            console.error('Currency selector elements missing');
-        }
-        
-        console.log('TRIOGEL validation completed!');
-    }, 1000);
-});
