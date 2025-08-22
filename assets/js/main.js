@@ -428,20 +428,6 @@ window.refreshExchangeRates = function() {
     }
     
     fetchLiveExchangeRates();
-}
-
-// Currency configuration with real-time exchange rates
-const currencies = {
-    'PHP': { symbol: '', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
-    'USD': { symbol: '', name: 'US Dollar', code: 'USD', rate: 0.018 },
-    'EUR': { symbol: '', name: 'Euro', code: 'EUR', rate: 0.016 },
-    'GBP': { symbol: '', name: 'British Pound', code: 'GBP', rate: 0.014 },
-    'JPY': { symbol: '', name: 'Japanese Yen', code: 'JPY', rate: 2.65 },
-    'KRW': { symbol: '', name: 'Korean Won', code: 'KRW', rate: 23.5 },
-    'SGD': { symbol: '', name: 'Singapore Dollar', code: 'SGD', rate: 0.024 },
-    'MYR': { symbol: '', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
-    'THB': { symbol: '', name: 'Thai Baht', code: 'THB', rate: 0.63 },
-    'VND': { symbol: '', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
 };
 
 let selectedCurrency = 'PHP';
