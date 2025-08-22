@@ -876,311 +876,247 @@ Instead of using build systems, always:
 - ? Test functionality by clicking and using the website
 - ? Validate with manual testing only
 
-## ?? **CRITICAL RULE: PREVENT UNCAUGHT REFERENCEERROR**
+## ?? **CRITICAL RULE: DO NOT MODIFY WORKING CODE**
 
-**THE SECOND MOST IMPORTANT RULE: Never allow "Uncaught ReferenceError" for functions called from HTML onclick events.**
+**THE THIRD MOST IMPORTANT RULE: Never recklessly change, update, add, or delete any existing code line that is already working, especially if it is not part of or related to the current prompt.**
 
-### ?? **COMMON CAUSES OF REFERENCEERROR:**
+### ?? **WORKING CODE PROTECTION PRINCIPLES:**
 
-1. **HTML onclick calling undefined functions**: HTML buttons calling functions before JavaScript loads
-2. **Function name mismatches**: HTML calls `openCart()` but JavaScript defines `openCartModal()`
-3. **Scope issues**: Functions not accessible globally when called from HTML
-4. **Load order problems**: HTML trying to call functions before script execution completes
+1. **Only Modify What's Asked**: If the user asks to fix a specific function, only modify that function and its direct dependencies
+2. **Leave Working Systems Alone**: If cart functionality is working and user asks about login, don't touch cart code
+3. **Surgical Precision**: Make the smallest possible change to achieve the requested result
+4. **Verify Before Changing**: Test existing functionality before making any modifications
 
-### ? **MANDATORY FUNCTION AVAILABILITY RULES:**
+### ? **MANDATORY CODE PRESERVATION RULES:**
 
-#### **Rule 1: All HTML onclick functions MUST be globally accessible**
+#### **Rule 1: Identify what's actually broken before changing anything**
 ```javascript
-// ? WRONG - Function not accessible from HTML
-function openCart() { /* code */ }
+// ? WRONG - Rewriting entire function when only one line has issue
+function displayItems() {
+    // Completely rewriting 50 lines of working code
+    // just to fix one small bug
+}
 
-// ? CORRECT - Ensure global accessibility
-window.openCart = openCart;
-// OR
-function openCart() { /* code */ }
-// Function is automatically global when declared this way
-```
-
-#### **Rule 2: Critical functions MUST be defined immediately**
-```javascript
-// ? REQUIRED - Define these functions early in the file, before any complex logic
-window.openCart = function() { /* implementation */ };
-window.closeCart = function() { /* implementation */ };
-window.openOrderTracking = function() { /* implementation */ };
-window.closeOrderTracking = function() { /* implementation */ };
-window.openLoginModal = function() { /* implementation */ };
-window.closeLoginModal = function() { /* implementation */ };
-window.openRegisterModal = function() { /* implementation */ };
-window.closeRegisterModal = function() { /* implementation */ };
-window.proceedToCheckout = function() { /* implementation */ };
-window.closeCheckout = function() { /* implementation */ };
-window.addToCart = function(itemId) { /* implementation */ };
-window.removeFromCart = function(itemId) { /* implementation */ };
-window.toggleCurrencySelector = function() { /* implementation */ };
-window.toggleUserDropdown = function() { /* implementation */ };
-window.closeUserDropdown = function() { /* implementation */ };
-window.switchToLogin = function() { /* implementation */ };
-window.switchToRegister = function() { /* implementation */ };
-window.logoutUser = function() { /* implementation */ };
-```
-
-#### **Rule 3: Function name consistency between HTML and JavaScript**
-```html
-<!-- HTML MUST match JavaScript function names exactly -->
-<button onclick="openCart()">Cart</button>
-<button onclick="closeCart()">Close</button>
-<button onclick="openOrderTracking()">Track Order</button>
-<button onclick="addToCart(1)">Add to Cart</button>
-```
-
-#### **Rule 4: Defensive programming for all onclick functions**
-```javascript
-// ? REQUIRED - Add error handling to all functions called from HTML
-function openCart() {
-    try {
-        console.log('Opening cart...');
-        document.getElementById('cartModal').style.display = 'block';
-        displayCartItems();
-    } catch (error) {
-        console.error('Error opening cart:', error);
-        showNotification('Error opening cart. Please refresh the page.');
-    }
+// ? CORRECT - Only fix the specific problem
+function displayItems() {
+    // ...existing working code...
+    // Only change the problematic line:
+    const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
+    // ...rest of existing working code...
 }
 ```
 
-### ??? **SPECIFIC FIXES FOR COMMON REFERENCEERROR FUNCTIONS:**
-
-#### **Fix 1: Modal Functions (Most Common Errors)**
+#### **Rule 2: Never refactor working code unless specifically asked**
 ```javascript
-// Define immediately after script loads
-window.openCart = function() {
-    try {
-        document.getElementById('cartModal').style.display = 'block';
-        if (typeof displayCartItems === 'function') displayCartItems();
-    } catch (e) { console.error('openCart error:', e); }
-};
-
-window.closeCart = function() {
-    try {
-        document.getElementById('cartModal').style.display = 'none';
-    } catch (e) { console.error('closeCart error:', e); }
-};
-
-window.openOrderTracking = function() {
-    try {
-        document.getElementById('orderTrackingModal').style.display = 'block';
-        const orderIdInput = document.getElementById('orderId');
-        if (orderIdInput) orderIdInput.value = '';
-        const orderResult = document.getElementById('orderResult');
-        if (orderResult) orderResult.style.display = 'none';
-    } catch (e) { console.error('openOrderTracking error:', e); }
-};
-
-window.closeOrderTracking = function() {
-    try {
-        document.getElementById('orderTrackingModal').style.display = 'none';
-    } catch (e) { console.error('closeOrderTracking error:', e); }
-};
-```
-
-#### **Fix 2: Authentication Functions**
-```javascript
-window.openLoginModal = function() {
-    try {
-        document.getElementById('loginModal').style.display = 'block';
-        const emailInput = document.getElementById('loginEmail');
-        if (emailInput) emailInput.focus();
-    } catch (e) { console.error('openLoginModal error:', e); }
-};
-
-window.closeLoginModal = function() {
-    try {
-        document.getElementById('loginModal').style.display = 'none';
-        if (typeof clearLoginForm === 'function') clearLoginForm();
-    } catch (e) { console.error('closeLoginModal error:', e); }
-};
-
-window.openRegisterModal = function() {
-    try {
-        document.getElementById('registerModal').style.display = 'block';
-        const usernameInput = document.getElementById('registerUsername');
-        if (usernameInput) usernameInput.focus();
-    } catch (e) { console.error('openRegisterModal error:', e); }
-};
-
-window.closeRegisterModal = function() {
-    try {
-        document.getElementById('registerModal').style.display = 'none';
-        if (typeof clearRegisterForm === 'function') clearRegisterForm();
-    } catch (e) { console.error('closeRegisterModal error:', e); }
-};
-```
-
-#### **Fix 3: Cart and Shopping Functions**
-```javascript
-window.addToCart = function(itemId) {
-    try {
-        if (typeof items === 'undefined' || !Array.isArray(items)) {
-            console.error('Items array not available');
-            return;
-        }
-        
-        const item = items.find(i => i.id === itemId);
-        if (!item) {
-            console.error('Item not found:', itemId);
-            return;
-        }
-        
-        // Add to cart logic here
-        if (typeof updateCartCount === 'function') updateCartCount();
-        if (typeof showNotification === 'function') {
-            showNotification(item.name + ' added to cart!');
-        }
-    } catch (e) { console.error('addToCart error:', e); }
-};
-
-window.removeFromCart = function(itemId) {
-    try {
-        if (typeof cart !== 'undefined' && Array.isArray(cart)) {
-            cart = cart.filter(item => item.id !== itemId);
-            if (typeof updateCartCount === 'function') updateCartCount();
-            if (typeof displayCartItems === 'function') displayCartItems();
-        }
-    } catch (e) { console.error('removeFromCart error:', e); }
-};
-```
-
-#### **Fix 4: UI Toggle Functions**
-```javascript
-window.toggleCurrencySelector = function() {
-    try {
-        const dropdown = document.getElementById('currencyDropdown');
-        const selector = document.getElementById('currencySelector');
-        
-        if (dropdown && selector) {
-            const isOpen = dropdown.style.display === 'block';
-            dropdown.style.display = isOpen ? 'none' : 'block';
-            selector.classList.toggle('active', !isOpen);
-        }
-    } catch (e) { console.error('toggleCurrencySelector error:', e); }
-};
-
-window.toggleUserDropdown = function() {
-    try {
-        const dropdown = document.getElementById('userDropdown');
-        const userBtn = document.querySelector('.user-info-btn');
-        
-        if (dropdown && userBtn) {
-            const isOpen = dropdown.style.display === 'block';
-            dropdown.style.display = isOpen ? 'none' : 'block';
-            userBtn.classList.toggle('active', !isOpen);
-        }
-    } catch (e) { console.error('toggleUserDropdown error:', e); }
-};
-
-window.closeUserDropdown = function() {
-    try {
-        const dropdown = document.getElementById('userDropdown');
-        const userBtn = document.querySelector('.user-info-btn');
-        
-        if (dropdown) dropdown.style.display = 'none';
-        if (userBtn) userBtn.classList.remove('active');
-    } catch (e) { console.error('closeUserDropdown error:', e); }
-};
-```
-
-### ?? **REFERENCEERROR PREVENTION CHECKLIST:**
-
-#### **Before ANY JavaScript changes:**
-1. **? Check HTML onclick attributes**: Ensure all function names match JavaScript definitions
-2. **? Verify global accessibility**: Confirm functions are accessible via `window.functionName`
-3. **? Test in browser console**: Type `functionName` to verify it's defined
-4. **? Add error handling**: Wrap all onclick functions in try/catch blocks
-5. **? Check dependencies**: Ensure functions don't call undefined functions
-
-#### **After ANY JavaScript changes:**
-1. **? Open browser console**: Look for ReferenceError messages
-2. **? Test all buttons**: Click every button to verify onclick functions work
-3. **? Verify modal operations**: Test opening/closing all modals
-4. **? Check cart functionality**: Test add/remove cart operations
-5. **? Validate authentication**: Test login/register modal functions
-
-### ?? **EMERGENCY REFERENCEERROR FIXES:**
-
-#### **Quick Fix Template for any undefined function:**
-```javascript
-// Emergency fix for any function showing ReferenceError
-window.FUNCTION_NAME = function(...args) {
-    try {
-        console.log('FUNCTION_NAME called with:', args);
-        // Add basic functionality or placeholder
-        showNotification('Feature temporarily unavailable');
-    } catch (error) {
-        console.error('FUNCTION_NAME error:', error);
-    }
-};
-```
-
-#### **Batch fix for all common onclick functions:**
-```javascript
-// Add this at the TOP of main.js to prevent ALL ReferenceErrors
-const essentialFunctions = [
-    'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
-    'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
-    'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
-    'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
-];
-
-// Ensure all functions exist globally (even as placeholders initially)
-essentialFunctions.forEach(funcName => {
-    if (typeof window[funcName] !== 'function') {
-        window[funcName] = function(...args) {
-            console.log(`${funcName} called (placeholder)`, args);
-        };
-    }
-});
-```
-
-### ?? **VALIDATION FUNCTION FOR REFERENCEERRORS:**
-
-```javascript
-// Add this function to check for potential ReferenceErrors
-function validateOnclickFunctions() {
-    const requiredFunctions = [
-        'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
-        'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
-        'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
-        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
-    ];
-    
-    const missingFunctions = requiredFunctions.filter(name => typeof window[name] !== 'function');
-    
-    if (missingFunctions.length > 0) {
-        console.error('MISSING ONCLICK FUNCTIONS:', missingFunctions);
-        console.error('This will cause ReferenceError when buttons are clicked!');
-        return false;
-    }
-    
-    console.log('All onclick functions are properly defined');
-    return true;
+// ? WRONG - "Improving" working code without being asked
+// User asked to fix login, but you decide to "clean up" the entire cart system
+function addToCart(itemId) {
+    // Don't rewrite this if it's working and unrelated to the prompt
 }
 
-// Run validation after script loads
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => validateOnclickFunctions(), 1000);
-});
+// ? CORRECT - Only touch what needs fixing
+// If user asks to fix login, only modify login-related functions
 ```
 
-### ? **NEVER DO THESE (Causes ReferenceError):**
-- ? Don't define functions inside other functions if they need to be called from HTML
-- ? Don't use arrow functions for onclick handlers (scoping issues)
-- ? Don't rely on functions being defined later in the file
-- ? Don't assume functions are available without checking
-- ? Don't ignore ReferenceError messages in console
+#### **Rule 3: Preserve existing function signatures and behavior**
+```javascript
+// ? WRONG - Changing function parameters when fixing unrelated issue
+// User asks to fix display bug, but you change the function signature
+function formatPrice(priceInPHP, targetCurrency, newParameterYouAdded) {
+    // This breaks all existing calls to formatPrice()
+}
 
-### ? **ALWAYS DO THESE (Prevents ReferenceError):**
-- ? Define all onclick functions early in the JavaScript file
-- ? Assign functions to window object for global access
-- ? Add try/catch blocks to all onclick functions
-- ? Test all buttons after making changes
-- ? Use `validateOnclickFunctions()` to check for missing functions
+// ? CORRECT - Keep existing signature intact
+function formatPrice(priceInPHP, targetCurrency) {
+    // Only fix the internal logic, don't change the interface
+}
+```
+
+#### **Rule 4: Don't "optimize" or "clean up" unless requested**
+```javascript
+// ? WRONG - User asks to fix one validation, you rewrite entire form system
+// This introduces new bugs in working code
+const validateForm = () => {
+    // Completely new validation logic you thought was "better"
+    // but breaks existing functionality
+}
+
+// ? CORRECT - Fix only what's broken
+const validateForm = () => {
+    // ...existing working validation...
+    // Only fix the specific validation issue mentioned
+    // ...rest of existing working validation...
+}
+```
+
+### ??? **CODE MODIFICATION SAFETY CHECKLIST:**
+
+#### **Before Changing ANY Code:**
+1. **? Is this code actually broken?** - Don't fix what isn't broken
+2. **? Is this change directly related to the user's request?** - Stay focused on the prompt
+3. **? Will this change break existing functionality?** - Test dependencies
+4. **? Can I make a smaller, more targeted change?** - Prefer minimal modifications
+5. **? Am I preserving the existing API/interface?** - Don't break external calls
+
+#### **During Code Changes:**
+1. **? Comment what you're changing and why** - Leave breadcrumbs
+2. **? Test the specific functionality you modified** - Verify your change works
+3. **? Test related functionality** - Ensure you didn't break dependencies
+4. **? Keep changes atomic** - One logical change at a time
+5. **? Preserve existing code style and patterns** - Don't introduce inconsistencies
+
+#### **After Code Changes:**
+1. **? Verify original issue is fixed** - Did you solve what was asked?
+2. **? Verify no new issues introduced** - Test related functionality
+3. **? Check console for new errors** - No new JavaScript errors
+4. **? Test user workflow** - End-to-end functionality still works
+5. **? Document what was changed** - Explain the modification
+
+### ?? **PROTECTED CODE ZONES:**
+
+#### **Never Modify Unless Specifically Asked:**
+- **Working modal functions** - If cart modal works, don't "improve" it
+- **Functional currency conversion** - If prices display correctly, don't touch
+- **Working authentication** - If login/logout works, leave it alone
+- **Stable item loading** - If items display properly, don't refactor
+- **CSS styles that look correct** - Don't "enhance" working designs
+- **Database integration that works** - Don't "optimize" working queries
+
+#### **High-Risk Changes to Avoid:**
+- **Renaming functions** - Breaks HTML onclick references
+- **Changing function parameters** - Breaks all existing calls
+- **Reordering code execution** - May break initialization sequences
+- **Modifying CSS selectors** - Can break styling across the site
+- **Changing data structures** - May break dependent functions
+- **Altering API endpoints** - Breaks backend integration
+
+### ? **EMERGENCY SITUATIONS WHERE CHANGES ARE ALLOWED:**
+
+#### **Override Protection Only When:**
+1. **Security vulnerability** - Fix immediately, but document changes
+2. **Complete system failure** - Only if existing code prevents basic functionality
+3. **User explicitly requests refactoring** - "Please rewrite the cart system"
+4. **Code is causing the specific issue** - But still make minimal changes
+
+#### **Even in Emergencies:**
+1. **Document what you're changing** - Explain why it's necessary
+2. **Make incremental changes** - Don't rewrite everything at once
+3. **Test each change** - Verify fixes don't create new problems
+4. **Preserve working parts** - Save what's functional
+
+### ?? **GOOD EXAMPLES OF TARGETED FIXES:**
+
+#### **Example 1: User Reports "Cart Count Not Updating"**
+```javascript
+// ? CORRECT - Only fix the specific issue
+function addToCart(itemId) {
+    // ...existing working code for finding item...
+    // ...existing working code for adding to cart...
+    
+    updateCartCount(); // ? Only add this missing line
+    
+    // ...existing working code for notifications...
+}
+
+// ? WRONG - Don't rewrite entire function
+// Don't change cart data structure, modal display, price formatting, etc.
+```
+
+#### **Example 2: User Reports "Login Button Not Working"**
+```javascript
+// ? CORRECT - Fix only the broken onclick reference
+<button onclick="openLoginModal()">Login</button>  // ? Fix only this reference
+
+// Don't modify:
+// - The entire login form HTML
+// - Working registration functionality  
+// - Existing authentication logic
+// - Modal styling that displays correctly
+```
+
+#### **Example 3: User Reports "Items Not Displaying"**
+```javascript
+// ? CORRECT - Fix only the display issue
+function displayItems() {
+    // ...existing working code...
+    
+    // Only fix the specific filtering bug:
+    const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
+    
+    // ...rest of existing working code...
+}
+
+// Don't modify:
+// - Currency conversion (if working)
+// - Item data structure (if correct)
+// - CSS styling (if items look right)
+// - Rarity system (if colors are correct)
+```
+
+### ?? **DOCUMENTATION FOR CHANGES:**
+
+#### **Always Include Change Explanation:**
+```javascript
+// CHANGED: Fixed cart count not updating after adding items
+// REASON: Missing updateCartCount() call in addToCart function  
+// IMPACT: Only affects cart badge display, no other functionality changed
+function addToCart(itemId) {
+    // ...existing code...
+    updateCartCount(); // ? Added this line only
+    // ...existing code...
+}
+```
+
+#### **What NOT to Document:**
+```javascript
+// ? DON'T: "Improved the entire cart system for better performance"
+// ? DON'T: "Refactored authentication for cleaner code"  
+// ? DON'T: "Updated all functions to modern JavaScript"
+// ? DON'T: "Enhanced UI components for better UX"
+```
+
+### ?? **FORBIDDEN MODIFICATIONS:**
+
+#### **Never Do These Unless Explicitly Asked:**
+- ? **Rewriting working functions** - "This could be cleaner"
+- ? **Changing CSS that looks correct** - "This could be more modern"  
+- ? **Optimizing functional code** - "This could be more efficient"
+- ? **Adding features not requested** - "This would be a nice addition"
+- ? **Updating working libraries** - "We should use the latest version"
+- ? **Restructuring working files** - "The code organization could be better"
+
+#### **Danger Phrases That Lead to Breaking Changes:**
+- ?? "While we're here, let's also improve..."
+- ?? "This would be a good opportunity to refactor..."
+- ?? "We should update this to be more modern..."
+- ?? "Let me clean up this code as well..."
+- ?? "This function could be written better..."
+
+### ? **SAFE MODIFICATION PHRASES:**
+
+#### **Use These Approaches:**
+- ? "I'll fix only the specific issue you mentioned"
+- ? "This change targets only the broken functionality"  
+- ? "I'm preserving all existing working code"
+- ? "This minimal change addresses your exact request"
+- ? "Only modifying what's necessary to solve the problem"
+
+### ?? **BEFORE EVERY CHANGE - ASK YOURSELF:**
+
+1. **Is this code actually broken?** If no, don't touch it
+2. **Did the user specifically ask for this change?** If no, don't make it
+3. **Will this change break something that currently works?** If yes, find another approach
+4. **Can I solve the problem with a smaller change?** Always prefer minimal modifications
+5. **Am I fixing the problem or just making the code "prettier"?** Only fix problems
+
+### ?? **REMEMBER: WORKING CODE IS SACRED**
+
+The TRIOGEL e-commerce site has complex, interconnected functionality. Every working piece of code represents tested, functional behavior that users and the business depend on. Changing working code unnecessarily:
+
+- ? **Introduces new bugs** - Working code becomes broken code
+- ? **Wastes time** - Time spent fixing new bugs instead of real problems  
+- ? **Breaks user experience** - Features that worked stop working
+- ? **Creates maintenance burden** - More code to test and debug
+- ? **Violates user trust** - They asked for one fix, you broke something else
+
+**The best code change is the smallest code change that solves the exact problem requested.**
