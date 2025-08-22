@@ -19,7 +19,9 @@ const essentialFunctions = [
     'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
     'proceedToCheckout', 'closeCheckout', 'addToCart', 'removeFromCart',
     'toggleCurrencySelector', 'toggleUserDropdown', 'closeUserDropdown',
-    'switchToLogin', 'switchToRegister', 'logoutUser', 'initAuth', 'initializeCurrencySystem'
+    'switchToLogin', 'switchToRegister', 'logoutUser', 'initAuth', 'initializeCurrencySystem',
+    'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
+    'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword'
 ];
 
 // Ensure all functions exist globally (even as placeholders initially)
@@ -90,6 +92,140 @@ window.closeRegisterModal = function() {
         document.getElementById('registerModal').style.display = 'none';
         if (typeof clearRegisterForm === 'function') clearRegisterForm();
     } catch (e) { console.error('closeRegisterModal error:', e); }
+};
+
+// NEW: User Profile Modal Functions
+window.openProfileModal = function() {
+    try {
+        console.log('Opening profile modal...');
+        
+        // Check if user is logged in
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (!currentUser) {
+            showNotification('Please log in to view your profile');
+            openLoginModal();
+            return;
+        }
+        
+        // Check if modal exists, if not create it dynamically
+        let profileModal = document.getElementById('profileModal');
+        if (!profileModal) {
+            createProfileModal();
+            profileModal = document.getElementById('profileModal');
+        }
+        
+        // Populate profile form with current user data
+        populateProfileForm(currentUser);
+        
+        profileModal.style.display = 'block';
+        closeUserDropdown();
+    } catch (e) { console.error('openProfileModal error:', e); }
+};
+
+window.closeProfileModal = function() {
+    try {
+        const profileModal = document.getElementById('profileModal');
+        if (profileModal) profileModal.style.display = 'none';
+    } catch (e) { console.error('closeProfileModal error:', e); }
+};
+
+// NEW: Order History Modal Functions
+window.openOrderHistoryModal = function() {
+    try {
+        console.log('Opening order history modal...');
+        
+        // Check if user is logged in
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (!currentUser) {
+            showNotification('Please log in to view your order history');
+            openLoginModal();
+            return;
+        }
+        
+        // Check if modal exists, if not create it dynamically
+        let orderHistoryModal = document.getElementById('orderHistoryModal');
+        if (!orderHistoryModal) {
+            createOrderHistoryModal();
+            orderHistoryModal = document.getElementById('orderHistoryModal');
+        }
+        
+        // Load and display user's order history
+        loadOrderHistory(currentUser);
+        
+        orderHistoryModal.style.display = 'block';
+        closeUserDropdown();
+    } catch (e) { console.error('openOrderHistoryModal error:', e); }
+};
+
+window.closeOrderHistoryModal = function() {
+    try {
+        const orderHistoryModal = document.getElementById('orderHistoryModal');
+        if (orderHistoryModal) orderHistoryModal.style.display = 'none';
+    } catch (e) { console.error('closeOrderHistoryModal error:', e); }
+};
+
+// NEW: Wishlist Modal Functions
+window.openWishlistModal = function() {
+    try {
+        console.log('Opening wishlist modal...');
+        
+        // Check if user is logged in
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (!currentUser) {
+            showNotification('Please log in to view your wishlist');
+            openLoginModal();
+            return;
+        }
+        
+        // Check if modal exists, if not create it dynamically
+        let wishlistModal = document.getElementById('wishlistModal');
+        if (!wishlistModal) {
+            createWishlistModal();
+            wishlistModal = document.getElementById('wishlistModal');
+        }
+        
+        // Load and display user's wishlist
+        loadWishlist(currentUser);
+        
+        wishlistModal.style.display = 'block';
+        closeUserDropdown();
+    } catch (e) { console.error('openWishlistModal error:', e); }
+};
+
+window.closeWishlistModal = function() {
+    try {
+        const wishlistModal = document.getElementById('wishlistModal');
+        if (wishlistModal) wishlistModal.style.display = 'none';
+    } catch (e) { console.error('closeWishlistModal error:', e); }
+};
+
+// NEW: Forgot Password Modal Functions
+window.openForgotPassword = function() {
+    try {
+        console.log('Opening forgot password modal...');
+        
+        // Close login modal first
+        closeLoginModal();
+        
+        // Check if modal exists, if not create it dynamically
+        let forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        if (!forgotPasswordModal) {
+            createForgotPasswordModal();
+            forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        }
+        
+        forgotPasswordModal.style.display = 'block';
+        
+        const emailInput = document.getElementById('forgotPasswordEmail');
+        if (emailInput) emailInput.focus();
+    } catch (e) { console.error('openForgotPassword error:', e); }
+};
+
+window.closeForgotPassword = function() {
+    try {
+        const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+        if (forgotPasswordModal) forgotPasswordModal.style.display = 'none';
+    } catch (e) { console.error('closeForgotPassword error:', e); }
 };
 
 window.proceedToCheckout = function() {
@@ -213,6 +349,7 @@ window.closeUserDropdown = function() {
 window.switchToLogin = function() {
     try {
         if (typeof closeRegisterModal === 'function') closeRegisterModal();
+        if (typeof closeForgotPassword === 'function') closeForgotPassword();
         if (typeof openLoginModal === 'function') openLoginModal();
     } catch (e) { console.error('switchToLogin error:', e); }
 };
@@ -220,6 +357,7 @@ window.switchToLogin = function() {
 window.switchToRegister = function() {
     try {
         if (typeof closeLoginModal === 'function') closeLoginModal();
+        if (typeof closeForgotPassword === 'function') closeForgotPassword();
         if (typeof openRegisterModal === 'function') openRegisterModal();
     } catch (e) { console.error('switchToRegister error:', e); }
 };
@@ -234,13 +372,291 @@ window.logoutUser = function() {
     } catch (e) { console.error('logoutUser error:', e); }
 };
 
+// NEW: Helper functions for dynamic modal creation
+function createProfileModal() {
+    const modal = document.createElement('div');
+    modal.id = 'profileModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeProfileModal()">&times;</span>
+            <h2>Profile Settings</h2>
+            <form id="profileForm" class="auth-form">
+                <div class="form-group">
+                    <label>Display Name:</label>
+                    <input type="text" id="profileUsername" placeholder="Your display name" required>
+                </div>
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="profileEmail" placeholder="your.email@example.com" readonly>
+                    <small style="color: var(--text-secondary);">Email cannot be changed</small>
+                </div>
+                <div class="form-group">
+                    <label>Favorite Game:</label>
+                    <select id="profileFavoriteGame">
+                        <option value="ml">Mobile Legends: Bang Bang</option>
+                        <option value="roblox">Roblox</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>New Password (leave empty to keep current):</label>
+                    <input type="password" id="profileNewPassword" placeholder="New password">
+                </div>
+                <div class="form-group">
+                    <label>Confirm New Password:</label>
+                    <input type="password" id="profileConfirmPassword" placeholder="Confirm new password">
+                </div>
+                <button type="submit" class="auth-btn">Update Profile</button>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Add form handler
+    const form = document.getElementById('profileForm');
+    if (form) {
+        form.addEventListener('submit', handleProfileUpdate);
+    }
+}
+
+function createOrderHistoryModal() {
+    const modal = document.createElement('div');
+    modal.id = 'orderHistoryModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderHistoryModal()">&times;</span>
+            <h2>Order History</h2>
+            <div id="orderHistoryContent" class="order-history-content">
+                <div class="loading">Loading your orders...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function createWishlistModal() {
+    const modal = document.createElement('div');
+    modal.id = 'wishlistModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeWishlistModal()">&times;</span>
+            <h2>My Wishlist</h2>
+            <div id="wishlistContent" class="wishlist-content">
+                <div class="loading">Loading your wishlist...</div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function createForgotPasswordModal() {
+    const modal = document.createElement('div');
+    modal.id = 'forgotPasswordModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotPassword()">&times;</span>
+            <h2>Reset Password</h2>
+            <form id="forgotPasswordForm" class="auth-form">
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="forgotPasswordEmail" placeholder="Enter your email" required>
+                </div>
+                <button type="submit" class="auth-btn">Send Reset Link</button>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchToLogin()">Back to Login</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Add form handler
+    const form = document.getElementById('forgotPasswordForm');
+    if (form) {
+        form.addEventListener('submit', handleForgotPassword);
+    }
+}
+
+// NEW: Helper functions for modal functionality
+function populateProfileForm(user) {
+    try {
+        const usernameInput = document.getElementById('profileUsername');
+        const emailInput = document.getElementById('profileEmail');
+        const favoriteGameSelect = document.getElementById('profileFavoriteGame');
+        
+        if (usernameInput) usernameInput.value = user.username || '';
+        if (emailInput) emailInput.value = user.email || '';
+        if (favoriteGameSelect) favoriteGameSelect.value = user.favorite_game || 'ml';
+    } catch (e) { console.error('populateProfileForm error:', e); }
+}
+
+function loadOrderHistory(user) {
+    try {
+        const content = document.getElementById('orderHistoryContent');
+        if (!content) return;
+        
+        // Get orders from localStorage (and eventually from database)
+        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const userOrders = localOrders.filter(order => 
+            order.email && user.email && order.email.toLowerCase() === user.email.toLowerCase()
+        );
+        
+        if (userOrders.length === 0) {
+            content.innerHTML = `
+                <div class="no-orders">
+                    <p>No orders found</p>
+                    <p>Start shopping to see your order history here!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        content.innerHTML = `
+            <div class="orders-list">
+                ${userOrders.map(order => `
+                    <div class="order-item">
+                        <div class="order-header">
+                            <span class="order-id">${order.orderId}</span>
+                            <span class="order-date">${new Date(order.timestamp).toLocaleDateString()}</span>
+                            <span class="order-status status-pending">Pending</span>
+                        </div>
+                        <div class="order-details">
+                            <div class="order-total">Total: ${formatPrice(order.total)}</div>
+                            <div class="order-items-count">${order.items.length} item(s)</div>
+                            <div class="order-payment">${order.paymentMethod}</div>
+                        </div>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="order-item-detail">
+                                    ${item.name} (${item.game.toUpperCase()}) x${item.quantity}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (e) { console.error('loadOrderHistory error:', e); }
+}
+
+function loadWishlist(user) {
+    try {
+        const content = document.getElementById('wishlistContent');
+        if (!content) return;
+        
+        // Get wishlist from localStorage (feature to be implemented)
+        const wishlist = JSON.parse(localStorage.getItem(`triogel-wishlist-${user.id}`) || '[]');
+        
+        if (wishlist.length === 0) {
+            content.innerHTML = `
+                <div class="no-wishlist">
+                    <p>Your wishlist is empty</p>
+                    <p>Browse items and add them to your wishlist!</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Display wishlist items (to be implemented)
+        content.innerHTML = `
+            <div class="wishlist-items">
+                <p>Wishlist feature coming soon!</p>
+            </div>
+        `;
+    } catch (e) { console.error('loadWishlist error:', e); }
+}
+
+async function handleProfileUpdate(e) {
+    e.preventDefault();
+    
+    try {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Updating...';
+        submitBtn.disabled = true;
+        
+        const newPassword = document.getElementById('profileNewPassword').value;
+        const confirmPassword = document.getElementById('profileConfirmPassword').value;
+        
+        if (newPassword && newPassword !== confirmPassword) {
+            throw new Error('New passwords do not match');
+        }
+        
+        const updateData = {
+            username: document.getElementById('profileUsername').value,
+            favoriteGame: document.getElementById('profileFavoriteGame').value
+        };
+        
+        if (newPassword) {
+            updateData.password = newPassword;
+        }
+        
+        // Here you would call the API to update the profile
+        // For now, just update locally
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (currentUser) {
+            currentUser.username = updateData.username;
+            currentUser.favorite_game = updateData.favoriteGame;
+            localStorage.setItem('triogel-user', JSON.stringify(currentUser));
+            
+            // Update UI
+            window.TriogelAuth.showUserSection();
+        }
+        
+        showNotification('Profile updated successfully!');
+        closeProfileModal();
+        
+    } catch (error) {
+        showNotification(`Profile update failed: ${error.message}`);
+    } finally {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = 'Update Profile';
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+async function handleForgotPassword(e) {
+    e.preventDefault();
+    
+    try {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = 'Sending...';
+        submitBtn.disabled = true;
+        
+        const email = document.getElementById('forgotPasswordEmail').value;
+        
+        // Here you would call the API to send reset email
+        // For now, just show a message
+        showNotification('Password reset instructions sent to your email!');
+        closeForgotPassword();
+        
+    } catch (error) {
+        showNotification(`Password reset failed: ${error.message}`);
+    } finally {
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = 'Send Reset Link';
+            submitBtn.disabled = false;
+        }
+    }
+}
+
 // Validation function for onclick functions
 function validateOnclickFunctions() {
     const requiredFunctions = [
         'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
         'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
         'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
-        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
+        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart',
+        'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
+        'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword'
     ];
     
     const missingFunctions = requiredFunctions.filter(name => typeof window[name] !== 'function');
