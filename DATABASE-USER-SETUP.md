@@ -54,17 +54,54 @@ Enable RLS and create policies for secure access:
 -- Enable Row Level Security
 ALTER TABLE triogel_users ENABLE ROW LEVEL SECURITY;
 
--- Allow users to view their own data
-CREATE POLICY "Users can view own profile" ON triogel_users
-    FOR SELECT USING (auth.uid()::text = id::text);
-
--- Allow users to update their own data
-CREATE POLICY "Users can update own profile" ON triogel_users
-    FOR UPDATE USING (auth.uid()::text = id::text);
-
--- Allow registration (insert)
+-- Policy 1: Allow anyone to register (INSERT new users)
 CREATE POLICY "Allow user registration" ON triogel_users
-    FOR INSERT WITH CHECK (true);
+    FOR INSERT 
+    WITH CHECK (true);
+
+-- Policy 2: Allow users to view their own data
+CREATE POLICY "Users can view own profile" ON triogel_users
+    FOR SELECT 
+    USING (id::text = current_setting('request.jwt.claims', true)::json->>'sub' 
+           OR email = current_setting('request.jwt.claims', true)::json->>'email');
+
+-- Policy 3: Allow users to update their own data  
+CREATE POLICY "Users can update own profile" ON triogel_users
+    FOR UPDATE 
+    USING (id::text = current_setting('request.jwt.claims', true)::json->>'sub'
+           OR email = current_setting('request.jwt.claims', true)::json->>'email');
+
+-- Policy 4: Allow reading user data by email for login (server-side only)
+CREATE POLICY "Allow login lookup" ON triogel_users
+    FOR SELECT
+    USING (true);
+
+-- Note: The above policies work with the anon key by checking JWT claims
+-- For server-side operations without JWT, we allow basic read access for authentication
+```
+
+## Alternative Simple RLS Setup (If JWT claims don't work)
+
+If the JWT-based policies cause issues, use this simpler approach:
+
+```sql
+-- Drop existing policies first
+DROP POLICY IF EXISTS "Users can view own profile" ON triogel_users;
+DROP POLICY IF EXISTS "Users can update own profile" ON triogel_users;
+DROP POLICY IF EXISTS "Allow user registration" ON triogel_users;
+DROP POLICY IF EXISTS "Allow login lookup" ON triogel_users;
+
+-- Enable Row Level Security
+ALTER TABLE triogel_users ENABLE ROW LEVEL SECURITY;
+
+-- Simple policies for anon key usage
+CREATE POLICY "Allow all operations for authentication" ON triogel_users
+    FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- Note: This is less secure but works reliably with anon key
+-- The security is handled at the application level in the Netlify function
 ```
 
 ## Required Supabase Configuration

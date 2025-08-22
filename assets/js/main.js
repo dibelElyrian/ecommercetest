@@ -107,6 +107,15 @@ window.proceedToCheckout = function() {
             selectedCurrencyDisplay.value = `${currencies[selectedCurrency].code} - ${currencies[selectedCurrency].name}`;
         }
         
+        // Pre-fill form with user data if logged in
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (currentUser) {
+            const emailInput = document.getElementById('email');
+            if (emailInput && !emailInput.value) {
+                emailInput.value = currentUser.email;
+            }
+        }
+        
         if (typeof displayOrderSummary === 'function') displayOrderSummary();
     } catch (e) { console.error('proceedToCheckout error:', e); }
 };
@@ -218,12 +227,10 @@ window.switchToRegister = function() {
 window.logoutUser = function() {
     try {
         console.log('Logging out user...');
-        window.currentUser = null;
-        localStorage.removeItem('triogel-user');
-        if (typeof showLoginSection === 'function') showLoginSection();
-        if (typeof showNotification === 'function') {
-            showNotification('Logged out successfully!');
-        }
+        
+        // Use the new authentication system
+        window.TriogelAuth.logout();
+        
     } catch (e) { console.error('logoutUser error:', e); }
 };
 
@@ -744,6 +751,19 @@ function init() {
     setupCurrencySelector();
     updateCurrencySelector();
     
+    // Add authentication status to debug
+    setTimeout(() => {
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
+        
+        // Show connection status
+        if (navigator.onLine) {
+            console.log('Online - Database authentication available');
+        } else {
+            console.log('Offline - Using localStorage fallback');
+        }
+    }, 1000);
+    
     console.log('TRIOGEL Initialized successfully!');
 }
 
@@ -1144,60 +1164,14 @@ window.loginUser = async function(email, password) {
     try {
         console.log('Attempting login for:', email);
         
-        // Simple validation
-        if (!email || !password) {
-            throw new Error('Email and password are required');
-        }
+        // Use the new authentication system
+        await window.TriogelAuth.login({ email, password });
         
-        // For now, use simple localStorage authentication
-        const registeredUsers = JSON.parse(localStorage.getItem('triogel-users') || '[]');
-        const existingUser = registeredUsers.find(user => 
-            user.email === email && user.password === password
-        );
+        console.log('Login successful');
         
-        if (existingUser) {
-            // User found - log them in
-            console.log('User found, logging in:', existingUser.username);
-            
-            const user = {
-                id: existingUser.id,
-                username: existingUser.username,
-                email: existingUser.email,
-                favoriteGame: existingUser.favoriteGame,
-                joinDate: existingUser.joinDate
-            };
-            
-            window.currentUser = user;
-            localStorage.setItem('triogel-user', JSON.stringify(user));
-            
-            showUserSection();
-            closeLoginModal();
-            showNotification(`Welcome back, ${user.username}!`);
-            
-            console.log('Login successful');
-        } else {
-            // For demo purposes, create a session anyway
-            const user = {
-                id: Date.now(),
-                username: email.split('@')[0],
-                email: email,
-                favoriteGame: 'ml',
-                joinDate: new Date().toISOString()
-            };
-            
-            window.currentUser = user;
-            localStorage.setItem('triogel-user', JSON.stringify(user));
-            
-            showUserSection();
-            closeLoginModal();
-            showNotification(`Welcome, ${user.username}! (Demo login)`);
-            
-            console.log('Demo login successful');
-        }
-        
-    } catch (e) { 
-        console.error('loginUser error:', e);
-        throw e; 
+    } catch (error) { 
+        console.error('loginUser error:', error);
+        throw error; 
     }
 };
 
@@ -1205,107 +1179,101 @@ window.registerUser = async function(userData) {
     try {
         console.log('Attempting registration for:', userData.username);
         
-        // Simple validation
-        if (!userData.username || !userData.email || !userData.password) {
-            throw new Error('All fields are required');
-        }
-        
-        if (userData.password !== userData.confirmPassword) {
-            throw new Error('Passwords do not match');
-        }
-        
-        // Check if user already exists
-        const registeredUsers = JSON.parse(localStorage.getItem('triogel-users') || '[]');
-        const existingUser = registeredUsers.find(user => user.email === userData.email);
-        
-        if (existingUser) {
-            throw new Error('An account with this email already exists');
-        }
-        
-        // Create user record
-        const user = {
-            id: Date.now(),
+        // Use the new authentication system
+        await window.TriogelAuth.register({
             username: userData.username,
             email: userData.email,
-            password: userData.password, // Store password for demo login
-            favoriteGame: userData.favoriteGame || 'ml',
-            joinDate: new Date().toISOString()
-        };
-        
-        // Save to users array
-        registeredUsers.push(user);
-        localStorage.setItem('triogel-users', JSON.stringify(registeredUsers));
-        
-        // Create current session (without password)
-        const sessionUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            favoriteGame: user.favoriteGame,
-            joinDate: user.joinDate
-        };
-        
-        window.currentUser = sessionUser;
-        localStorage.setItem('triogel-user', JSON.stringify(sessionUser));
-        
-        showUserSection();
-        closeRegisterModal();
-        showNotification(`Account created successfully! Welcome, ${user.username}!`);
+            password: userData.password,
+            confirmPassword: userData.confirmPassword,
+            favoriteGame: userData.favoriteGame
+        });
         
         console.log('Registration successful');
         
-    } catch (e) { 
-        console.error('registerUser error:', e);
-        throw e; 
+    } catch (error) { 
+        console.error('registerUser error:', error);
+        throw error; 
     }
 };
 
 window.showLoginSection = function() {
     try {
-        const loginSection = document.getElementById('loginSection');
-        const userSection = document.getElementById('userSection');
-        
-        if (loginSection) loginSection.style.display = 'block';
-        if (userSection) userSection.style.display = 'none';
+        // Use the authentication system's method
+        window.TriogelAuth.showLoginSection();
     } catch (e) { console.error('showLoginSection error:', e); }
 };
 
 window.showUserSection = function() {
     try {
-        if (!window.currentUser) {
-            showLoginSection();
-            return;
-        }
-        
-        const loginSection = document.getElementById('loginSection');
-        const userSection = document.getElementById('userSection');
-        
-        if (loginSection) loginSection.style.display = 'none';
-        if (userSection) {
-            userSection.style.display = 'block';
-            const userName = userSection.querySelector('.user-name');
-            if (userName) userName.textContent = window.currentUser.username;
-        }
+        // Use the authentication system's method
+        window.TriogelAuth.showUserSection();
     } catch (e) { console.error('showUserSection error:', e); }
 };
+
+// Debug functions for testing authentication (remove in production)
+window.testAuth = {
+    register: async function(testEmail = 'test@example.com', testUsername = 'TestUser') {
+        try {
+            console.log('Testing registration...');
+            await window.TriogelAuth.register({
+                username: testUsername,
+                email: testEmail,
+                password: 'testpass123',
+                confirmPassword: 'testpass123',
+                favoriteGame: 'ml'
+            });
+            console.log('? Registration test passed');
+        } catch (error) {
+            console.error('? Registration test failed:', error);
+        }
+    },
+    
+    login: async function(testEmail = 'test@example.com') {
+        try {
+            console.log('Testing login...');
+            await window.TriogelAuth.login({
+                email: testEmail,
+                password: 'testpass123'
+            });
+            console.log('? Login test passed');
+        } catch (error) {
+            console.error('? Login test failed:', error);
+        }
+    },
+    
+    logout: async function() {
+        try {
+            console.log('Testing logout...');
+            await window.TriogelAuth.logout();
+            console.log('? Logout test passed');
+        } catch (error) {
+            console.error('? Logout test failed:', error);
+        }
+    },
+    
+    status: function() {
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        console.log('?? Auth Status:');
+        console.log('- Online:', navigator.onLine);
+        console.log('- Logged in:', window.TriogelAuth?.isLoggedIn());
+        console.log('- Current user:', currentUser);
+        console.log('- Auth system:', window.TriogelAuth ? 'Loaded' : 'Not loaded');
+    }
+};
+
+// Make test functions available in console for debugging
+console.log('?? Auth testing functions available:');
+console.log('- testAuth.status() - Check current auth status');
+console.log('- testAuth.register() - Test user registration');
+console.log('- testAuth.login() - Test user login');
+console.log('- testAuth.logout() - Test user logout');
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded - Starting TRIOGEL...');
     
-    // Check for existing user session
-    const savedUser = localStorage.getItem('triogel-user');
-    if (savedUser) {
-        try {
-            window.currentUser = JSON.parse(savedUser);
-            showUserSection();
-        } catch (e) {
-            localStorage.removeItem('triogel-user');
-            showLoginSection();
-        }
-    } else {
-        showLoginSection();
-    }
+    // The authentication system will initialize itself
+    // No need to manually handle user session here as TriogelAuth handles it
     
     init();
     
@@ -1319,3 +1287,29 @@ window.addEventListener('beforeunload', function() {
         console.log('Currency update interval cleared');
     }
 });
+
+window.clearLoginForm = function() {
+    try {
+        const emailInput = document.getElementById('loginEmail');
+        const passwordInput = document.getElementById('loginPassword');
+        
+        if (emailInput) emailInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+    } catch (e) { console.error('clearLoginForm error:', e); }
+};
+
+window.clearRegisterForm = function() {
+    try {
+        const usernameInput = document.getElementById('registerUsername');
+        const emailInput = document.getElementById('registerEmail');
+        const passwordInput = document.getElementById('registerPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const favoriteGameSelect = document.getElementById('favoriteGame');
+        
+        if (usernameInput) usernameInput.value = '';
+        if (emailInput) emailInput.value = '';
+        if (passwordInput) passwordInput.value = '';
+        if (confirmPasswordInput) confirmPasswordInput.value = '';
+        if (favoriteGameSelect) favoriteGameSelect.value = '';
+    } catch (e) { console.error('clearRegisterForm error:', e); }
+};

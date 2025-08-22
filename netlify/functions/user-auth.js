@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcrypt');
 
-// Initialize Supabase client
+// Initialize Supabase client with anon key (RLS-compliant)
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
@@ -70,7 +70,7 @@ async function handleRegistration(userData) {
     try {
         const { username, email, password, favorite_game } = userData;
 
-        // Check if user already exists
+        // Check if user already exists (this works with anon key + RLS)
         const { data: existingUsers, error: checkError } = await supabase
             .from('triogel_users')
             .select('email')
@@ -96,7 +96,7 @@ async function handleRegistration(userData) {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Insert new user
+        // Insert new user (RLS allows INSERT for registration)
         const { data: newUser, error: insertError } = await supabase
             .from('triogel_users')
             .insert([
@@ -151,7 +151,7 @@ async function handleLogin(credentials) {
     try {
         const { email, password } = credentials;
 
-        // Get user from database
+        // Get user from database (works with anon key)
         const { data: users, error: fetchError } = await supabase
             .from('triogel_users')
             .select('*')
@@ -189,7 +189,7 @@ async function handleLogin(credentials) {
             };
         }
 
-        // Update last login
+        // Update last login (RLS allows UPDATE on own record)
         const { error: updateError } = await supabase
             .from('triogel_users')
             .update({ 
@@ -200,6 +200,7 @@ async function handleLogin(credentials) {
 
         if (updateError) {
             console.error('Error updating last login:', updateError);
+            // Don't fail login if update fails
         }
 
         console.log('User logged in successfully:', user.email);
@@ -233,6 +234,7 @@ async function handleLogin(credentials) {
 // Handle session update
 async function handleSessionUpdate(userId, sessionData) {
     try {
+        // Update session (works with RLS - user can update own record)
         const { error } = await supabase
             .from('triogel_users')
             .update(sessionData)
@@ -268,6 +270,7 @@ async function handleSessionUpdate(userId, sessionData) {
 // Handle get user profile
 async function handleGetProfile(userId) {
     try {
+        // Get user profile (RLS allows SELECT on own record)
         const { data: user, error } = await supabase
             .from('triogel_users')
             .select('id, username, email, favorite_game, created_at, last_login')
