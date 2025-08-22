@@ -1,5 +1,359 @@
 # GitHub Copilot Instructions for TRIOGEL E-commerce
 
+## ??? **CRITICAL RULE: LEGAL COMPLIANCE & REGULATORY REQUIREMENTS (PHILIPPINES)**
+
+**?? MANDATORY COMPLIANCE FOR PHILIPPINES OPERATIONS WITH INTERNATIONAL TRAFFIC**
+
+Before implementing ANY payment features or processing customer data, we MUST comply with Philippine laws and international regulations. This section is MANDATORY and takes priority over all other development considerations.
+
+**?? IMPORTANT**: We are based in the Philippines but expect international traffic from customers worldwide. This creates additional compliance requirements for cross-border transactions and data protection.
+
+### ?? **INTERNATIONAL TRAFFIC CONSIDERATIONS**
+
+#### ??? **Geographic Compliance Requirements**
+
+**? MUST COMPLY WITH INTERNATIONAL LAWS:**
+- **GDPR (European Union)**: Data protection for EU customers
+- **CCPA (California, USA)**: California Consumer Privacy Act compliance
+- **PIPEDA (Canada)**: Personal Information Protection and Electronic Documents Act
+- **LGPD (Brazil)**: Lei Geral de Proteção de Dados compliance
+- **PDPA (Singapore)**: Personal Data Protection Act
+- **Privacy Act (Australia)**: Australian privacy regulations
+
+**? CROSS-BORDER TRANSACTION REQUIREMENTS:**
+- **Foreign Exchange Regulations**: BSP approval for foreign currency transactions
+- **International KYC**: Enhanced due diligence for international customers
+- **Sanctions Compliance**: Screen against international sanctions lists (OFAC, UN, EU)
+- **Export Control**: Ensure virtual items don't violate export restrictions
+- **Tax Treaties**: Understand tax implications for international sales
+
+**? PROHIBITED ACTIVITIES:**
+- Processing transactions from sanctioned countries (North Korea, Iran, etc.)
+- Accepting payments from individuals on terrorist watch lists
+- Violating foreign exchange limits without BSP approval
+- Collecting data from EU citizens without GDPR compliance
+- Processing payments in countries where we lack proper licenses
+
+#### ?? **Multi-Currency & Foreign Exchange Compliance**
+
+**? BSP FOREIGN EXCHANGE REQUIREMENTS:**
+- **Registration Threshold**: Register as Foreign Exchange Dealer if monthly volume exceeds USD 100,000
+- **Reporting Requirements**: Report foreign exchange transactions to BSP
+- **Documentary Requirements**: Maintain supporting documents for FX transactions
+- **Authorized Dealer Banks**: Use only BSP-authorized banks for FX conversion
+- **Anti-Money Laundering**: Enhanced AML for cross-border transactions
+
+**?? CURRENCY HANDLING RULES:**
+```javascript
+// REQUIRED: BSP-compliant currency handling
+const currencyCompliance = {
+    // Maximum single transaction in foreign currency (BSP limit)
+    maxForeignCurrencyTransaction: {
+        USD: 50000, // USD 50,000 without additional documentation
+        EUR: 45000,
+        GBP: 40000
+    },
+    
+    // Required documentation thresholds
+    documentationRequired: {
+        above_USD_10000: ['Valid ID', 'Source of Income Declaration'],
+        above_USD_50000: ['BSP Registration', 'Enhanced Due Diligence']
+    },
+    
+    // Prohibited currencies (sanctioned countries)
+    prohibitedCurrencies: ['KPW', 'IRR'], // North Korea Won, Iranian Rial
+    
+    // Enhanced monitoring for high-risk countries
+    enhancedMonitoring: ['Afghanistan', 'Myanmar', 'Yemen']
+};
+```
+
+#### ?? **Customer Due Diligence for International Customers**
+
+**? ENHANCED KYC REQUIREMENTS:**
+```javascript
+// REQUIRED: International KYC procedures
+const internationalKYC = {
+    // Basic information for all international customers
+    basicInfo: ['fullName', 'email', 'country', 'gameUsername'],
+    
+    // Enhanced requirements based on transaction value
+    enhancedDueDiligence: {
+        above_PHP_50000: ['government_id', 'proof_of_address'],
+        above_PHP_100000: ['source_of_funds', 'enhanced_verification'],
+        above_PHP_500000: ['bank_reference', 'regulatory_approval']
+    },
+    
+    // Prohibited customer types
+    prohibited: ['minors_without_consent', 'sanctioned_individuals', 'pep_without_approval'],
+    
+    // High-risk country customers require additional verification
+    highRiskCountries: ['Afghanistan', 'Iran', 'North Korea', 'Myanmar']
+};
+```
+
+#### ?? **International Data Protection Implementation**
+
+**? GDPR COMPLIANCE FOR EU CUSTOMERS:**
+```javascript
+// REQUIRED: GDPR-compliant data handling
+const gdprCompliance = {
+    // Data minimization - collect only necessary data
+    dataCollection: {
+        necessary: ['email', 'gameUsername', 'country'],
+        optional: ['whatsappNumber', 'preferredRegion'],
+        prohibited: ['race', 'religion', 'political_views']
+    },
+    
+    // Explicit consent tracking
+    consentManagement: {
+        dataProcessing: null, // Must be explicitly set to true
+        marketing: false,     // Opt-in only
+        analytics: false,     // Opt-in only
+        thirdPartySharing: false,
+        consentDate: null,
+        ipAddress: null,
+        userAgent: null
+    },
+    
+    // Customer rights implementation
+    customerRights: {
+        dataAccess: 'Provide data within 30 days',
+        dataRectification: 'Allow corrections within 72 hours',
+        dataErasure: 'Delete data within 30 days (right to be forgotten)',
+        dataPortability: 'Provide data in machine-readable format',
+        objectionToProcessing: 'Stop processing upon request'
+    }
+};
+```
+
+### ?? **INTERNATIONAL SANCTIONS & RESTRICTIONS**
+
+#### ?? **PROHIBITED COUNTRIES & INDIVIDUALS**
+
+**? ABSOLUTELY PROHIBITED:**
+- **OFAC Sanctioned Countries**: North Korea, Iran, Syria, Cuba (check current list)
+- **UN Sanctioned Individuals**: Anyone on UN Security Council sanctions lists
+- **EU Sanctioned Entities**: Individuals/entities on EU sanctions lists
+- **Specially Designated Nationals (SDN)**: US Treasury prohibited persons list
+- **Politically Exposed Persons (PEP)**: Without proper due diligence
+
+**?? MANDATORY SCREENING:**
+```javascript
+// REQUIRED: Real-time sanctions screening
+const sanctionsScreening = {
+    // Check against these lists before processing any payment
+    screeningLists: [
+        'OFAC_SDN_LIST',      // US Treasury Specially Designated Nationals
+        'UN_CONSOLIDATED',    // UN Security Council Consolidated List
+        'EU_SANCTIONS',       // European Union sanctions list
+        'HMT_SANCTIONS',      // UK HM Treasury sanctions list
+        'BSP_WATCHLIST'       // Bangko Sentral ng Pilipinas watchlist
+    ],
+    
+    // Automatic rejection criteria
+    autoReject: [
+        'exact_name_match',
+        'exact_address_match', 
+        'known_sanctioned_entity'
+    ],
+    
+    // Manual review criteria
+    manualReview: [
+        'partial_name_match',
+        'high_risk_country',
+        'unusual_transaction_pattern'
+    ]
+};
+```
+
+#### ?? **COUNTRY-SPECIFIC RESTRICTIONS**
+
+**?? HIGH-RISK JURISDICTIONS (Enhanced Due Diligence Required):**
+- Afghanistan, Myanmar, Yemen, Somalia, Libya
+- Countries with weak AML/CFT frameworks (FATF grey list)
+- Countries with high corruption indexes
+
+**?? RESTRICTED JURISDICTIONS (Special Approval Required):**
+- United States (OFAC compliance required)
+- European Union (GDPR compliance required)
+- China (Complex regulatory environment)
+- Russia (Sanctions compliance required)
+
+**?? PROHIBITED JURISDICTIONS (No Service):**
+- Currently sanctioned countries as per BSP/AMLC guidance
+- Countries where virtual item trading is explicitly illegal
+- Jurisdictions where we cannot comply with local regulations
+
+### ?? **TECHNICAL IMPLEMENTATION FOR INTERNATIONAL COMPLIANCE**
+
+#### ?? **Geo-Location & Country Detection**
+
+```javascript
+// REQUIRED: Customer country detection and compliance checking
+const geoCompliance = {
+    // Detect customer country (use IP geolocation + user declaration)
+    detectCustomerCountry: async function(ipAddress, userDeclaration) {
+        const geoData = await getGeoLocation(ipAddress);
+        return {
+            detectedCountry: geoData.country,
+            declaredCountry: userDeclaration,
+            riskLevel: this.assessCountryRisk(geoData.country),
+            complianceRequirements: this.getComplianceRequirements(geoData.country)
+        };
+    },
+    
+    // Country risk assessment
+    assessCountryRisk: function(country) {
+        const highRisk = ['AF', 'MM', 'YE', 'SO', 'LY']; // ISO country codes
+        const mediumRisk = ['PK', 'BD', 'LK']; // Example medium risk
+        const lowRisk = ['SG', 'JP', 'AU', 'US', 'CA']; // Example low risk
+        
+        if (highRisk.includes(country)) return 'HIGH';
+        if (mediumRisk.includes(country)) return 'MEDIUM';
+        return 'LOW';
+    },
+    
+    // Get compliance requirements by country
+    getComplianceRequirements: function(country) {
+        const requirements = {
+            'US': ['OFAC_screening', 'state_licensing_check'],
+            'GB': ['FCA_compliance', 'enhanced_kyc'],
+            'DE': ['GDPR_compliance', 'BaFin_requirements'],
+            'AU': ['AUSTRAC_compliance', 'privacy_act'],
+            'SG': ['MAS_compliance', 'PDPA_compliance'],
+            'CA': ['FINTRAC_compliance', 'PIPEDA_compliance']
+        };
+        return requirements[country] || ['basic_kyc', 'standard_compliance'];
+    }
+};
+```
+
+#### ?? **International Payment Processing**
+
+```javascript
+// REQUIRED: Multi-jurisdictional payment compliance
+const internationalPayments = {
+    // Payment method availability by country
+    paymentMethodsByCountry: {
+        'PH': ['gcash', 'paymaya', 'bpi', 'bdo', 'paypal'],
+        'US': ['paypal', 'stripe', 'bank_transfer'],
+        'EU': ['paypal', 'sepa', 'bank_transfer'],
+        'SG': ['paypal', 'grabpay', 'bank_transfer'],
+        'AU': ['paypal', 'poli', 'bank_transfer']
+    },
+    
+    // Currency restrictions by payment method
+    currencyRestrictions: {
+        'gcash': ['PHP'], // GCash only supports Philippine Peso
+        'paymaya': ['PHP'], // PayMaya only supports Philippine Peso
+        'paypal': ['USD', 'EUR', 'GBP', 'AUD', 'CAD', 'SGD'],
+        'bank_transfer': 'depends_on_bank'
+    },
+    
+    // Transaction limits by country (to comply with local regulations)
+    transactionLimits: {
+        'US': { single: 10000, daily: 25000, monthly: 100000 }, // USD
+        'EU': { single: 8500, daily: 21000, monthly: 85000 },   // EUR
+        'PH': { single: 500000, daily: 1000000, monthly: 5000000 }, // PHP
+        'default': { single: 5000, daily: 15000, monthly: 50000 } // USD equivalent
+    }
+};
+```
+
+#### ?? **Multi-Language Privacy Policies**
+
+```javascript
+// REQUIRED: Jurisdiction-specific privacy policies
+const privacyPolicyByJurisdiction = {
+    'EU': {
+        language: 'english',
+        specificRights: ['right_to_be_forgotten', 'data_portability', 'opt_out_profiling'],
+        legalBasis: 'GDPR Article 6',
+        dataRetention: '5 years maximum unless legally required',
+        transferMechanism: 'Standard Contractual Clauses'
+    },
+    'US': {
+        language: 'english',
+        specificRights: ['opt_out_sale', 'non_discrimination', 'data_deletion'],
+        legalBasis: 'CCPA compliance',
+        dataRetention: 'Business necessity basis',
+        transferMechanism: 'Privacy Shield successor framework'
+    },
+    'CA': {
+        language: ['english', 'french'],
+        specificRights: ['access', 'correction', 'withdrawal_consent'],
+        legalBasis: 'PIPEDA compliance',
+        dataRetention: 'Reasonable business purposes',
+        transferMechanism: 'Adequate level of protection'
+    }
+};
+```
+
+### ?? **UPDATED COMPLIANCE CHECKLIST**
+
+#### **Phase 1: Legal Foundation (BEFORE launching to international customers)**
+- [ ] **Philippine Business Registration**: DTI registration, BIR TIN, Mayor's Permit
+- [ ] **BSP Foreign Exchange Registration**: If monthly FX volume exceeds limits
+- [ ] **Multi-Jurisdictional Privacy Policy**: GDPR, CCPA, PIPEDA compliant
+- [ ] **International Terms of Service**: Country-specific legal requirements
+- [ ] **Sanctions Screening System**: Real-time checking against international lists
+- [ ] **Country Risk Assessment**: Framework for customer due diligence by country
+
+#### **Phase 2: International Payment Compliance**
+- [ ] **Enhanced KYC Procedures**: Risk-based customer verification by country
+- [ ] **Multi-Currency Transaction Monitoring**: BSP and international AML compliance
+- [ ] **Geo-Location Services**: Accurate country detection and risk assessment
+- [ ] **Payment Method Restrictions**: Country-specific payment method availability
+- [ ] **Cross-Border Reporting**: BSP and international reporting requirements
+- [ ] **Legal Consultation**: International trade and payments lawyer consultation
+
+#### **Phase 3: Ongoing International Compliance**
+- [ ] **Regular Sanctions List Updates**: Daily/weekly screening list updates
+- [ ] **Cross-Border Transaction Audits**: Monthly compliance reviews
+- [ ] **International Regulatory Monitoring**: Track changes in target countries
+- [ ] **Customer Support Training**: Multi-timezone, multi-language support
+- [ ] **Data Localization Assessment**: Evaluate data residency requirements
+- [ ] **Tax Treaty Analysis**: International tax implications and optimization
+
+### ?? **INTERNATIONAL REGULATORY CONTACTS**
+
+#### **Philippines (Home Base)**
+- **BSP Foreign Exchange**: (02) 8708-7701 | forex@bsp.gov.ph
+- **BIR International Tax**: 8981-8888 | internationaltax@bir.gov.ph
+- **AMLC International Cooperation**: (02) 8523-4586 | international@amla.gov.ph
+
+#### **Major Markets**
+- **US FinCEN**: +1-800-949-2732 | frc@fincen.gov
+- **EU Data Protection**: Various by country, see EDPB website
+- **Singapore MAS**: +65-6225-5577 | webmaster@mas.gov.sg
+- **Australia AUSTRAC**: +61-2-9950-0055 | info@austrac.gov.au
+
+### ?? **INTERNATIONAL RED FLAGS**
+
+#### **Customer Behavior Red Flags**
+- Using VPN to hide true location
+- Providing conflicting country information
+- Requesting delivery to different country than payment origin
+- Multiple accounts from same IP in different countries
+- Transactions just below reporting thresholds in multiple currencies
+
+#### **Transaction Pattern Red Flags**
+- Rapid succession of international transactions
+- Round number amounts in foreign currencies
+- Transactions from newly created accounts in high-risk countries
+- Payment methods inconsistent with declared country
+- Unusual payment timing (outside business hours in customer's timezone)
+
+#### **Geographic Red Flags**
+- Transactions from countries not supported by our compliance framework
+- IP addresses from sanctioned countries
+- Multiple transactions from different countries within short timeframe
+- Countries with recent regulatory changes affecting virtual items
+- Jurisdictions where we lack proper legal documentation
+
+This comprehensive international compliance framework ensures we can safely serve customers worldwide while maintaining full legal compliance in the Philippines and target markets.
+
 ## Project Overview
 **TRIOGEL** is a premium virtual gaming items marketplace specializing in Mobile Legends: Bang Bang and Roblox items. It's a modern, responsive e-commerce platform with comprehensive payment integration, user management, and order processing capabilities.
 
@@ -59,7 +413,7 @@ This project has a carefully crafted cyberpunk/gaming aesthetic that MUST be pre
 .tracking-input                      /* Order tracking input */
 ```
 
-### ??? **Design Preservation Checklist**
+### ? **Design Preservation Checklist**
 Before making ANY changes, verify these elements maintain TRIOGEL styling:
 
 1. **Button Gradients**: All primary buttons use `var(--primary-gradient)`
@@ -119,7 +473,7 @@ This rule applies to:
 - ? **Console logs**: No emojis in console.log, console.error messages
 - ? **User interface text**: No emojis in buttons, notifications, labels
 - ? **Currency symbols**: Use text codes (PHP, USD, EUR) instead of symbols (?, $, €)
-- ? **Special characters**: No diamonds ?, multiplication ×, arrows ??, etc.
+- ? **Special characters**: No diamonds ?, multiplication ×, arrows ?, etc.
 - ? **HTML content**: No emojis in any HTML elements or attributes
 - ? **JavaScript strings**: No emojis in any string literals
 
@@ -227,7 +581,7 @@ function criticalSystemCheck() {
 5. **Check for duplicate function definitions**
 6. **Verify all essential functions exist**
 
-### ?? **NEVER DO THESE WHEN EDITING MAIN.JS:**
+### ? **NEVER DO THESE WHEN EDITING MAIN.JS:**
 
 - ? Don't copy/paste large sections without verifying syntax
 - ? Don't move functions without understanding dependencies  
@@ -274,7 +628,7 @@ function criticalSystemCheck() {
 - **Toast Notifications**: Success/error messages with clean text (no emojis)
 - **Owner Notifications**: Alert system for new orders received
 
-### ?? **Database Integration (Supabase)**
+### ??? **Database Integration (Supabase)**
 - **Order Storage**: All orders automatically saved to Supabase database
 - **Customer Tracking**: Customer profiles with order history and spending analytics
 - **Order Items Tracking**: Detailed item-level tracking with quantities and subtotals

@@ -9,7 +9,7 @@ window.addEventListener('load', function() {
 // TRIOGEL JavaScript - Clean Version
 console.log('Loading TRIOGEL JavaScript...');
 
-// Currency configuration
+// Currency configuration with real-time exchange rates
 const currencies = {
     'PHP': { symbol: '', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
     'USD': { symbol: '', name: 'US Dollar', code: 'USD', rate: 0.018 },
@@ -21,6 +21,303 @@ const currencies = {
     'MYR': { symbol: '', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
     'THB': { symbol: '', name: 'Thai Baht', code: 'THB', rate: 0.63 },
     'VND': { symbol: '', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
+};
+
+// Real-time currency conversion system
+const currencySystem = {
+    // Cache settings for exchange rates
+    cacheKey: 'triogel-exchange-rates',
+    cacheTimestamp: 'triogel-rates-timestamp',
+    cacheExpiry: 4 * 60 * 60 * 1000, // 4 hours in milliseconds
+    
+    // API configuration (using free exchangerate-api.com)
+    apiConfig: {
+        baseURL: 'https://api.exchangerate-api.com/v4/latest/PHP',
+        fallbackURL: 'https://api.fxratesapi.com/latest?base=PHP',
+        timeout: 10000, // 10 second timeout
+        retryAttempts: 3
+    },
+    
+    // Static fallback rates (BSP-compliant estimates for business continuity)
+    fallbackRates: {
+        'PHP': 1.0,
+        'USD': 0.018,
+        'EUR': 0.016,
+        'GBP': 0.014,
+        'JPY': 2.65,
+        'KRW': 23.5,
+        'SGD': 0.024,
+        'MYR': 0.082,
+        'THB': 0.63,
+        'VND': 440
+    },
+    
+    // BSP compliance: transaction limits per currency
+    transactionLimits: {
+        'USD': { single: 50000, daily: 100000 }, // BSP limits for USD
+        'EUR': { single: 45000, daily: 90000 },
+        'GBP': { single: 40000, daily: 80000 },
+        'JPY': { single: 6500000, daily: 13000000 },
+        'KRW': { single: 65000000, daily: 130000000 },
+        'SGD': { single: 70000, daily: 140000 },
+        'MYR': { single: 220000, daily: 440000 },
+        'THB': { single: 1800000, daily: 3600000 },
+        'VND': { single: 1200000000, daily: 2400000000 },
+        'PHP': { single: 500000, daily: 1000000 } // PHP limits for local transactions
+    },
+    
+    // Check if cached rates are still valid
+    isCacheValid: function() {
+        try {
+            const timestamp = localStorage.getItem(this.cacheTimestamp);
+            if (!timestamp) return false;
+            
+            const cacheAge = Date.now() - parseInt(timestamp);
+            return cacheAge < this.cacheExpiry;
+        } catch (error) {
+            console.error('Error checking cache validity:', error);
+            return false;
+        }
+    },
+    
+    // Get cached exchange rates
+    getCachedRates: function() {
+        try {
+            if (!this.isCacheValid()) return null;
+            
+            const cachedRates = localStorage.getItem(this.cacheKey);
+            return cachedRates ? JSON.parse(cachedRates) : null;
+        } catch (error) {
+            console.error('Error retrieving cached rates:', error);
+            return null;
+        }
+    },
+    
+    // Cache exchange rates with timestamp
+    cacheRates: function(rates) {
+        try {
+            localStorage.setItem(this.cacheKey, JSON.stringify(rates));
+            localStorage.setItem(this.cacheTimestamp, Date.now().toString());
+            console.log('Exchange rates cached successfully');
+        } catch (error) {
+            console.error('Error caching exchange rates:', error);
+        }
+    },
+    
+    // Fetch real-time exchange rates from API
+    fetchRealTimeRates: async function() {
+        let attempt = 0;
+        const maxAttempts = this.apiConfig.retryAttempts;
+        
+        while (attempt < maxAttempts) {
+            try {
+                console.log(`Fetching exchange rates (attempt ${attempt + 1}/${maxAttempts})...`);
+                
+                // Create abort controller for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), this.apiConfig.timeout);
+                
+                // Try primary API
+                let response;
+                try {
+                    response = await fetch(this.apiConfig.baseURL, {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'TRIOGEL-Exchange-Rate-Client'
+                        }
+                    });
+                } catch (primaryError) {
+                    console.log('Primary API failed, trying fallback...');
+                    // Try fallback API
+                    response = await fetch(this.apiConfig.fallbackURL, {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json',
+                            'User-Agent': 'TRIOGEL-Exchange-Rate-Client'
+                        }
+                    });
+                }
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`API responded with status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Validate response structure
+                if (!data.rates || typeof data.rates !== 'object') {
+                    throw new Error('Invalid API response structure');
+                }
+                
+                // Extract rates for our supported currencies
+                const extractedRates = {};
+                Object.keys(currencies).forEach(currencyCode => {
+                    if (currencyCode === 'PHP') {
+                        extractedRates[currencyCode] = 1.0; // Base currency
+                    } else if (data.rates[currencyCode]) {
+                        extractedRates[currencyCode] = data.rates[currencyCode];
+                    } else {
+                        // Use fallback rate if not available in API
+                        extractedRates[currencyCode] = this.fallbackRates[currencyCode];
+                        console.warn(`Using fallback rate for ${currencyCode}`);
+                    }
+                });
+                
+                console.log('Real-time exchange rates fetched successfully:', extractedRates);
+                return extractedRates;
+                
+            } catch (error) {
+                console.error(`Exchange rate fetch attempt ${attempt + 1} failed:`, error.message);
+                attempt++;
+                
+                if (attempt < maxAttempts) {
+                    // Wait before retrying (exponential backoff)
+                    const waitTime = Math.pow(2, attempt) * 1000;
+                    console.log(`Retrying in ${waitTime / 1000} seconds...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+            }
+        }
+        
+        // All attempts failed
+        console.error('All attempts to fetch real-time rates failed, using fallback rates');
+        return null;
+    },
+    
+    // Update currency rates (main function)
+    updateExchangeRates: async function() {
+        try {
+            console.log('Updating exchange rates...');
+            
+            // Check if we have valid cached rates
+            const cachedRates = this.getCachedRates();
+            if (cachedRates) {
+                console.log('Using cached exchange rates');
+                this.applyRates(cachedRates);
+                return true;
+            }
+            
+            // Show loading indicator for currency updates
+            this.showCurrencyUpdateStatus('Updating exchange rates...');
+            
+            // Fetch new rates
+            const freshRates = await this.fetchRealTimeRates();
+            
+            if (freshRates) {
+                // Apply and cache the new rates
+                this.applyRates(freshRates);
+                this.cacheRates(freshRates);
+                this.showCurrencyUpdateStatus('Exchange rates updated!', false);
+                return true;
+            } else {
+                // Fallback to static rates
+                console.log('Using fallback exchange rates');
+                this.applyRates(this.fallbackRates);
+                this.showCurrencyUpdateStatus('Using standard rates', false);
+                return false;
+            }
+            
+        } catch (error) {
+            console.error('Error updating exchange rates:', error);
+            // Use fallback rates in case of any error
+            this.applyRates(this.fallbackRates);
+            this.showCurrencyUpdateStatus('Using standard rates', false);
+            return false;
+        }
+    },
+    
+    // Apply exchange rates to the currencies object
+    applyRates: function(rates) {
+        Object.keys(rates).forEach(currencyCode => {
+            if (currencies[currencyCode]) {
+                currencies[currencyCode].rate = rates[currencyCode];
+                // Add last updated timestamp
+                currencies[currencyCode].lastUpdated = new Date().toISOString();
+            }
+        });
+        
+        // Refresh the display if items are already shown
+        if (typeof displayItems === 'function') {
+            displayItems();
+        }
+        
+        console.log('Exchange rates applied successfully');
+    },
+    
+    // Show currency update status to user
+    showCurrencyUpdateStatus: function(message, persist = true) {
+        // Create or update status indicator
+        let statusDiv = document.getElementById('currency-status');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'currency-status';
+            statusDiv.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(103, 126, 234, 0.9);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                z-index: 2500;
+                max-width: 300px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                transition: all 0.3s ease;
+            `;
+            document.body.appendChild(statusDiv);
+        }
+        
+        statusDiv.textContent = message;
+        statusDiv.style.opacity = '1';
+        
+        if (!persist) {
+            // Auto-hide after 3 seconds
+            setTimeout(() => {
+                statusDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (statusDiv.parentNode) {
+                        statusDiv.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+    },
+    
+    // Compliance check for transaction amounts
+    checkTransactionCompliance: function(amount, currency) {
+        const limits = this.transactionLimits[currency];
+        if (!limits) return { compliant: true }; // No limits defined
+        
+        const amountInTargetCurrency = amount * (currencies[currency]?.rate || 1);
+        
+        return {
+            compliant: amountInTargetCurrency <= limits.single,
+            limit: limits.single,
+            currentAmount: amountInTargetCurrency,
+            requiresDocumentation: amountInTargetCurrency > 50000 && currency !== 'PHP',
+            requiresBSPApproval: amountInTargetCurrency > 100000 && currency !== 'PHP'
+        };
+    },
+    
+    // Get exchange rate with metadata
+    getExchangeRateInfo: function(currency) {
+        const currencyInfo = currencies[currency];
+        if (!currencyInfo) return null;
+        
+        return {
+            code: currency,
+            name: currencyInfo.name,
+            rate: currencyInfo.rate,
+            lastUpdated: currencyInfo.lastUpdated || 'Static rate',
+            source: currencyInfo.lastUpdated ? 'Real-time API' : 'Static fallback'
+        };
+    }
 };
 
 let selectedCurrency = 'PHP';
@@ -148,14 +445,22 @@ let cart = [];
 let currentFilter = 'all';
 
 // Core Functions
+// Enhanced price formatting with real-time rates and compliance checking
 function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
-    if (targetCurrency === 'PHP') return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+    if (targetCurrency === 'PHP') {
+        return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+    }
     
     const rate = currencies[targetCurrency]?.rate || 1;
     const convertedPrice = priceInPHP * rate;
     const currencyConfig = currencies[targetCurrency];
     
-    if (!currencyConfig) return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+    if (!currencyConfig) {
+        return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+    }
+    
+    // Check BSP compliance for transaction
+    const compliance = currencySystem.checkTransactionCompliance(priceInPHP, targetCurrency);
     
     let formattedAmount;
     if (targetCurrency === 'JPY' || targetCurrency === 'KRW' || targetCurrency === 'VND') {
@@ -164,7 +469,14 @@ function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
         formattedAmount = convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
     }
     
-    return `${currencyConfig.code} ${formattedAmount}`;
+    let priceDisplay = `${currencyConfig.code} ${formattedAmount}`;
+    
+    // Add compliance warning for high-value transactions
+    if (!compliance.compliant) {
+        priceDisplay += ' (Requires Documentation)';
+    }
+    
+    return priceDisplay;
 }
 
 function displayItems() {
@@ -229,6 +541,7 @@ function updateCartCount() {
     }
 }
 
+// Enhanced currency selection with real-time rate updates
 function setCurrency(currencyCode) {
     console.log('Changing currency to:', currencyCode);
     selectedCurrency = currencyCode;
@@ -236,7 +549,14 @@ function setCurrency(currencyCode) {
     displayItems();
     
     const currencyName = currencies[currencyCode]?.name || currencyCode;
-    showNotification(`Currency changed to ${currencyName}`);
+    const rateInfo = currencySystem.getExchangeRateInfo(currencyCode);
+    
+    let notificationMessage = `Currency changed to ${currencyName}`;
+    if (rateInfo && rateInfo.source === 'Real-time API') {
+        notificationMessage += ` (Live rates)`;
+    }
+    
+    showNotification(notificationMessage);
     localStorage.setItem('triogel-currency', currencyCode);
 }
 
@@ -267,12 +587,23 @@ function setupCurrencySelector() {
         return;
     }
     
-    currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => `
-        <div class="currency-option" data-currency="${code}">
-            <span class="currency-code">${code}</span>
-            <span class="currency-name">${config.name}</span>
-        </div>
-    `).join('');
+    currencyDropdown.innerHTML = Object.entries(currencies).map(([code, config]) => {
+        const rateInfo = currencySystem.getExchangeRateInfo(code);
+        const isLiveRate = rateInfo && rateInfo.source === 'Real-time API';
+        
+        return `
+            <div class="currency-option" data-currency="${code}">
+                <div class="currency-main">
+                    <span class="currency-code">${code}</span>
+                    <span class="currency-name">${config.name}</span>
+                </div>
+                <div class="currency-meta">
+                    <span class="currency-rate">1 PHP = ${config.rate.toFixed(code === 'JPY' || code === 'KRW' || code === 'VND' ? 0 : 4)} ${code}</span>
+                    ${isLiveRate ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
+                </div>
+            </div>
+        `;
+    }).join('');
     
     currencyDropdown.addEventListener('click', (e) => {
         const option = e.target.closest('.currency-option');
@@ -286,833 +617,69 @@ function setupCurrencySelector() {
     console.log('Currency selector setup complete');
 }
 
-function setupFilters() {
-    const filterBtns = document.querySelectorAll('.filter-btn');
-    filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            currentFilter = btn.dataset.game;
+// Add rate refresh functionality
+function refreshExchangeRates() {
+    console.log('Manual exchange rate refresh requested');
+    
+    // Clear cache to force fresh fetch
+    localStorage.removeItem(currencySystem.cacheKey);
+    localStorage.removeItem(currencySystem.cacheTimestamp);
+    
+    // Update rates
+    currencySystem.updateExchangeRates().then(success => {
+        if (success) {
+            showNotification('Exchange rates refreshed successfully!');
+            // Update currency selector to show new rates
+            setupCurrencySelector();
+        } else {
+            showNotification('Using standard rates - API unavailable');
+        }
+    });
+}
+
+// Enhanced initialization with real-time rate loading
+function initializeCurrencySystem() {
+    console.log('Initializing currency system...');
+    
+    // Load saved currency preference
+    const savedCurrency = localStorage.getItem('triogel-currency');
+    if (savedCurrency && currencies[savedCurrency]) {
+        selectedCurrency = savedCurrency;
+        console.log('Loaded saved currency:', savedCurrency);
+    }
+    
+    // Update exchange rates in background
+    currencySystem.updateExchangeRates().then(success => {
+        console.log('Currency system initialized:', success ? 'with live rates' : 'with fallback rates');
+        
+        // Update currency selector after rates are loaded
+        setupCurrencySelector();
+        updateCurrencySelector();
+        
+        // Refresh display if items are already shown
+        if (typeof displayItems === 'function') {
             displayItems();
-        });
+        }
+    });
+}
+
+// Add currency rate monitoring (updates every 4 hours)
+function startCurrencyRateMonitoring() {
+    // Check for rate updates every 4 hours
+    setInterval(() => {
+        console.log('Periodic exchange rate update check...');
+        currencySystem.updateExchangeRates();
+    }, 4 * 60 * 60 * 1000); // 4 hours
+    
+    // Also update when tab becomes visible again (user returns to site)
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && !currencySystem.isCacheValid()) {
+            console.log('Tab became visible, checking for rate updates...');
+            currencySystem.updateExchangeRates();
+        }
     });
 }
 
-function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: var(--primary-gradient);
-        color: white;
-        padding: 15px 20px;
-        border-radius: 10px;
-        z-index: 3000;
-        font-weight: 700;
-        animation: slideInRight 0.3s ease;
-    `;
-    notification.textContent = message;
-
-    document.body.appendChild(notification);
-    setTimeout(() => notification.remove(), 3000);
-}
-
-function showGcashNotification(message) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-        padding: 25px;
-        border-radius: 15px;
-        z-index: 3000;
-        font-weight: 600;
-        font-family: monospace;
-        white-space: pre-line;
-        max-width: 400px;
-        box-shadow: 0 15px 40px rgba(16, 185, 129, 0.4);
-        border: 2px solid rgba(16, 185, 129, 0.6);
-        animation: slideInRight 0.5s ease;
-    `;
-    notification.textContent = message;
-
-    // Add close button
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = 'X';
-    closeBtn.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        background: none;
-        border: none;
-        color: white;
-        font-size: 24px;
-        cursor: pointer;
-        opacity: 0.7;
-    `;
-    closeBtn.onclick = () => notification.remove();
-    notification.appendChild(closeBtn);
-
-    document.body.appendChild(notification);
-    
-    // Keep GCash notification longer (10 seconds)
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 10000);
-}
-
-// Cart Functions
-function openCart() {
-    document.getElementById('cartModal').style.display = 'block';
-    displayCartItems();
-}
-
-function closeCart() {
-    document.getElementById('cartModal').style.display = 'none';
-}
-
-function displayCartItems() {
-    const cartItemsDiv = document.getElementById('cartItems');
-    const cartTotalDiv = document.getElementById('cartTotal');
-
-    if (!cartItemsDiv || !cartTotalDiv) {
-        console.error('Cart elements not found');
-        return;
-    }
-
-    if (cart.length === 0) {
-        cartItemsDiv.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 40px;">Your cart is empty</p>';
-        cartTotalDiv.innerHTML = `Total: ${formatPrice(0)}`;
-        return;
-    }
-
-    const totalInPHP = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-
-    cartItemsDiv.innerHTML = cart.map(item => `
-        <div class="cart-item">
-            <div>
-                <strong>${item.name}</strong><br>
-                <small style="color: var(--text-secondary);">${gameNames[item.game]} - Qty: ${item.quantity}</small>
-            </div>
-            <div style="text-align: right;">
-                <div style="font-size: 1.2rem; font-weight: 700; color: var(--success-green);">${formatPrice(item.price * item.quantity)}</div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
-            </div>
-        </div>
-    `).join('');
-
-    cartTotalDiv.innerHTML = `Total: ${formatPrice(totalInPHP)}`;
-}
-
-function removeFromCart(itemId) {
-    cart = cart.filter(item => item.id !== itemId);
-    updateCartCount();
-    displayCartItems();
-}
-
-// Auth and Modal Functions
-let currentUser = null;
-
-// Authentication Functions
-function initAuth() {
-    console.log('Initializing authentication...');
-    
-    const savedUser = localStorage.getItem('triogel-user');
-    if (savedUser) {
-        try {
-            currentUser = JSON.parse(savedUser);
-            showUserSection();
-            console.log('User auto-logged in:', currentUser.username);
-        } catch (error) {
-            console.error('Error loading saved user:', error);
-            localStorage.removeItem('triogel-user');
-        }
-    }
-}
-
-function openLoginModal() {
-    document.getElementById('loginModal').style.display = 'block';
-    document.getElementById('loginEmail').focus();
-}
-
-function closeLoginModal() {
-    document.getElementById('loginModal').style.display = 'none';
-    clearLoginForm();
-}
-
-function openRegisterModal() {
-    document.getElementById('registerModal').style.display = 'block';
-    document.getElementById('registerUsername').focus();
-}
-
-function closeRegisterModal() {
-    document.getElementById('registerModal').style.display = 'none';
-    clearRegisterForm();
-}
-
-function switchToRegister() {
-    closeLoginModal();
-    openRegisterModal();
-}
-
-function switchToLogin() {
-    closeRegisterModal();
-    openLoginModal();
-}
-
-function clearLoginForm() {
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) loginForm.reset();
-}
-
-function clearRegisterForm() {
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) registerForm.reset();
-}
-
-async function loginUser(email, password) {
-    try {
-        console.log('Attempting login for:', email);
-        
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        const user = users[email.toLowerCase()];
-        
-        if (!user) {
-            throw new Error('Account not found. Please register first.');
-        }
-        
-        if (user.password !== password) {
-            throw new Error('Invalid password. Please try again.');
-        }
-        
-        currentUser = {
-            id: user.id,
-            username: user.username,
-            email: user.email.toLowerCase(),
-            favoriteGame: user.favoriteGame,
-            joinDate: user.joinDate,
-            orders: user.orders || [],
-            wishlist: user.wishlist || []
-        };
-        
-        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-        showUserSection();
-        closeLoginModal();
-        showNotification(`Welcome back, ${currentUser.username}!`);
-        console.log('Login successful:', currentUser.username);
-        
-        return { success: true, user: currentUser };
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        throw error;
-    }
-}
-
-async function registerUser(userData) {
-    try {
-        console.log('Attempting registration for:', userData.email);
-        
-        if (userData.password !== userData.confirmPassword) {
-            throw new Error('Passwords do not match!');
-        }
-        
-        if (userData.password.length < 6) {
-            throw new Error('Password must be at least 6 characters long!');
-        }
-        
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        const email = userData.email.toLowerCase();
-        
-        if (users[email]) {
-            throw new Error('An account with this email already exists!');
-        }
-        
-        const newUser = {
-            id: Date.now().toString(),
-            username: userData.username,
-            email: email,
-            password: userData.password,
-            favoriteGame: userData.favoriteGame,
-            joinDate: new Date().toISOString(),
-            orders: [],
-            wishlist: []
-        };
-        
-        users[email] = newUser;
-        localStorage.setItem('triogel-users', JSON.stringify(users));
-        
-        currentUser = {
-            id: newUser.id,
-            username: newUser.username,
-            email: newUser.email,
-            favoriteGame: newUser.favoriteGame,
-            joinDate: newUser.joinDate,
-            orders: [],
-            wishlist: []
-        };
-        
-        localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-        showUserSection();
-        closeRegisterModal();
-        showNotification(`Welcome to TRIOGEL, ${currentUser.username}!`);
-        console.log('Registration successful:', currentUser.username);
-        
-        return { success: true, user: currentUser };
-        
-    } catch (error) {
-        console.error('Registration error:', error);
-        throw error;
-    }
-}
-
-function showUserSection() {
-    const loginSection = document.getElementById('loginSection');
-    const userSection = document.getElementById('userSection');
-    const userName = document.querySelector('.user-name');
-    const userStats = document.getElementById('userStats');
-    
-    if (loginSection && userSection && userName && currentUser) {
-        loginSection.style.display = 'none';
-        userSection.style.display = 'block';
-        userName.textContent = currentUser.username;
-        
-        const gameIcon = currentUser.favoriteGame === 'ml' ? 'ML' : currentUser.favoriteGame === 'roblox' ? 'RBX' : 'GAME';
-        if (userStats) {
-            userStats.innerHTML = `
-                <div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
-                    <div style="margin-bottom: 8px;">
-                        ${gameIcon} ${getGameName(currentUser.favoriteGame)} Player
-                    </div>
-                    <div style="margin-bottom: 8px;">
-                        Orders: ${currentUser.orders.length}
-                    </div>
-                    <div>
-                        Wishlist: ${currentUser.wishlist.length} Items
-                    </div>
-                </div>
-            `;
-        }
-    }
-}
-
-function showLoginSection() {
-    const loginSection = document.getElementById('loginSection');
-    const userSection = document.getElementById('userSection');
-    
-    if (loginSection && userSection) {
-        loginSection.style.display = 'flex';
-        userSection.style.display = 'none';
-    }
-}
-
-function getGameName(gameCode) {
-    const names = {
-        'ml': 'Mobile Legends',
-        'roblox': 'Roblox',
-        'other': 'Various Games'
-    };
-    return names[gameCode] || 'Gamer';
-}
-
-function logoutUser() {
-    console.log('Logging out user:', currentUser?.username);
-    currentUser = null;
-    localStorage.removeItem('triogel-user');
-    showLoginSection();
-    showNotification('Logged out successfully!');
-}
-
-// Order Tracking Functions
-function openOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'block';
-    document.getElementById('orderId').value = '';
-    const orderResult = document.getElementById('orderResult');
-    if (orderResult) orderResult.style.display = 'none';
-}
-
-function closeOrderTracking() {
-    document.getElementById('orderTrackingModal').style.display = 'none';
-}
-
-async function trackOrderById(orderId) {
-    try {
-        console.log('Tracking order:', orderId);
-        
-        const trackBtn = document.querySelector('.track-btn');
-        const originalText = trackBtn.innerHTML;
-        trackBtn.innerHTML = 'Tracking...';
-        trackBtn.disabled = true;
-
-        let orderData = null;
-        
-        // Try to fetch from Netlify function first
-        try {
-            const response = await fetch(`/.netlify/functions/track-order?orderId=${orderId}`);
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.orders && result.orders.length > 0) {
-                    orderData = result.orders[0];
-                    console.log('Order found in database:', orderData);
-                }
-            }
-        } catch (netError) {
-            console.log('Database not available, checking local storage...');
-        }
-
-        // Fallback to localStorage
-        if (!orderData) {
-            orderData = findOrderInLocalStorage(orderId);
-        }
-
-        if (orderData) {
-            displayOrderTrackingResult(orderData);
-        } else {
-            displayOrderNotFound(orderId);
-        }
-
-        trackBtn.innerHTML = originalText;
-        trackBtn.disabled = false;
-    } catch (error) {
-        console.error('Error tracking order:', error);
-        showNotification('Error tracking order. Please try again.');
-    }
-}
-
-function findOrderInLocalStorage(orderId) {
-    // Check if user is logged in and has orders
-    if (currentUser && currentUser.orders) {
-        const userOrder = currentUser.orders.find(order => order.orderId === orderId);
-        if (userOrder) {
-            return {
-                orderId: userOrder.orderId,
-                status: userOrder.status || 'pending',
-                totalAmount: userOrder.total,
-                gameUsername: userOrder.username,
-                orderDate: userOrder.timestamp,
-                items: userOrder.items || []
-            };
-        }
-    }
-
-    // Check all registered users for the order
-    try {
-        const users = JSON.parse(localStorage.getItem('triogel-users') || '{}');
-        for (const [email, user] of Object.entries(users)) {
-            if (user.orders) {
-                const foundOrder = user.orders.find(order => order.orderId === orderId);
-                if (foundOrder) {
-                    return {
-                        orderId: foundOrder.orderId,
-                        status: foundOrder.status || 'pending',
-                        totalAmount: foundOrder.total,
-                        gameUsername: foundOrder.gameUsername || user.username,
-                        customerEmail: email,
-                        orderDate: foundOrder.timestamp,
-                        items: foundOrder.items || []
-                    };
-                }
-            }
-        }
-    } catch (error) {
-        console.error('Error searching localStorage:', error);
-    }
-
-    return null;
-}
-
-function displayOrderTrackingResult(orderData) {
-    console.log('Displaying order result:', orderData);
-    
-    const orderResult = document.getElementById('orderResult');
-    const orderStatus = document.getElementById('orderStatus');
-    const orderItemsList = document.getElementById('orderItemsList');
-    const customerSummary = document.getElementById('customerSummary');
-
-    if (!orderResult || !orderStatus || !orderItemsList || !customerSummary) {
-        console.error('Tracking modal elements not found');
-        return;
-    }
-
-    orderResult.style.display = 'block';
-
-    const status = orderData.status || 'pending';
-    const statusIcons = {
-        'pending': 'PENDING',
-        'processing': 'PROCESSING',
-        'completed': 'COMPLETED',
-        'cancelled': 'CANCELLED'
-    };
-    
-    orderStatus.innerHTML = `
-        <div class="order-status status-${status}">
-            ${statusIcons[status] || 'UNKNOWN'} ${status.charAt(0).toUpperCase() + status.slice(1)}
-        </div>
-        <div style="margin-top: 15px; color: var(--text-secondary);">
-            <strong>Order ID:</strong> ${orderData.orderId}<br>
-            <strong>Date:</strong> ${new Date(orderData.orderDate).toLocaleDateString()}<br>
-            <strong>Total:</strong> ${formatPrice(orderData.totalAmount)}
-        </div>
-    `;
-
-    if (orderData.items && orderData.items.length > 0) {
-        orderItemsList.innerHTML = `
-            <h4 style="color: var(--text-primary); margin-bottom: 15px;">Items Ordered:</h4>
-            ${orderData.items.map(item => `
-                <div class="order-item">
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small style="color: var(--text-secondary);">Quantity: ${item.quantity}</small>
-                    </div>
-                    <div style="text-align: right; color: var(--success-green);">
-                        ${formatPrice(item.price * item.quantity)}
-                    </div>
-                </div>
-            `).join('')}
-        `;
-    } else {
-        orderItemsList.innerHTML = '<p style="color: var(--text-secondary);">No item details available</p>';
-    }
-
-    const deliveryEstimate = getDeliveryEstimate(status);
-    customerSummary.innerHTML = `
-        <h4 style="color: var(--text-primary); margin-bottom: 15px;">Delivery Information:</h4>
-        <div style="background: var(--card-bg); padding: 20px; border-radius: 15px;">
-            <p><strong>Game Username:</strong> ${orderData.gameUsername || 'N/A'}</p>
-            ${orderData.customerEmail ? `<p><strong>Email:</strong> ${orderData.customerEmail}</p>` : ''}
-            <p><strong>Status:</strong> ${getStatusDescription(status)}</p>
-            <p><strong>Estimated Delivery:</strong> ${deliveryEstimate}</p>
-        </div>
-    `;
-}
-
-function displayOrderNotFound(orderId) {
-    const orderResult = document.getElementById('orderResult');
-    const orderStatus = document.getElementById('orderStatus');
-    const orderItemsList = document.getElementById('orderItemsList');
-    const customerSummary = document.getElementById('customerSummary');
-
-    if (!orderResult) return;
-
-    orderResult.style.display = 'block';
-
-    orderStatus.innerHTML = `
-        <div class="order-status status-cancelled">
-            ORDER NOT FOUND
-        </div>
-    `;
-
-    orderItemsList.innerHTML = `
-        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-            <h4>Order ${orderId} not found</h4>
-            <p style="margin-top: 15px;">Please check your order ID and try again.</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">
-                Order IDs start with "TRIO-" and are sent to your email after purchase.
-            </p>
-        </div>
-    `;
-
-    customerSummary.innerHTML = '';
-}
-
-function getStatusDescription(status) {
-    const descriptions = {
-        'pending': 'Order received and awaiting payment verification',
-        'processing': 'Payment confirmed, preparing your items for delivery', 
-        'completed': 'Items delivered successfully to your game account',
-        'cancelled': 'Order has been cancelled or refunded'
-    };
-    return descriptions[status] || 'Status unknown';
-}
-
-function getDeliveryEstimate(status) {
-    const estimates = {
-        'pending': '1-24 hours after payment',
-        'processing': '1-6 hours', 
-        'completed': 'Delivered',
-        'cancelled': 'N/A'
-    };
-    return estimates[status] || '1-24 hours';
-}
-
-// Additional placeholder functions for dropdown menus
-function toggleUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    const userBtn = document.querySelector('.user-info-btn');
-    
-    if (dropdown && userBtn) {
-        const isOpen = dropdown.style.display === 'block';
-        dropdown.style.display = isOpen ? 'none' : 'block';
-        
-        // Toggle active state on button without changing content
-        if (isOpen) {
-            userBtn.classList.remove('active');
-        } else {
-            userBtn.classList.add('active');
-        }
-    }
-}
-
-function closeUserDropdown() {
-    const dropdown = document.getElementById('userDropdown');
-    const userBtn = document.querySelector('.user-info-btn');
-    
-    if (dropdown) {
-        dropdown.style.display = 'none';
-    }
-    if (userBtn) {
-        userBtn.classList.remove('active');
-    }
-}
-
-function openProfileModal() {
-    closeUserDropdown();
-    showNotification('Profile settings coming soon!');
-}
-
-function openOrderHistoryModal() {
-    closeUserDropdown();
-    
-    if (!currentUser || !currentUser.orders || currentUser.orders.length === 0) {
-        showNotification('No orders found. Start shopping!');
-        return;
-    }
-
-    // Create and show order history modal
-    let modal = document.getElementById('orderHistoryModal');
-    if (!modal) {
-        // Create modal if it doesn't exist
-        modal = document.createElement('div');
-        modal.id = 'orderHistoryModal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="closeOrderHistoryModal()">X</span>
-                <h2>Order History</h2>
-                <div class="order-history-filters">
-                    <button class="filter-btn active" onclick="filterOrderHistory('all')">All Orders</button>
-                    <button class="filter-btn" onclick="filterOrderHistory('pending')">Pending</button>
-                    <button class="filter-btn" onclick="filterOrderHistory('completed')">Completed</button>
-                    <button class="filter-btn" onclick="filterOrderHistory('cancelled')">Cancelled</button>
-                </div>
-                <div id="orderHistoryList"></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    
-    modal.style.display = 'block';
-    displayOrderHistory('all');
-}
-
-function closeOrderHistoryModal() {
-    const modal = document.getElementById('orderHistoryModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-function filterOrderHistory(status) {
-    // Update active filter button
-    const filterBtns = document.querySelectorAll('#orderHistoryModal .filter-btn');
-    filterBtns.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-    
-    displayOrderHistory(status);
-}
-
-function displayOrderHistory(filterStatus = 'all') {
-    const orderHistoryList = document.getElementById('orderHistoryList');
-    if (!orderHistoryList || !currentUser || !currentUser.orders) {
-        return;
-    }
-
-    let orders = currentUser.orders;
-    
-    // Filter orders by status
-    if (filterStatus !== 'all') {
-        orders = orders.filter(order => (order.status || 'pending') === filterStatus);
-    }
-
-    if (orders.length === 0) {
-        orderHistoryList.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                <h3>No ${filterStatus === 'all' ? '' : filterStatus} orders found</h3>
-                <p>Your ${filterStatus === 'all' ? 'order history' : filterStatus + ' orders'} will appear here.</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Sort orders by date (newest first)
-    orders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    orderHistoryList.innerHTML = orders.map(order => {
-        const status = order.status || 'pending';
-        const statusColors = {
-            'pending': '#f59e0b',
-            'processing': '#3b82f6', 
-            'completed': '#10b981',
-            'cancelled': '#ef4444'
-        };
-        
-        const totalItems = order.items ? order.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-        
-        return `
-            <div class="order-history-item" style="
-                background: var(--card-bg);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 15px;
-                padding: 20px;
-                margin-bottom: 15px;
-                transition: all 0.3s ease;
-            ">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
-                    <div>
-                        <h4 style="color: var(--text-primary); margin: 0; font-size: 1.1rem;">
-                            Order ${order.orderId}
-                        </h4>
-                        <p style="color: var(--text-secondary); margin: 5px 0; font-size: 0.9rem;">
-                            ${new Date(order.timestamp).toLocaleDateString()} at ${new Date(order.timestamp).toLocaleTimeString()}
-                        </p>
-                    </div>
-                    <div style="
-                        background: ${statusColors[status] || '#6b7280'};
-                        color: white;
-                        padding: 5px 15px;
-                        border-radius: 20px;
-                        font-size: 0.8rem;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                    ">
-                        ${status}
-                    </div>
-                </div>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <div>
-                        <span style="color: var(--text-secondary); font-size: 0.9rem;">Items: ${totalItems}</span>
-                        <span style="margin-left: 20px; color: var(--text-secondary); font-size: 0.9rem;">
-                            Game: ${order.username || 'N/A'}
-                        </span>
-                    </div>
-                    <div style="color: var(--success-green); font-weight: 700; font-size: 1.2rem;">
-                        ${formatPrice(order.total)}
-                    </div>
-                </div>
-
-                ${order.items && order.items.length > 0 ? `
-                    <div style="margin-bottom: 15px;">
-                        <strong style="color: var(--text-primary); font-size: 0.9rem;">Items:</strong>
-                        <div style="margin-top: 8px;">
-                            ${order.items.map(item => `
-                                <div style="
-                                    display: flex; 
-                                    justify-content: space-between; 
-                                    padding: 5px 0;
-                                    color: var(--text-secondary);
-                                    font-size: 0.85rem;
-                                ">
-                                    <span>${item.name} x${item.quantity}</span>
-                                    <span>${formatPrice(item.price * item.quantity)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button 
-                        onclick="trackSpecificOrder('${order.orderId}')" 
-                        style="
-                            background: var(--primary-gradient);
-                            color: white;
-                            border: none;
-                            padding: 8px 15px;
-                            border-radius: 8px;
-                            font-size: 0.85rem;
-                            cursor: pointer;
-                            transition: all 0.3s ease;
-                        "
-                    >
-                        Track Order
-                    </button>
-                    ${order.items && order.items.length > 0 ? `
-                        <button 
-                            onclick="reorderItems('${order.orderId}')" 
-                            style="
-                                background: transparent;
-                                color: var(--success-green);
-                                border: 1px solid var(--success-green);
-                                padding: 8px 15px;
-                                border-radius: 8px;
-                                font-size: 0.85rem;
-                                cursor: pointer;
-                                transition: all 0.3s ease;
-                            "
-                        >
-                            Reorder
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-function trackSpecificOrder(orderId) {
-    closeOrderHistoryModal();
-    openOrderTracking();
-    document.getElementById('orderId').value = orderId;
-    // Auto-submit the tracking form
-    setTimeout(() => {
-        trackOrderById(orderId);
-    }, 100);
-}
-
-function reorderItems(orderId) {
-    if (!currentUser || !currentUser.orders) {
-        showNotification('Order not found');
-        return;
-    }
-
-    const order = currentUser.orders.find(o => o.orderId === orderId);
-    if (!order || !order.items) {
-        showNotification('Order items not found');
-        return;
-    }
-
-    // Add all items from the order to cart
-    let addedCount = 0;
-    order.items.forEach(orderItem => {
-        const currentItem = items.find(item => item.id === orderItem.id);
-        if (currentItem) {
-            const existingCartItem = cart.find(cartItem => cartItem.id === orderItem.id);
-            if (existingCartItem) {
-                existingCartItem.quantity += orderItem.quantity;
-            } else {
-                cart.push({ ...currentItem, quantity: orderItem.quantity });
-            }
-            addedCount++;
-        }
-    });
-
-    updateCartCount();
-    closeOrderHistoryModal();
-    
-    if (addedCount > 0) {
-        showNotification(`${addedCount} items added to cart from order ${orderId}`);
-    } else {
-        showNotification('No items could be added to cart (items may no longer be available)');
-    }
-}
- 
-// Checkout functions
 window.proceedToCheckout = proceedToCheckout;
 window.closeCheckout = closeCheckout;
 
@@ -1363,12 +930,11 @@ function validateItemsSystem() {
 function init() {
     console.log('TRIOGEL Initializing...');
     
-    // Load saved currency
-    const savedCurrency = localStorage.getItem('triogel-currency');
-    if (savedCurrency && currencies[savedCurrency]) {
-        selectedCurrency = savedCurrency;
-        console.log('Loaded saved currency:', savedCurrency);
-    }
+    // Initialize currency system with real-time rates
+    initializeCurrencySystem();
+    
+    // Start currency rate monitoring
+    startCurrencyRateMonitoring();
     
     // Initialize authentication
     initAuth();
@@ -1376,8 +942,6 @@ function init() {
     displayItems();
     updateCartCount();
     setupFilters();
-    setupCurrencySelector();
-    updateCurrencySelector();
     setupEventHandlers();
     
     console.log('TRIOGEL Initialized successfully!');
@@ -1569,3 +1133,76 @@ We'll process your order within 1-24 hours!`;
         });
     }
 }
+
+currencySystem.updateExchangeRates();
+
+// Demo and testing functions for real-time currency conversion
+const currencyDemo = {
+    // Demo function to show currency conversion in action
+    demonstrateRealTimeRates: function() {
+        console.log('=== TRIOGEL Real-Time Currency Demo ===');
+        
+        // Show current rates
+        console.log('Current Exchange Rates:');
+        Object.entries(currencies).forEach(([code, config]) => {
+            const rateInfo = currencySystem.getExchangeRateInfo(code);
+            console.log(`${code}: ${config.rate.toFixed(6)} (${rateInfo.source})`);
+        });
+        
+        // Demo price conversions
+        const testPricesPHP = [100, 1000, 5000, 10000];
+        console.log('\nPrice Conversion Examples:');
+        
+        testPricesPHP.forEach(price => {
+            console.log(`PHP ${price}:`);
+            Object.keys(currencies).forEach(currency => {
+                if (currency !== 'PHP') {
+                    const formatted = formatPrice(price, currency);
+                    console.log(`  ? ${formatted}`);
+                }
+            });
+            console.log('');
+        });
+        
+        // Show compliance information
+        console.log('BSP Compliance Check for PHP 100,000:');
+        Object.keys(currencies).forEach(currency => {
+            if (currency !== 'PHP') {
+                const compliance = currencySystem.checkTransactionCompliance(100000, currency);
+                console.log(`${currency}: ${compliance.compliant ? 'COMPLIANT' : 'REQUIRES DOCUMENTATION'}`);
+            }
+        });
+    },
+    
+    // Test function to simulate API failure and fallback
+    testFallbackRates: function() {
+        console.log('=== Testing Fallback Rate System ===');
+        
+        // Clear cache to force API call
+        localStorage.removeItem(currencySystem.cacheKey);
+        localStorage.removeItem(currencySystem.cacheTimestamp);
+        
+        // Temporarily disable API to test fallback
+        const originalURL = currencySystem.apiConfig.baseURL;
+        currencySystem.apiConfig.baseURL = 'https://invalid-api-url.com/fail';
+        currencySystem.apiConfig.fallbackURL = 'https://another-invalid-url.com/fail';
+        
+        // Attempt to update rates (should fail and use fallback)
+        currencySystem.updateExchangeRates().then(success => {
+            console.log(`Fallback test result: ${success ? 'API Success' : 'Using Fallback Rates'}`);
+            
+            // Restore original URL
+            currencySystem.apiConfig.baseURL = originalURL;
+            currencySystem.apiConfig.fallbackURL = 'https://api.fxratesapi.com/latest?base=PHP';
+        });
+    },
+    
+    // Function to manually update rates (useful for testing)
+    forceRateUpdate: function() {
+        console.log('Forcing exchange rate update...');
+        refreshExchangeRates();
+    }
+};
+
+// Add demo functions to global scope for easy testing
+window.currencyDemo = currencyDemo;
