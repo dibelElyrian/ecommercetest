@@ -875,3 +875,312 @@ Instead of using build systems, always:
 - ? Check browser console for errors (F12 ? Console)
 - ? Test functionality by clicking and using the website
 - ? Validate with manual testing only
+
+## ?? **CRITICAL RULE: PREVENT UNCAUGHT REFERENCEERROR**
+
+**THE SECOND MOST IMPORTANT RULE: Never allow "Uncaught ReferenceError" for functions called from HTML onclick events.**
+
+### ?? **COMMON CAUSES OF REFERENCEERROR:**
+
+1. **HTML onclick calling undefined functions**: HTML buttons calling functions before JavaScript loads
+2. **Function name mismatches**: HTML calls `openCart()` but JavaScript defines `openCartModal()`
+3. **Scope issues**: Functions not accessible globally when called from HTML
+4. **Load order problems**: HTML trying to call functions before script execution completes
+
+### ? **MANDATORY FUNCTION AVAILABILITY RULES:**
+
+#### **Rule 1: All HTML onclick functions MUST be globally accessible**
+```javascript
+// ? WRONG - Function not accessible from HTML
+function openCart() { /* code */ }
+
+// ? CORRECT - Ensure global accessibility
+window.openCart = openCart;
+// OR
+function openCart() { /* code */ }
+// Function is automatically global when declared this way
+```
+
+#### **Rule 2: Critical functions MUST be defined immediately**
+```javascript
+// ? REQUIRED - Define these functions early in the file, before any complex logic
+window.openCart = function() { /* implementation */ };
+window.closeCart = function() { /* implementation */ };
+window.openOrderTracking = function() { /* implementation */ };
+window.closeOrderTracking = function() { /* implementation */ };
+window.openLoginModal = function() { /* implementation */ };
+window.closeLoginModal = function() { /* implementation */ };
+window.openRegisterModal = function() { /* implementation */ };
+window.closeRegisterModal = function() { /* implementation */ };
+window.proceedToCheckout = function() { /* implementation */ };
+window.closeCheckout = function() { /* implementation */ };
+window.addToCart = function(itemId) { /* implementation */ };
+window.removeFromCart = function(itemId) { /* implementation */ };
+window.toggleCurrencySelector = function() { /* implementation */ };
+window.toggleUserDropdown = function() { /* implementation */ };
+window.closeUserDropdown = function() { /* implementation */ };
+window.switchToLogin = function() { /* implementation */ };
+window.switchToRegister = function() { /* implementation */ };
+window.logoutUser = function() { /* implementation */ };
+```
+
+#### **Rule 3: Function name consistency between HTML and JavaScript**
+```html
+<!-- HTML MUST match JavaScript function names exactly -->
+<button onclick="openCart()">Cart</button>
+<button onclick="closeCart()">Close</button>
+<button onclick="openOrderTracking()">Track Order</button>
+<button onclick="addToCart(1)">Add to Cart</button>
+```
+
+#### **Rule 4: Defensive programming for all onclick functions**
+```javascript
+// ? REQUIRED - Add error handling to all functions called from HTML
+function openCart() {
+    try {
+        console.log('Opening cart...');
+        document.getElementById('cartModal').style.display = 'block';
+        displayCartItems();
+    } catch (error) {
+        console.error('Error opening cart:', error);
+        showNotification('Error opening cart. Please refresh the page.');
+    }
+}
+```
+
+### ??? **SPECIFIC FIXES FOR COMMON REFERENCEERROR FUNCTIONS:**
+
+#### **Fix 1: Modal Functions (Most Common Errors)**
+```javascript
+// Define immediately after script loads
+window.openCart = function() {
+    try {
+        document.getElementById('cartModal').style.display = 'block';
+        if (typeof displayCartItems === 'function') displayCartItems();
+    } catch (e) { console.error('openCart error:', e); }
+};
+
+window.closeCart = function() {
+    try {
+        document.getElementById('cartModal').style.display = 'none';
+    } catch (e) { console.error('closeCart error:', e); }
+};
+
+window.openOrderTracking = function() {
+    try {
+        document.getElementById('orderTrackingModal').style.display = 'block';
+        const orderIdInput = document.getElementById('orderId');
+        if (orderIdInput) orderIdInput.value = '';
+        const orderResult = document.getElementById('orderResult');
+        if (orderResult) orderResult.style.display = 'none';
+    } catch (e) { console.error('openOrderTracking error:', e); }
+};
+
+window.closeOrderTracking = function() {
+    try {
+        document.getElementById('orderTrackingModal').style.display = 'none';
+    } catch (e) { console.error('closeOrderTracking error:', e); }
+};
+```
+
+#### **Fix 2: Authentication Functions**
+```javascript
+window.openLoginModal = function() {
+    try {
+        document.getElementById('loginModal').style.display = 'block';
+        const emailInput = document.getElementById('loginEmail');
+        if (emailInput) emailInput.focus();
+    } catch (e) { console.error('openLoginModal error:', e); }
+};
+
+window.closeLoginModal = function() {
+    try {
+        document.getElementById('loginModal').style.display = 'none';
+        if (typeof clearLoginForm === 'function') clearLoginForm();
+    } catch (e) { console.error('closeLoginModal error:', e); }
+};
+
+window.openRegisterModal = function() {
+    try {
+        document.getElementById('registerModal').style.display = 'block';
+        const usernameInput = document.getElementById('registerUsername');
+        if (usernameInput) usernameInput.focus();
+    } catch (e) { console.error('openRegisterModal error:', e); }
+};
+
+window.closeRegisterModal = function() {
+    try {
+        document.getElementById('registerModal').style.display = 'none';
+        if (typeof clearRegisterForm === 'function') clearRegisterForm();
+    } catch (e) { console.error('closeRegisterModal error:', e); }
+};
+```
+
+#### **Fix 3: Cart and Shopping Functions**
+```javascript
+window.addToCart = function(itemId) {
+    try {
+        if (typeof items === 'undefined' || !Array.isArray(items)) {
+            console.error('Items array not available');
+            return;
+        }
+        
+        const item = items.find(i => i.id === itemId);
+        if (!item) {
+            console.error('Item not found:', itemId);
+            return;
+        }
+        
+        // Add to cart logic here
+        if (typeof updateCartCount === 'function') updateCartCount();
+        if (typeof showNotification === 'function') {
+            showNotification(item.name + ' added to cart!');
+        }
+    } catch (e) { console.error('addToCart error:', e); }
+};
+
+window.removeFromCart = function(itemId) {
+    try {
+        if (typeof cart !== 'undefined' && Array.isArray(cart)) {
+            cart = cart.filter(item => item.id !== itemId);
+            if (typeof updateCartCount === 'function') updateCartCount();
+            if (typeof displayCartItems === 'function') displayCartItems();
+        }
+    } catch (e) { console.error('removeFromCart error:', e); }
+};
+```
+
+#### **Fix 4: UI Toggle Functions**
+```javascript
+window.toggleCurrencySelector = function() {
+    try {
+        const dropdown = document.getElementById('currencyDropdown');
+        const selector = document.getElementById('currencySelector');
+        
+        if (dropdown && selector) {
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            selector.classList.toggle('active', !isOpen);
+        }
+    } catch (e) { console.error('toggleCurrencySelector error:', e); }
+};
+
+window.toggleUserDropdown = function() {
+    try {
+        const dropdown = document.getElementById('userDropdown');
+        const userBtn = document.querySelector('.user-info-btn');
+        
+        if (dropdown && userBtn) {
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            userBtn.classList.toggle('active', !isOpen);
+        }
+    } catch (e) { console.error('toggleUserDropdown error:', e); }
+};
+
+window.closeUserDropdown = function() {
+    try {
+        const dropdown = document.getElementById('userDropdown');
+        const userBtn = document.querySelector('.user-info-btn');
+        
+        if (dropdown) dropdown.style.display = 'none';
+        if (userBtn) userBtn.classList.remove('active');
+    } catch (e) { console.error('closeUserDropdown error:', e); }
+};
+```
+
+### ?? **REFERENCEERROR PREVENTION CHECKLIST:**
+
+#### **Before ANY JavaScript changes:**
+1. **? Check HTML onclick attributes**: Ensure all function names match JavaScript definitions
+2. **? Verify global accessibility**: Confirm functions are accessible via `window.functionName`
+3. **? Test in browser console**: Type `functionName` to verify it's defined
+4. **? Add error handling**: Wrap all onclick functions in try/catch blocks
+5. **? Check dependencies**: Ensure functions don't call undefined functions
+
+#### **After ANY JavaScript changes:**
+1. **? Open browser console**: Look for ReferenceError messages
+2. **? Test all buttons**: Click every button to verify onclick functions work
+3. **? Verify modal operations**: Test opening/closing all modals
+4. **? Check cart functionality**: Test add/remove cart operations
+5. **? Validate authentication**: Test login/register modal functions
+
+### ?? **EMERGENCY REFERENCEERROR FIXES:**
+
+#### **Quick Fix Template for any undefined function:**
+```javascript
+// Emergency fix for any function showing ReferenceError
+window.FUNCTION_NAME = function(...args) {
+    try {
+        console.log('FUNCTION_NAME called with:', args);
+        // Add basic functionality or placeholder
+        showNotification('Feature temporarily unavailable');
+    } catch (error) {
+        console.error('FUNCTION_NAME error:', error);
+    }
+};
+```
+
+#### **Batch fix for all common onclick functions:**
+```javascript
+// Add this at the TOP of main.js to prevent ALL ReferenceErrors
+const essentialFunctions = [
+    'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
+    'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
+    'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
+    'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
+];
+
+// Ensure all functions exist globally (even as placeholders initially)
+essentialFunctions.forEach(funcName => {
+    if (typeof window[funcName] !== 'function') {
+        window[funcName] = function(...args) {
+            console.log(`${funcName} called (placeholder)`, args);
+        };
+    }
+});
+```
+
+### ?? **VALIDATION FUNCTION FOR REFERENCEERRORS:**
+
+```javascript
+// Add this function to check for potential ReferenceErrors
+function validateOnclickFunctions() {
+    const requiredFunctions = [
+        'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
+        'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
+        'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
+        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
+    ];
+    
+    const missingFunctions = requiredFunctions.filter(name => typeof window[name] !== 'function');
+    
+    if (missingFunctions.length > 0) {
+        console.error('MISSING ONCLICK FUNCTIONS:', missingFunctions);
+        console.error('This will cause ReferenceError when buttons are clicked!');
+        return false;
+    }
+    
+    console.log('All onclick functions are properly defined');
+    return true;
+}
+
+// Run validation after script loads
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => validateOnclickFunctions(), 1000);
+});
+```
+
+### ? **NEVER DO THESE (Causes ReferenceError):**
+- ? Don't define functions inside other functions if they need to be called from HTML
+- ? Don't use arrow functions for onclick handlers (scoping issues)
+- ? Don't rely on functions being defined later in the file
+- ? Don't assume functions are available without checking
+- ? Don't ignore ReferenceError messages in console
+
+### ? **ALWAYS DO THESE (Prevents ReferenceError):**
+- ? Define all onclick functions early in the JavaScript file
+- ? Assign functions to window object for global access
+- ? Add try/catch blocks to all onclick functions
+- ? Test all buttons after making changes
+- ? Use `validateOnclickFunctions()` to check for missing functions

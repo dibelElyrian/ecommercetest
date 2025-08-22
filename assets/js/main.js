@@ -9,6 +9,241 @@ window.addEventListener('load', function() {
 // TRIOGEL JavaScript - Clean Version
 console.log('Loading TRIOGEL JavaScript...');
 
+// ========================================
+// CRITICAL: Define all onclick functions IMMEDIATELY to prevent ReferenceError
+// ========================================
+
+// Essential onclick functions that MUST be globally accessible
+const essentialFunctions = [
+    'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
+    'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
+    'proceedToCheckout', 'closeCheckout', 'addToCart', 'removeFromCart',
+    'toggleCurrencySelector', 'toggleUserDropdown', 'closeUserDropdown',
+    'switchToLogin', 'switchToRegister', 'logoutUser'
+];
+
+// Ensure all functions exist globally (even as placeholders initially)
+essentialFunctions.forEach(funcName => {
+    if (typeof window[funcName] !== 'function') {
+        window[funcName] = function(...args) {
+            console.log(`${funcName} called (placeholder)`, args);
+        };
+    }
+});
+
+// Define modal functions immediately
+window.openCart = function() {
+    try {
+        console.log('Opening cart...');
+        document.getElementById('cartModal').style.display = 'block';
+        if (typeof displayCartItems === 'function') displayCartItems();
+    } catch (e) { console.error('openCart error:', e); }
+};
+
+window.closeCart = function() {
+    try {
+        document.getElementById('cartModal').style.display = 'none';
+    } catch (e) { console.error('closeCart error:', e); }
+};
+
+window.openOrderTracking = function() {
+    try {
+        document.getElementById('orderTrackingModal').style.display = 'block';
+        const orderIdInput = document.getElementById('orderId');
+        if (orderIdInput) orderIdInput.value = '';
+        const orderResult = document.getElementById('orderResult');
+        if (orderResult) orderResult.style.display = 'none';
+    } catch (e) { console.error('openOrderTracking error:', e); }
+};
+
+window.closeOrderTracking = function() {
+    try {
+        document.getElementById('orderTrackingModal').style.display = 'none';
+    } catch (e) { console.error('closeOrderTracking error:', e); }
+};
+
+window.openLoginModal = function() {
+    try {
+        document.getElementById('loginModal').style.display = 'block';
+        const emailInput = document.getElementById('loginEmail');
+        if (emailInput) emailInput.focus();
+    } catch (e) { console.error('openLoginModal error:', e); }
+};
+
+window.closeLoginModal = function() {
+    try {
+        document.getElementById('loginModal').style.display = 'none';
+        if (typeof clearLoginForm === 'function') clearLoginForm();
+    } catch (e) { console.error('closeLoginModal error:', e); }
+};
+
+window.openRegisterModal = function() {
+    try {
+        document.getElementById('registerModal').style.display = 'block';
+        const usernameInput = document.getElementById('registerUsername');
+        if (usernameInput) usernameInput.focus();
+    } catch (e) { console.error('openRegisterModal error:', e); }
+};
+
+window.closeRegisterModal = function() {
+    try {
+        document.getElementById('registerModal').style.display = 'none';
+        if (typeof clearRegisterForm === 'function') clearRegisterForm();
+    } catch (e) { console.error('closeRegisterModal error:', e); }
+};
+
+window.proceedToCheckout = function() {
+    try {
+        if (typeof cart === 'undefined' || !Array.isArray(cart) || cart.length === 0) {
+            alert('Your cart is empty!');
+            return;
+        }
+        document.getElementById('cartModal').style.display = 'none';
+        document.getElementById('checkoutModal').style.display = 'block';
+        if (typeof displayOrderSummary === 'function') displayOrderSummary();
+    } catch (e) { console.error('proceedToCheckout error:', e); }
+};
+
+window.closeCheckout = function() {
+    try {
+        document.getElementById('checkoutModal').style.display = 'none';
+    } catch (e) { console.error('closeCheckout error:', e); }
+};
+
+window.addToCart = function(itemId) {
+    try {
+        if (typeof items === 'undefined' || !Array.isArray(items)) {
+            console.error('Items array not available');
+            return;
+        }
+        
+        const item = items.find(i => i.id === itemId);
+        if (!item) {
+            console.error('Item not found:', itemId);
+            return;
+        }
+        
+        // Initialize cart if it doesn't exist
+        if (typeof cart === 'undefined' || !Array.isArray(cart)) {
+            window.cart = [];
+        }
+        
+        const existingItem = cart.find(i => i.id === itemId);
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({ ...item, quantity: 1 });
+        }
+
+        if (typeof updateCartCount === 'function') updateCartCount();
+        if (typeof showNotification === 'function') {
+            showNotification(item.name + ' added to cart!');
+        }
+    } catch (e) { console.error('addToCart error:', e); }
+};
+
+window.removeFromCart = function(itemId) {
+    try {
+        if (typeof cart !== 'undefined' && Array.isArray(cart)) {
+            window.cart = cart.filter(item => item.id !== itemId);
+            if (typeof updateCartCount === 'function') updateCartCount();
+            if (typeof displayCartItems === 'function') displayCartItems();
+        }
+    } catch (e) { console.error('removeFromCart error:', e); }
+};
+
+window.toggleCurrencySelector = function() {
+    try {
+        const dropdown = document.getElementById('currencyDropdown');
+        const selector = document.getElementById('currencySelector');
+        
+        if (dropdown && selector) {
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            selector.classList.toggle('active', !isOpen);
+        }
+    } catch (e) { console.error('toggleCurrencySelector error:', e); }
+};
+
+window.toggleUserDropdown = function() {
+    try {
+        const dropdown = document.getElementById('userDropdown');
+        const userBtn = document.querySelector('.user-info-btn');
+        
+        if (dropdown && userBtn) {
+            const isOpen = dropdown.style.display === 'block';
+            dropdown.style.display = isOpen ? 'none' : 'block';
+            
+            // Toggle active state on button without changing content
+            if (isOpen) {
+                userBtn.classList.remove('active');
+            } else {
+                userBtn.classList.add('active');
+            }
+        }
+    } catch (e) { console.error('toggleUserDropdown error:', e); }
+};
+
+window.closeUserDropdown = function() {
+    try {
+        const dropdown = document.getElementById('userDropdown');
+        const userBtn = document.querySelector('.user-info-btn');
+        
+        if (dropdown) dropdown.style.display = 'none';
+        if (userBtn) userBtn.classList.remove('active');
+    } catch (e) { console.error('closeUserDropdown error:', e); }
+};
+
+window.switchToLogin = function() {
+    try {
+        if (typeof closeRegisterModal === 'function') closeRegisterModal();
+        if (typeof openLoginModal === 'function') openLoginModal();
+    } catch (e) { console.error('switchToLogin error:', e); }
+};
+
+window.switchToRegister = function() {
+    try {
+        if (typeof closeLoginModal === 'function') closeLoginModal();
+        if (typeof openRegisterModal === 'function') openRegisterModal();
+    } catch (e) { console.error('switchToRegister error:', e); }
+};
+
+window.logoutUser = function() {
+    try {
+        console.log('Logging out user...');
+        window.currentUser = null;
+        localStorage.removeItem('triogel-user');
+        if (typeof showLoginSection === 'function') showLoginSection();
+        if (typeof showNotification === 'function') {
+            showNotification('Logged out successfully!');
+        }
+    } catch (e) { console.error('logoutUser error:', e); }
+};
+
+// Validation function for onclick functions
+function validateOnclickFunctions() {
+    const requiredFunctions = [
+        'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
+        'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
+        'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
+        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart'
+    ];
+    
+    const missingFunctions = requiredFunctions.filter(name => typeof window[name] !== 'function');
+    
+    if (missingFunctions.length > 0) {
+        console.error('MISSING ONCLICK FUNCTIONS:', missingFunctions);
+        console.error('This will cause ReferenceError when buttons are clicked!');
+        return false;
+    }
+    
+    console.log('All onclick functions are properly defined');
+    return true;
+}
+
+// Run validation immediately
+setTimeout(() => validateOnclickFunctions(), 100);
+
 // Currency configuration with real-time exchange rates
 const currencies = {
     'PHP': { symbol: '', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
@@ -680,8 +915,6 @@ function startCurrencyRateMonitoring() {
     });
 }
 
-window.proceedToCheckout = proceedToCheckout;
-window.closeCheckout = closeCheckout;
 
 // Local Order Storage Functions
 function saveOrderLocally(orderData) {
@@ -734,6 +967,17 @@ document.addEventListener('click', function (e) {
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM loaded - Starting TRIOGEL...');
     console.log('DEBUG: About to call init()...');
+    
+    // Validate onclick functions first
+    setTimeout(() => {
+        const functionsValid = validateOnclickFunctions();
+        if (!functionsValid) {
+            console.error('CRITICAL: onclick functions validation failed');
+            alert('CRITICAL ERROR: Some functions missing. Check console for details.');
+        } else {
+            console.log('onclick functions validation passed');
+        }
+    }, 500);
     
     // Emergency check - are all critical elements present?
     const itemsGrid = document.getElementById('itemsGrid');
@@ -791,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         
         console.log('TRIOGEL validation completed!');
-    }, 500);
+    }, 1000);
 });
 
 console.log('TRIOGEL JavaScript loaded successfully!');
