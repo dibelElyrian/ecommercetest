@@ -5,7 +5,10 @@
   "scripts": {
     "build": "echo 'TRIOGEL: Building functions and processing site...'"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "bcrypt": "^5.1.1"
+  },
   "engines": {
     "node": ">=18.0.0"
   }
