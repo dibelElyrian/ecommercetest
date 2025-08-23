@@ -763,7 +763,7 @@ function init() {
     console.log('Items array loaded with', items.length, 'items');
     
     // Initialize live currency system first
-    //initializeLiveCurrencySystem();
+    initializeLiveCurrencySystem();
     
     // Display items - this is the key function
     displayItems();
@@ -1089,4 +1089,35 @@ function displayItems() {
     `).join('');
     
     console.log('Items displayed successfully, grid innerHTML length:', grid.innerHTML.length);
+}
+
+function formatPrice(price) {
+    // Use selectedCurrency and currencies object to format price
+    const currency = currencies[selectedCurrency] || currencies['PHP'];
+    const converted = price * currency.rate;
+    // Format with 2 decimals and currency symbol
+    return `${currency.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function initializeLiveCurrencySystem() {
+    // Example using exchangerate.host (free, no API key required)
+    fetch('https://api.exchangerate.host/latest?base=PHP')
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.rates) {
+                // Update rates for supported currencies
+                Object.keys(currencies).forEach(code => {
+                    if (data.rates[code]) {
+                        currencies[code].rate = data.rates[code];
+                    }
+                });
+                lastCurrencyUpdate = new Date();
+                console.log('Live currency rates updated:', currencies);
+                updateCurrencySelector();
+                displayItems();
+            }
+        })
+        .catch(err => {
+            console.warn('Failed to fetch live currency rates:', err);
+        });
 }
