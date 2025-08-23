@@ -21,7 +21,7 @@ const essentialFunctions = [
     'toggleCurrencySelector', 'toggleUserDropdown', 'closeUserDropdown',
     'switchToLogin', 'switchToRegister', 'logoutUser', 'initAuth', 'initializeCurrencySystem',
     'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
-    'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword',
+    'openForgotPassword', 'closeForgotPassword',
     'openAdminPanel', 'closeAdminPanel', 'refreshAdminData'
 ];
 
@@ -205,41 +205,6 @@ window.closeOrderHistoryModal = function() {
         const orderHistoryModal = document.getElementById('orderHistoryModal');
         if (orderHistoryModal) orderHistoryModal.style.display = 'none';
     } catch (e) { console.error('closeOrderHistoryModal error:', e); }
-};
-
-// NEW: Wishlist Modal Functions
-window.openWishlistModal = function() {
-    try {
-        console.log('Opening wishlist modal...');
-        
-        // Check if user is logged in
-        const currentUser = window.TriogelAuth?.getCurrentUser();
-        if (!currentUser) {
-            showNotification('Please log in to view your wishlist');
-            openLoginModal();
-            return;
-        }
-        
-        // Check if modal exists, if not create it dynamically
-        let wishlistModal = document.getElementById('wishlistModal');
-        if (!wishlistModal) {
-            createWishlistModal();
-            wishlistModal = document.getElementById('wishlistModal');
-        }
-        
-        // Load and display user's wishlist
-        loadWishlist(currentUser);
-        
-        wishlistModal.style.display = 'block';
-        closeUserDropdown();
-    } catch (e) { console.error('openWishlistModal error:', e); }
-};
-
-window.closeWishlistModal = function() {
-    try {
-        const wishlistModal = document.getElementById('wishlistModal');
-        if (wishlistModal) wishlistModal.style.display = 'none';
-    } catch (e) { console.error('closeWishlistModal error:', e); }
 };
 
 // NEW: Forgot Password Modal Functions
@@ -573,51 +538,6 @@ function createOrderHistoryModal() {
         </div>
     `;
     document.body.appendChild(modal);
-}
-
-function createWishlistModal() {
-    const modal = document.createElement('div');
-    modal.id = 'wishlistModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeWishlistModal()">&times;</span>
-            <h2>My Wishlist</h2>
-            <div id="wishlistContent" class="wishlist-content">
-                <div class="loading">Loading your wishlist...</div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-function createForgotPasswordModal() {
-    const modal = document.createElement('div');
-    modal.id = 'forgotPasswordModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeForgotPassword()">&times;</span>
-            <h2>Reset Password</h2>
-            <form id="forgotPasswordForm" class="auth-form">
-                <div class="form-group">
-                    <label>Email Address:</label>
-                    <input type="email" id="forgotPasswordEmail" placeholder="Enter your email" required>
-                </div>
-                <button type="submit" class="auth-btn">Send Reset Link</button>
-                <div class="auth-links">
-                    <button type="button" class="link-btn" onclick="switchToLogin()">Back to Login</button>
-                </div>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Add form handler
-    const form = document.getElementById('forgotPasswordForm');
-    if (form) {
-        form.addEventListener('submit', handleForgotPassword);
-    }
 }
 
 // NEW: Secure Admin Data Loading Functions (Server-Verified)
@@ -1826,8 +1746,8 @@ window.registerUser = async function(event) {
         const usernameField = form.querySelector('#registerUsername');
         const emailField = form.querySelector('#registerEmail');
         const passwordField = form.querySelector('#registerPassword');
-        const confirmPasswordField = form.querySelector('#registerConfirmPassword');
-        const favoriteGameField = form.querySelector('#registerFavoriteGame');
+        const confirmPasswordField = form.querySelector('#confirmPassword');
+        const favoriteGameField = form.querySelector('#favoriteGame');
 
         // Check if all required fields exist
         if (!usernameField || !emailField || !passwordField || !confirmPasswordField) {
@@ -1889,35 +1809,56 @@ window.registerUser = async function(event) {
     }
 };
 
-// Add missing form clearing functions
-window.clearLoginForm = function() {
+// Add missing functions for profile and order history functionality
+window.populateProfileForm = function(currentUser) {
     try {
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.reset();
-        }
-    } catch (e) { console.error('clearLoginForm error:', e); }
+        const profileUsername = document.getElementById('profileUsername');
+        const profileEmail = document.getElementById('profileEmail');
+        const profileFavoriteGame = document.getElementById('profileFavoriteGame');
+        
+        if (profileUsername) profileUsername.value = currentUser.username || '';
+        if (profileEmail) profileEmail.value = currentUser.email || '';
+        if (profileFavoriteGame) profileFavoriteGame.value = currentUser.favoriteGame || 'ml';
+    } catch (e) { console.error('populateProfileForm error:', e); }
 };
 
-window.clearRegisterForm = function() {
+window.loadOrderHistory = function(currentUser) {
     try {
-        const registerForm = document.getElementById('registerForm');
-        if (registerForm) {
-            registerForm.reset();
+        const orderHistoryContent = document.getElementById('orderHistoryContent');
+        if (!orderHistoryContent) return;
+        
+        // Get orders from localStorage
+        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const userOrders = localOrders.filter(order => 
+            order.email && order.email.toLowerCase() === currentUser.email.toLowerCase()
+        );
+        
+        if (userOrders.length === 0) {
+            orderHistoryContent.innerHTML = '<div class="no-orders">No orders found</div>';
+            return;
         }
-    } catch (e) { console.error('clearRegisterForm error:', e); }
+        
+        orderHistoryContent.innerHTML = `
+            <div class="order-history-list">
+                ${userOrders.map(order => `
+                    <div class="order-history-item">
+                        <div class="order-header">
+                            <h4>Order ${order.orderId}</h4>
+                            <span class="order-date">${new Date(order.timestamp).toLocaleDateString()}</span>
+                        </div>
+                        <div class="order-details">
+                            <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
+                            <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
+                            <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
+                        </div>
+                        <div class="order-items">
+                            ${order.items.map(item => `
+                                <div class="order-item">${item.name} x${item.quantity}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } catch (e) { console.error('loadOrderHistory error:', e); }
 };
-
-// Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
-    init();
-});
-
-// Also initialize on window load as fallback
-window.addEventListener('load', function() {
-    console.log('Window Load event - TRIOGEL fallback initialization...');
-    if (!document.getElementById('itemsGrid').innerHTML.trim()) {
-        init();
-    }
-});
