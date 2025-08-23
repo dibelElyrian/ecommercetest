@@ -1207,7 +1207,7 @@ function setupCurrencySelector() {
             <span>${currencies[code].symbol} - ${currencies[code].name}</span>
             <span style="margin-left:8px; color:#aaa; font-size:0.9em;">
                 1 PHP = ${rate} ${code}
-                ${isLive ? '<span style="color:#4caf50; font-weight:bold; margin-left:4px;">Live</span>' : ''}
+                ${isLive ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
             </span>
         `;
         option.onclick = function () {
