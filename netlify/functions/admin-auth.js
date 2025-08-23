@@ -6,72 +6,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || ''
 );
 
-// Secure admin configuration - stored server-side only
+// Secure admin configuration - only use existing Netlify variables
 const ADMIN_CONFIG = {
-  // Admin emails stored as environment variables for security
-  superAdmins: (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(email => email.trim()).filter(Boolean),
-  managers: (process.env.MANAGER_EMAILS || '').split(',').map(email => email.trim()).filter(Boolean),
-  basicAdmins: (process.env.BASIC_ADMIN_EMAILS || '').split(',').map(email => email.trim()).filter(Boolean),
-  
-  // Admin levels
-  SUPER_ADMIN: 3,
-  MANAGER: 2,
-  BASIC_ADMIN: 1,
-  REGULAR_USER: 0
+  // Only use SUPER_ADMIN_EMAILS since that's what exists in Netlify
+  adminEmails: (process.env.SUPER_ADMIN_EMAILS || 'admin@triogel.com,ryanserdan@gmail.com').split(',').map(email => email.trim()).filter(Boolean)
 };
 
 /**
- * Securely determine admin level for a user
+ * Check if email is admin
  */
-function getAdminLevel(email) {
-  if (!email || typeof email !== 'string') return ADMIN_CONFIG.REGULAR_USER;
+function isAdminEmail(email) {
+  if (!email || typeof email !== 'string') return false;
   
   const normalizedEmail = email.toLowerCase().trim();
-  
-  if (ADMIN_CONFIG.superAdmins.includes(normalizedEmail)) {
-    return ADMIN_CONFIG.SUPER_ADMIN;
-  }
-  
-  if (ADMIN_CONFIG.managers.includes(normalizedEmail)) {
-    return ADMIN_CONFIG.MANAGER;
-  }
-  
-  if (ADMIN_CONFIG.basicAdmins.includes(normalizedEmail)) {
-    return ADMIN_CONFIG.BASIC_ADMIN;
-  }
-  
-  return ADMIN_CONFIG.REGULAR_USER;
-}
-
-/**
- * Verify admin access and get permissions
- */
-function verifyAdminAccess(email, requiredLevel = 1) {
-  const adminLevel = getAdminLevel(email);
-  
-  return {
-    isAdmin: adminLevel >= 1,
-    adminLevel: adminLevel,
-    hasAccess: adminLevel >= requiredLevel,
-    permissions: {
-      canViewOrders: adminLevel >= 1,
-      canUpdateOrders: adminLevel >= 1,
-      canViewCustomers: adminLevel >= 2,
-      canManageItems: adminLevel >= 2,
-      canAccessAnalytics: adminLevel >= 2,
-      canExportData: adminLevel >= 2,
-      canManageAdmins: adminLevel >= 3,
-      canAccessLogs: adminLevel >= 3
-    }
-  };
-}
-
-/**
- * Hash email for privacy in logs
- */
-function hashEmail(email) {
-  const crypto = require('crypto');
-  return crypto.createHash('sha256').update(email + (process.env.EMAIL_HASH_SALT || 'triogel-salt')).digest('hex');
+  return ADMIN_CONFIG.adminEmails.includes(normalizedEmail);
 }
 
 exports.handler = async (event, context) => {
@@ -87,8 +35,6 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('?? Admin auth request:', event.httpMethod);
-
     const body = event.body ? JSON.parse(event.body) : {};
     const { action, userEmail } = body;
 
@@ -104,31 +50,33 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Get admin status (without exposing email lists)
-    const adminAccess = verifyAdminAccess(userEmail);
+    // Check if user is admin
+    const isAdmin = isAdminEmail(userEmail);
 
-    // Log admin access attempt (for security monitoring)
-    if (adminAccess.isAdmin) {
-      console.log('? Admin access granted:', {
-        level: adminAccess.adminLevel,
-        timestamp: new Date().toISOString()
-      });
-    }
+    // Simple admin permissions
+    const permissions = {
+      canViewOrders: isAdmin,
+      canUpdateOrders: isAdmin,
+      canViewCustomers: isAdmin,
+      canManageItems: isAdmin,
+      canAccessAnalytics: isAdmin,
+      canExportData: isAdmin
+    };
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
         success: true,
-        isAdmin: adminAccess.isAdmin,
-        adminLevel: adminAccess.adminLevel,
-        permissions: adminAccess.permissions,
-        message: adminAccess.isAdmin ? 'Admin access granted' : 'Regular user access'
+        isAdmin: isAdmin,
+        adminLevel: isAdmin ? 3 : 0,
+        permissions: permissions,
+        message: isAdmin ? 'Admin access granted' : 'Regular user access'
       })
     };
 
   } catch (error) {
-    console.error('?? Admin auth error:', error);
+    console.error('Admin auth error:', error);
     
     return {
       statusCode: 500,
