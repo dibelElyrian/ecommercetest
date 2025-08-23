@@ -1,0 +1,13 @@
+{
+  "name": "triogel-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for TRIOGEL Marketplace",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "build": "echo 'Functions build complete'"
+  }
+}

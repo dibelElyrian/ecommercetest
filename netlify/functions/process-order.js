@@ -1,13 +1,28 @@
-﻿exports.handler = async (event, context) => {
+﻿const { createClient } = require('@supabase/supabase-js');
+
+exports.handler = async (event, context) => {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
+
+  // Handle CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 200,
+      headers,
+      body: ''
+    };
+  }
+
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'Content-Type',
-        'Access-Control-Allow-Methods': 'POST'
-      },
+      headers,
       body: JSON.stringify({ error: 'Method not allowed' })
     };
   }
@@ -19,17 +34,24 @@
     // Environment variables for integrations
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
-    const GCASH_NUMBER = process.env.GCASH_NUMBER; // Your personal GCash number
-    const GCASH_NAME = process.env.GCASH_NAME; // Your GCash account name
-    const WHATSAPP_NUMBER = null; // No WhatsApp integration needed
+    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const GCASH_NUMBER = process.env.GCASH_NUMBER;
+    const GCASH_NAME = process.env.GCASH_NAME;
+    
+    // Initialize Supabase client
+    let supabase = null;
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
     
     if (!DISCORD_WEBHOOK_URL) {
       console.warn('⚠️ Discord webhook URL not configured');
     }
     
-    if (!SUPABASE_URL || !SUPABASE_KEY) {
+    if (!supabase) {
       console.warn('⚠️ Supabase database not configured');
+    } else {
+      console.log('✅ Supabase client initialized');
     }
 
     if (!GCASH_NUMBER) {
@@ -45,8 +67,7 @@
         // Generate unique payment reference
         const paymentReference = `TRIO-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
         
-        // Convert USD to PHP (approximate rate: 1 USD = 55 PHP)
-        const phpAmount = orderData.total.toFixed(2); // Prices are already in PHP now
+        const phpAmount = orderData.total.toFixed(2);
         
         if (GCASH_NUMBER && GCASH_NAME) {
           paymentResult = {
@@ -57,7 +78,7 @@
             amount_usd: orderData.total.toFixed(2),
             gcash_number: GCASH_NUMBER,
             gcash_name: GCASH_NAME,
-            contact_method: 'email', // Use email instead of WhatsApp
+            contact_method: 'email',
             instructions: `Send ₱${phpAmount} to GCash ${GCASH_NUMBER} (${GCASH_NAME}) with reference: ${paymentReference}. Email payment screenshot to the email address provided in your order confirmation.`
           };
           console.log('✅ Manual GCash payment setup created');
@@ -88,6 +109,79 @@
       return `**${item.name}** (${gameName})\nQuantity: ${item.quantity} | Price: ₱${(item.price * item.quantity).toFixed(2)}`;
     }).join('\n\n');
 
+    // SUPABASE DATABASE INTEGRATION - Save order
+    let databaseSaved = false;
+    let orderDbId = null;
+    
+    if (supabase) {
+      try {
+        console.log('💾 Saving order to Supabase database...');
+        
+        // Insert main order record
+        const { data: orderResult, error: orderError } = await supabase
+          .from('triogel_orders')
+          .insert({
+            order_id: orderData.orderId,
+            customer_email: orderData.email,
+            customer_game_username: orderData.gameUsername,
+            customer_whatsapp: orderData.whatsappNumber || null,
+            payment_method: orderData.paymentMethod,
+            currency: orderData.currency || 'PHP',
+            server_region: orderData.serverRegion || null,
+            customer_notes: orderData.customerNotes || null,
+            order_total: orderData.total,
+            order_status: 'pending',
+            payment_reference: paymentResult?.reference || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (orderError) {
+          console.error('❌ Error creating order:', orderError);
+          throw orderError;
+        }
+
+        orderDbId = orderResult.id;
+        console.log('✅ Order saved to database with ID:', orderDbId);
+
+        // Insert order items
+        const orderItems = orderData.items.map(item => ({
+          order_id: orderDbId, // Use the database ID, not the order_id string
+          item_id: item.id,
+          item_name: item.name,
+          item_game: item.game,
+          item_price: item.price,
+          quantity: item.quantity,
+          total_price: item.price * item.quantity
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('triogel_order_items')
+          .insert(orderItems);
+
+        if (itemsError) {
+          console.error('❌ Error creating order items:', itemsError);
+          // Try to rollback the order if items insertion failed
+          await supabase
+            .from('triogel_orders')
+            .delete()
+            .eq('id', orderDbId);
+          throw itemsError;
+        }
+
+        console.log('✅ Order items saved to database');
+        databaseSaved = true;
+
+      } catch (dbError) {
+        console.error('💥 Database error:', dbError);
+        databaseSaved = false;
+        // Continue processing even if database save fails
+        console.log('⚠️ Continuing without database save...');
+      }
+    }
+
     // Create rich Discord embed message
     const discordMessage = {
       content: `**:bell: NEW TRIOGEL ORDER RECEIVED!**`,
@@ -98,17 +192,17 @@
         fields: [
           {
             name: ':clipboard: Order Information',
-            value: `**Order ID:** ${orderData.orderId}\n**Total Amount:** ₱${orderData.total.toFixed(2)} (${paymentResult?.amount_php ? '₱' + paymentResult.amount_php : 'N/A'})\n**Date:** ${new Date(orderData.timestamp).toLocaleString()}`,
+            value: `**Order ID:** ${orderData.orderId}\n**Database ID:** ${orderDbId || 'N/A'}\n**Total Amount:** ₱${orderData.total.toFixed(2)}\n**Date:** ${new Date(orderData.timestamp).toLocaleString()}`,
             inline: false
           },
           {
             name: ':bust_in_silhouette: Customer Details',
-            value: `**Email:** ${orderData.customer.email}\n**Game Username:** ${orderData.customer.gameUsername}\n**Region:** ${orderData.customer.serverRegion || 'Not specified'}`,
+            value: `**Email:** ${orderData.email}\n**Game Username:** ${orderData.gameUsername}\n**Region:** ${orderData.serverRegion || 'Not specified'}`,
             inline: true
           },
           {
             name: ':credit_card: Payment & Contact',
-            value: `**Payment Method:** ${orderData.paymentMethod.toUpperCase()}\n**WhatsApp:** ${orderData.customer.whatsappNumber || 'Not provided'}\n**Status:** ${paymentResult?.success ? ':moneybag: GCash Instructions Sent' : ':hourglass: Pending'}`,
+            value: `**Payment Method:** ${orderData.paymentMethod.toUpperCase()}\n**WhatsApp:** ${orderData.whatsappNumber || 'Not provided'}\n**Status:** ${paymentResult?.success ? ':moneybag: GCash Instructions Sent' : ':hourglass: Pending'}`,
             inline: true
           },
           {
@@ -118,7 +212,7 @@
           }
         ],
         footer: {
-          text: 'TRIOGEL Gaming Marketplace • Database: ' + (SUPABASE_URL ? 'Connected' : 'Local')
+          text: 'TRIOGEL Gaming Marketplace • Database: ' + (databaseSaved ? 'Saved ✅' : 'Failed ❌')
         },
         timestamp: orderData.timestamp
       }]
@@ -129,7 +223,7 @@
       if (paymentResult.success) {
         discordMessage.embeds[0].fields.push({
           name: ':money_with_wings: GCash Payment Instructions',
-          value: `**Amount:** ₱${paymentResult.amount_php}\n**GCash Number:** ${paymentResult.gcash_number}\n**Account Name:** ${paymentResult.gcash_name}\n**Reference:** ${paymentResult.reference}\n\n:warning: **Customer should:**\n• Send exact amount to GCash number\n• Include reference in payment message\n• Email screenshot to: ${orderData.customer.email}\n• Reply to their order confirmation email with payment proof`,
+          value: `**Amount:** ₱${paymentResult.amount_php}\n**GCash Number:** ${paymentResult.gcash_number}\n**Account Name:** ${paymentResult.gcash_name}\n**Reference:** ${paymentResult.reference}\n\n:warning: **Customer should:**\n• Send exact amount to GCash number\n• Include reference in payment message\n• Email screenshot to: ${orderData.email}\n• Reply to their order confirmation email with payment proof`,
           inline: false
         });
       } else {
@@ -148,105 +242,6 @@
         value: orderData.customerNotes,
         inline: false
       });
-    }
-
-    // DATABASE INTEGRATION - Save order to Supabase
-    let databaseSaved = false;
-    if (SUPABASE_URL && SUPABASE_KEY) {
-      try {
-        console.log('💾 Saving order to database...');
-        
-        // Prepare order data for database
-        const orderRecord = {
-          order_id: orderData.orderId,
-          customer_email: orderData.customer.email,
-          customer_game_username: orderData.customer.gameUsername,
-          customer_whatsapp: orderData.customer.whatsappNumber || null,
-          customer_region: orderData.customer.serverRegion || null,
-          payment_method: orderData.paymentMethod,
-          customer_notes: orderData.customerNotes || null,
-          total_amount: orderData.total,
-          status: paymentResult?.success ? 'awaiting_payment' : 'pending',
-          discord_sent: true,
-          created_at: orderData.timestamp,
-          payment_reference: paymentResult?.reference || null,
-          payment_amount_php: paymentResult?.amount_php || null,
-          payment_gcash_number: paymentResult?.gcash_number || null
-        };
-
-        // Save main order record
-        const orderResponse = await fetch(`${SUPABASE_URL}/rest/v1/triogel_orders`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify(orderRecord)
-        });
-
-        if (orderResponse.ok) {
-          console.log('✅ Order saved to database');
-          databaseSaved = true;
-
-          // Save order items
-          const orderItems = orderData.items.map(item => ({
-            order_id: orderData.orderId,
-            item_id: item.id,
-            item_name: item.name,
-            item_game: item.game,
-            item_price: item.price,
-            quantity: item.quantity,
-            subtotal: item.price * item.quantity
-          }));
-
-          await fetch(`${SUPABASE_URL}/rest/v1/triogel_order_items`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`
-            },
-            body: JSON.stringify(orderItems)
-          });
-
-          console.log('✅ Order items saved to database');
-
-          // Update customer record (optional)
-          const customerRecord = {
-            email: orderData.customer.email,
-            game_username: orderData.customer.gameUsername,
-            whatsapp: orderData.customer.whatsappNumber || null,
-            preferred_region: orderData.customer.serverRegion || null,
-            last_order_date: orderData.timestamp
-          };
-
-          // Try to upsert customer record
-          await fetch(`${SUPABASE_URL}/rest/v1/triogel_customers`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-              'Prefer': 'resolution=merge-duplicates'
-            },
-            body: JSON.stringify({
-              ...customerRecord,
-              total_orders: 1,
-              total_spent: orderData.total,
-              first_order_date: orderData.timestamp
-            })
-          });
-
-          console.log('✅ Customer record updated');
-        } else {
-          const dbError = await orderResponse.text();
-          console.error('❌ Database save failed:', dbError);
-        }
-      } catch (dbError) {
-        console.error('💥 Database error (continuing with Discord):', dbError);
-      }
     }
 
     // Send to Discord if webhook URL is configured
@@ -278,8 +273,9 @@
     // Log successful processing
     console.log('💾 Order processed:', {
       orderId: orderData.orderId,
+      dbId: orderDbId,
       total: orderData.total,
-      customerEmail: orderData.customer.email,
+      customerEmail: orderData.email,
       itemCount: orderData.items.length,
       databaseSaved: databaseSaved,
       discordSent: discordSent,
@@ -290,23 +286,21 @@
     // Return success response
     return {
         statusCode: 200,
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Content-Type': 'application/json'
-        },
+        headers,
         body: JSON.stringify({
             success: true,
             message: 'Order processed successfully',
             orderId: orderData.orderId,
+            orderDbId: orderDbId,
             discordSent: discordSent,
             databaseSaved: databaseSaved,
             paymentResult: {
               ...paymentResult,
-              contact_method: 'email' // Use email instead of WhatsApp
+              contact_method: 'email'
             },
             integrations: {
                 discord: !!DISCORD_WEBHOOK_URL,
-                database: !!SUPABASE_URL,
+                database: databaseSaved,
                 manual_gcash: !!GCASH_NUMBER
             }
         })
@@ -317,10 +311,7 @@
     
     return {
       statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify({ 
         error: 'Failed to process order',  
         details: error.message,
