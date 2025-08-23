@@ -763,7 +763,7 @@ function init() {
     console.log('Items array loaded with', items.length, 'items');
     
     // Initialize live currency system first
-    initializeLiveCurrencySystem();
+    //initializeLiveCurrencySystem();
     
     // Display items - this is the key function
     displayItems();
