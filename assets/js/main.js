@@ -569,6 +569,79 @@ function createForgotPasswordModal() {
     }
 }
 
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
+    
+    // Ensure the items grid exists before initializing
+    const itemsGrid = document.getElementById('itemsGrid');
+    if (!itemsGrid) {
+        console.error('Items grid not found in DOM!');
+        return;
+    }
+    
+    init();
+});
+
+// Also initialize on window load as fallback
+window.addEventListener('load', function () {
+    console.log('Window Load event - TRIOGEL fallback initialization...');
+    const itemsGrid = document.getElementById('itemsGrid');
+    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
+        console.log('Items grid is empty, forcing initialization...');
+        init();
+    }
+});
+
+// Additional fallback - initialize after a short delay if nothing happened
+setTimeout(() => {
+    console.log('Timeout fallback - checking if TRIOGEL needs initialization...');
+    const itemsGrid = document.getElementById('itemsGrid');
+    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
+        console.log('Items grid is empty, forcing initialization...');
+        init();
+    }
+}, 3000); // Increased timeout to 3 seconds
+
+// Initialize everything
+function init() {
+    console.log('TRIOGEL Initializing...');
+    
+    // Check if items array exists
+    if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
+        console.error('Items array is not available or empty!', items);
+        return;
+    }
+    
+    console.log('Items array loaded with', items.length, 'items');
+    
+    // Initialize live currency system first
+    initializeLiveCurrencySystem();
+    
+    // Display items - this is the key function
+    displayItems();
+    updateCartCount();
+    setupFilters();
+    setupEventHandlers();
+    setupCurrencySelector();
+    updateCurrencySelector();
+    
+    // Add authentication status to debug
+    setTimeout(() => {
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
+        
+        // Show connection status
+        if (navigator.onLine) {
+            console.log('Online - Database authentication available');
+        } else {
+            console.log('Offline - Using localStorage fallback');
+        }
+    }, 1000);
+    
+    console.log('TRIOGEL Initialized successfully!');
+}
+
 // NEW: Secure Admin Data Loading Functions (Server-Verified)
 async function loadAdminData() {
     try {
@@ -822,4 +895,51 @@ function displayAdminOrders(orders) {
             ordersList.innerHTML = '<div class="admin-error">Error displaying orders</div>';
         }
     }
+}
+
+// Debugging modifications - more detailed logging for item display issues
+function displayItems() {
+    console.log('displayItems() called - Displaying items for filter:', currentFilter);
+    const grid = document.getElementById('itemsGrid');
+    if (!grid) {
+        console.error('Items grid element not found!');
+        return;
+    }
+    
+    console.log('Items grid found:', grid);
+    console.log('Available items:', items.length);
+    
+    const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
+    console.log(`Items to display: ${filteredItems.length} (filter: ${currentFilter})`);
+
+    if (filteredItems.length === 0) {
+        grid.innerHTML = '<div class="no-items">No items available for the selected filter.</div>';
+        return;
+    }
+
+    grid.innerHTML = filteredItems.map(item => `
+        <div class="item-card ${item.game}-item" data-game="${item.game}">
+            <div class="item-header">
+                <div class="game-tag ${item.game}-tag">${gameNames[item.game]}</div>
+                <div class="rarity-badge rarity-${item.rarity}">${item.rarity}</div>
+            </div>
+            <div class="item-image ${item.game}-bg">
+                <div class="item-icon">${item.icon}</div>
+            </div>
+            <div class="item-name">${item.name}</div>
+            <div class="item-description">${item.description}</div>
+            <div class="item-stats">
+                ${Object.entries(item.stats).map(([key, value]) => `
+                    <div class="stat">
+                        <div class="stat-value">${value}</div>
+                        <div class="stat-label">${key}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="item-price">${formatPrice(item.price)}</div>
+            <button class="add-to-cart-btn" onclick="addToCart(${item.id})">Add to Cart</button>
+        </div>
+    `).join('');
+    
+    console.log('Items displayed successfully, grid innerHTML length:', grid.innerHTML.length);
 }
