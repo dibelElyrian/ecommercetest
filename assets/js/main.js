@@ -1130,3 +1130,257 @@ function updateCartCount() {
     const total = Array.isArray(cart) ? cart.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
     cartCountElem.textContent = total;
 }
+
+function setupFilters() {
+    // Find or create the filter container
+    let filterContainer = document.getElementById('filterContainer');
+    if (!filterContainer) {
+        filterContainer = document.createElement('div');
+        filterContainer.id = 'filterContainer';
+        filterContainer.className = 'item-filters';
+        // Insert before itemsGrid if possible
+        const itemsGrid = document.getElementById('itemsGrid');
+        if (itemsGrid && itemsGrid.parentNode) {
+            itemsGrid.parentNode.insertBefore(filterContainer, itemsGrid);
+        } else {
+            document.body.insertBefore(filterContainer, document.body.firstChild);
+        }
+    } else {
+        filterContainer.innerHTML = '';
+    }
+
+    // Create "All" filter button
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.className = currentFilter === 'all' ? 'filter-btn active' : 'filter-btn';
+    allBtn.onclick = function () {
+        currentFilter = 'all';
+        displayItems();
+        setupFilters();
+    };
+    filterContainer.appendChild(allBtn);
+
+    // Create filter buttons for each game
+    Object.keys(gameNames).forEach(gameKey => {
+        const btn = document.createElement('button');
+        btn.textContent = gameNames[gameKey];
+        btn.className = currentFilter === gameKey ? 'filter-btn active' : 'filter-btn';
+        btn.onclick = function () {
+            currentFilter = gameKey;
+            displayItems();
+            setupFilters();
+        };
+        filterContainer.appendChild(btn);
+    });
+}
+function setupEventHandlers() {
+    // Cart modal close
+    const cartCloseBtn = document.querySelector('#cartModal .close');
+    if (cartCloseBtn) cartCloseBtn.onclick = closeCart;
+
+    // Checkout modal close
+    const checkoutCloseBtn = document.querySelector('#checkoutModal .close');
+    if (checkoutCloseBtn) checkoutCloseBtn.onclick = closeCheckout;
+
+    // Currency selector
+    const currencySelector = document.getElementById('currencySelector');
+    if (currencySelector) currencySelector.onclick = toggleCurrencySelector;
+
+    // User dropdown
+    const userBtn = document.querySelector('.user-info-btn');
+    if (userBtn) userBtn.onclick = toggleUserDropdown;
+
+    // Cart icon
+    const cartIcon = document.getElementById('cartIcon');
+    if (cartIcon) cartIcon.onclick = openCart;
+}
+function setupCurrencySelector() {
+    const dropdown = document.getElementById('currencyDropdown');
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
+    Object.keys(currencies).forEach(code => {
+        const option = document.createElement('div');
+        option.className = 'currency-option';
+        option.textContent = `${currencies[code].symbol} - ${currencies[code].name}`;
+        option.onclick = function () {
+            selectedCurrency = code;
+            updateCurrencySelector();
+            displayItems();
+        };
+        dropdown.appendChild(option);
+    });
+}
+function updateCurrencySelector() {
+    const selector = document.getElementById('currencySelector');
+    if (selector && currencies[selectedCurrency]) {
+        selector.textContent = `${currencies[selectedCurrency].symbol} (${currencies[selectedCurrency].code})`;
+    }
+}
+function displayCartItems() {
+    const cartList = document.getElementById('cartItemsList');
+    if (!cartList) return;
+    if (!cart || cart.length === 0) {
+        cartList.innerHTML = '<div class="empty-cart">Your cart is empty.</div>';
+        return;
+    }
+    cartList.innerHTML = cart.map(item => `
+        <div class="cart-item">
+            <span class="cart-item-name">${item.name}</span>
+            <span class="cart-item-qty">x${item.quantity}</span>
+            <span class="cart-item-price">${formatPrice(item.price * item.quantity)}</span>
+            <button class="remove-cart-btn" onclick="removeFromCart(${item.id})">&times;</button>
+        </div>
+    `).join('');
+    // Optionally show total
+    const cartTotalElem = document.getElementById('cartTotal');
+    if (cartTotalElem) {
+        const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        cartTotalElem.textContent = formatPrice(total);
+    }
+}
+function showNotification(message, type = 'info') {
+    let notif = document.getElementById('notification');
+    if (!notif) {
+        notif = document.createElement('div');
+        notif.id = 'notification';
+        notif.className = 'notification';
+        document.body.appendChild(notif);
+    }
+    notif.textContent = message;
+    notif.className = `notification ${type}`;
+    notif.style.display = 'block';
+    setTimeout(() => { notif.style.display = 'none'; }, 2500);
+}
+function populateProfileForm(user) {
+    if (!user) return;
+    document.getElementById('profileUsername').value = user.username || '';
+    document.getElementById('profileEmail').value = user.email || '';
+    document.getElementById('profileFavoriteGame').value = user.favoriteGame || 'ml';
+}
+function handleProfileUpdate(event) {
+    event.preventDefault();
+    // Collect form data
+    const username = document.getElementById('profileUsername').value;
+    const newPassword = document.getElementById('profileNewPassword').value;
+    const confirmPassword = document.getElementById('profileConfirmPassword').value;
+    const favoriteGame = document.getElementById('profileFavoriteGame').value;
+    // Basic validation
+    if (newPassword && newPassword !== confirmPassword) {
+        showNotification('Passwords do not match', 'error');
+        return;
+    }
+    // Update user profile (assume TriogelAuth has updateProfile)
+    window.TriogelAuth.updateProfile({ username, newPassword, favoriteGame })
+        .then(() => showNotification('Profile updated!', 'success'))
+        .catch(() => showNotification('Failed to update profile', 'error'));
+}
+function loadOrderHistory(user) {
+    const historyContent = document.getElementById('orderHistoryContent');
+    if (!historyContent || !user) return;
+    historyContent.innerHTML = '<div class="loading">Loading your orders...</div>';
+    // Example: fetch from localStorage or API
+    let orders = [];
+    try {
+        orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]')
+            .filter(order => order.email === user.email);
+    } catch { }
+    if (!orders.length) {
+        historyContent.innerHTML = '<div class="empty-orders">No orders found.</div>';
+        return;
+    }
+    historyContent.innerHTML = orders.map(order => `
+        <div class="order-history-item">
+            <div><strong>Order #${order.orderId || order.order_id}</strong> - ${order.status || 'pending'}</div>
+            <div>${new Date(order.timestamp || order.created_at).toLocaleString()}</div>
+            <div>Total: ${formatPrice(order.total || order.order_total)}</div>
+        </div>
+    `).join('');
+}
+function handleForgotPassword(event) {
+    event.preventDefault();
+    const email = document.getElementById('forgotPasswordEmail').value;
+    if (!email) {
+        showNotification('Please enter your email', 'error');
+        return;
+    }
+    // Assume TriogelAuth has sendPasswordReset
+    window.TriogelAuth.sendPasswordReset(email)
+        .then(() => showNotification('Reset link sent!', 'success'))
+        .catch(() => showNotification('Failed to send reset link', 'error'));
+}
+function openAddItemModal() {
+    let modal = document.getElementById('addItemModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'addItemModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close" onclick="document.getElementById('addItemModal').style.display='none'">&times;</span>
+                <h2>Add New Item</h2>
+                <form id="addItemForm">
+                    <input type="text" id="newItemName" placeholder="Item Name" required>
+                    <input type="number" id="newItemPrice" placeholder="Price" required>
+                    <select id="newItemGame">
+                        <option value="ml">Mobile Legends</option>
+                        <option value="roblox">Roblox</option>
+                    </select>
+                    <button type="submit">Add Item</button>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        document.getElementById('addItemForm').onsubmit = function (e) {
+            e.preventDefault();
+            // Add item logic here
+            modal.style.display = 'none';
+            showNotification('Item added (demo only)', 'success');
+        };
+    }
+    modal.style.display = 'block';
+}
+function loadAdminItems() {
+    const itemsList = document.getElementById('adminItemsList');
+    if (!itemsList) return;
+    itemsList.innerHTML = items.map(item => `
+        <div class="admin-item">
+            <span>${item.name}</span>
+            <span>${formatPrice(item.price)}</span>
+            <span>${gameNames[item.game]}</span>
+            <span>${item.rarity}</span>
+        </div>
+    `).join('');
+}
+function loadAdminCustomers() {
+    const customersList = document.getElementById('adminCustomersList');
+    if (!customersList) return;
+    // Example: fetch from localStorage or API
+    let customers = [];
+    try {
+        customers = JSON.parse(localStorage.getItem('triogel-customers') || '[]');
+    } catch { }
+    if (!customers.length) {
+        customersList.innerHTML = '<div class="empty-customers">No customers found.</div>';
+        return;
+    }
+    customersList.innerHTML = customers.map(cust => `
+        <div class="admin-customer">
+            <span>${cust.username || cust.email}</span>
+            <span>${cust.email}</span>
+        </div>
+    `).join('');
+}
+function loadAdminAnalytics() {
+    const analyticsElem = document.getElementById('adminAnalytics');
+    if (!analyticsElem) return;
+    // Example: show total sales and orders
+    let orders = [];
+    try {
+        orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+    } catch { }
+    const totalSales = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+    analyticsElem.innerHTML = `
+        <div><strong>Total Orders:</strong> ${orders.length}</div>
+        <div><strong>Total Sales:</strong> ${formatPrice(totalSales)}</div>
+    `;
+}
