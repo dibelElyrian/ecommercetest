@@ -292,9 +292,21 @@
         </div>
     </footer>
 
-    <!-- Scripts -->
-    <script src="assets/js/auth.js"></script>
-    <script src="assets/js/admin-utils.js"></script>
-    <script src="assets/js/main.js"></script>
+    <!-- Scripts - Load in correct order -->
+    <script src="assets/js/auth.js" defer></script>
+    <script src="assets/js/admin-utils.js" defer></script>
+    <script src="assets/js/main.js" defer></script>
+    
+    <!-- Debug tools for development (remove in production) -->
+    <script>
+        // Add debug tools to console
+        window.addEventListener('load', function() {
+            console.log('🔧 Debug tools available:');
+            console.log('- window.TRIOGEL_DEBUG.debug() - Show system status');
+            console.log('- window.TRIOGEL_DEBUG.testAuth() - Test authentication');
+            console.log('- window.TRIOGEL_DEBUG.clearAuth() - Clear auth data');
+            console.log('- window.debugTriogel() - Quick debug info');
+        });
+    </script>
 </body>
 </html>
