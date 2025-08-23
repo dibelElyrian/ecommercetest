@@ -1823,11 +1823,24 @@ window.registerUser = async function(event) {
     
     try {
         const form = event.target;
-        const username = form.querySelector('#registerUsername').value;
-        const email = form.querySelector('#registerEmail').value;
-        const password = form.querySelector('#registerPassword').value;
-        const confirmPassword = form.querySelector('#registerConfirmPassword').value;
-        const favoriteGame = form.querySelector('#registerFavoriteGame').value;
+        const usernameField = form.querySelector('#registerUsername');
+        const emailField = form.querySelector('#registerEmail');
+        const passwordField = form.querySelector('#registerPassword');
+        const confirmPasswordField = form.querySelector('#registerConfirmPassword');
+        const favoriteGameField = form.querySelector('#registerFavoriteGame');
+
+        // Check if all required fields exist
+        if (!usernameField || !emailField || !passwordField || !confirmPasswordField) {
+            console.error('Required form fields not found');
+            showNotification('? Form fields not found. Please refresh the page.');
+            return;
+        }
+
+        const username = usernameField.value;
+        const email = emailField.value;
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        const favoriteGame = favoriteGameField ? favoriteGameField.value : 'ml';
 
         if (!username || !email || !password || !confirmPassword) {
             showNotification('? Please fill in all fields');
@@ -1874,6 +1887,25 @@ window.registerUser = async function(event) {
         console.error('registerUser error:', error);
         showNotification('? Registration failed. Please try again.');
     }
+};
+
+// Add missing form clearing functions
+window.clearLoginForm = function() {
+    try {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.reset();
+        }
+    } catch (e) { console.error('clearLoginForm error:', e); }
+};
+
+window.clearRegisterForm = function() {
+    try {
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.reset();
+        }
+    } catch (e) { console.error('clearRegisterForm error:', e); }
 };
 
 // Initialize everything when DOM is ready
