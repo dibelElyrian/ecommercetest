@@ -93,6 +93,22 @@ body {
     display: flex;
     gap: 15px;
     align-items: center;
+    margin-bottom: 0;
+}
+
+/* Move filterContainer into nav-section for alignment */
+.nav-section {
+    flex-direction: row;
+}
+
+/* Ensure filterContainer and nav-controls share the same flex row */
+.nav-section > #filterContainer {
+    order: 1;
+    flex: 1 1 auto;
+}
+.nav-section > .nav-controls {
+    order: 2;
+    flex: 0 0 auto;
 }
 
 .game-filter {
@@ -1764,14 +1780,6 @@ button.account-btn {
     );
     color: #ff5555;
     border-top-color: rgba(255, 107, 107, 0.3);
-}
-
-.user-menu-item.logout::before {
-    background: linear-gradient(90deg, 
-        transparent, 
-        rgba(255, 107, 107, 0.15), 
-        transparent
-    );
 }
 
 /* NEW: Admin Panel Styles */

@@ -527,6 +527,121 @@ window.logoutUser = function() {
     } catch (e) { console.error('logoutUser error:', e); }
 };
 
+// REAL-TIME CURRENCY FETCHING SYSTEM
+async function fetchLiveExchangeRates() {
+    try {
+        console.log('Fetching live exchange rates from API...');
+        // Using exchangerate-api.com (free tier: 1500 requests/month)
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/PHP');
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log('Exchange rate data received:', data);
+        if (data && data.rates) {
+            // Update currency rates with live data
+            const supportedCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'KRW', 'SGD', 'MYR', 'THB', 'VND'];
+            supportedCurrencies.forEach(code => {
+                if (data.rates[code] && currencies[code]) {
+                    currencies[code].rate = data.rates[code];
+                    currencies[code].lastUpdate = new Date().toISOString();
+                    currencies[code].source = 'live';
+                }
+            });
+            currencies['PHP'].rate = 1.0;
+            currencies['PHP'].lastUpdate = new Date().toISOString();
+            currencies['PHP'].source = 'base';
+            lastCurrencyUpdate = new Date();
+            localStorage.setItem('triogel-currency-cache', JSON.stringify({
+                rates: currencies,
+                lastUpdate: lastCurrencyUpdate.toISOString()
+            }));
+            console.log('Live exchange rates updated successfully');
+            if (typeof setupCurrencySelector === 'function') setupCurrencySelector();
+            if (typeof displayItems === 'function') displayItems();
+            if (typeof showNotification === 'function') showNotification('Exchange rates updated with live data');
+            return true;
+        } else {
+            throw new Error('Invalid response format from exchange rate API');
+        }
+    } catch (error) {
+        console.error('Failed to fetch live exchange rates:', error);
+        // Try fallback API (freeforexapi.com)
+        try {
+            console.log('Trying fallback exchange rate API...');
+            const fallbackResponse = await fetch(`https://api.freeforexapi.com/v1/latest?base_currency=PHP&currencies=USD,EUR,GBP,JPY,KRW,SGD,MYR,THB,VND`);
+            if (!fallbackResponse.ok) {
+                throw new Error('Fallback API also failed');
+            }
+            const fallbackData = await fallbackResponse.json();
+            if (fallbackData && fallbackData.data) {
+                Object.keys(fallbackData.data).forEach(code => {
+                    if (currencies[code] && fallbackData.data[code]) {
+                        currencies[code].rate = fallbackData.data[code].value;
+                        currencies[code].lastUpdate = new Date().toISOString();
+                        currencies[code].source = 'fallback';
+                    }
+                });
+                lastCurrencyUpdate = new Date();
+                console.log('Fallback exchange rates updated successfully');
+                return true;
+            }
+        } catch (fallbackError) {
+            console.error('Fallback API also failed:', fallbackError);
+        }
+        // Load from cache if available
+        loadCachedExchangeRates();
+        if (typeof showNotification === 'function') {
+            showNotification('Using cached exchange rates (offline mode)');
+        }
+        return false;
+    }
+}
+
+function loadCachedExchangeRates() {
+    try {
+        const cached = localStorage.getItem('triogel-currency-cache');
+        if (cached) {
+            const cacheData = JSON.parse(cached);
+            const cacheAge = new Date() - new Date(cacheData.lastUpdate);
+            const maxCacheAge = 24 * 60 * 60 * 1000; // 24 hours
+            if (cacheAge < maxCacheAge) {
+                currencies = { ...currencies, ...cacheData.rates };
+                lastCurrencyUpdate = new Date(cacheData.lastUpdate);
+                console.log('Loaded cached exchange rates (age: ' + Math.round(cacheAge / 1000 / 60) + ' minutes)');
+                return true;
+            } else {
+                console.log('Cached exchange rates are too old, ignoring cache');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load cached exchange rates:', error);
+    }
+    return false;
+}
+
+function initializeLiveCurrencySystem() {
+    console.log('Initializing live currency system...');
+    loadCachedExchangeRates();
+    fetchLiveExchangeRates();
+    if (currencyUpdateInterval) {
+        clearInterval(currencyUpdateInterval);
+    }
+    currencyUpdateInterval = setInterval(() => {
+        console.log('Automatic currency rate update...');
+        fetchLiveExchangeRates();
+    }, 30 * 60 * 1000); // 30 minutes
+    console.log('Live currency system initialized - updates every 30 minutes');
+}
+
+window.refreshExchangeRates = function() {
+    console.log('Manual currency rate refresh requested...');
+    if (typeof showNotification === 'function') {
+        showNotification('Updating exchange rates...');
+    }
+    fetchLiveExchangeRates();
+};
+
 // NEW: Helper functions for dynamic modal creation
 function createAdminModal() {
     const modal = document.createElement('div');
@@ -1100,26 +1215,17 @@ function formatPrice(price) {
 }
 
 function initializeLiveCurrencySystem() {
-    // Example using exchangerate.host (free, no API key required)
-    fetch('https://api.exchangerate.host/latest?base=PHP')
-        .then(response => response.json())
-        .then(data => {
-            if (data && data.rates) {
-                // Update rates for supported currencies
-                Object.keys(currencies).forEach(code => {
-                    if (data.rates[code]) {
-                        currencies[code].rate = data.rates[code];
-                    }
-                });
-                lastCurrencyUpdate = new Date();
-                console.log('Live currency rates updated:', currencies);
-                updateCurrencySelector();
-                displayItems();
-            }
-        })
-        .catch(err => {
-            console.warn('Failed to fetch live currency rates:', err);
-        });
+    console.log('Initializing live currency system...');
+    loadCachedExchangeRates();
+    fetchLiveExchangeRates();
+    if (currencyUpdateInterval) {
+        clearInterval(currencyUpdateInterval);
+    }
+    currencyUpdateInterval = setInterval(() => {
+        console.log('Automatic currency rate update...');
+        fetchLiveExchangeRates();
+    }, 30 * 60 * 1000); // 30 minutes
+    console.log('Live currency system initialized - updates every 30 minutes');
 }
 
 function updateCartCount() {
