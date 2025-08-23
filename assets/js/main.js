@@ -1,6 +1,7 @@
 ﻿// IMMEDIATE DEBUG - Add at very start of file
 console.log('TRIOGEL DEBUG: Script file starting to load...');
 
+
 // Test basic functionality immediately
 window.addEventListener('load', function() {
     console.log('TRIOGEL DEBUG: Window loaded event fired');
@@ -8,6 +9,152 @@ window.addEventListener('load', function() {
 
 // TRIOGEL JavaScript - Clean Version
 console.log('Loading TRIOGEL JavaScript...');
+
+// ========================================
+// CRITICAL: Define items array and other data IMMEDIATELY
+// ========================================
+
+// TRIOGEL Items Database - MUST BE DEFINED EARLY
+const items = [
+    {
+        id: 1,
+        name: "Legendary Skin Bundle",
+        game: "ml",
+        description: "Premium legendary skin collection with special effects and voice lines. Includes 5 top-tier skins.",
+        price: 4949.45,
+        icon: "SKIN",
+        rarity: "legendary",
+        stats: { skins: "5", effects: "Special", voice: "Yes" }
+    },
+    {
+        id: 2,
+        name: "Epic Skin - Fanny",
+        game: "ml",
+        description: "Fanny's epic skin with enhanced animations and unique recall effects.",
+        price: 1924.45,
+        icon: "HERO",
+        rarity: "epic",
+        stats: { hero: "Fanny", type: "Epic", recall: "Custom" }
+    },
+    {
+        id: 3,
+        name: "Starlight Pass (Season)",
+        game: "ml",
+        description: "Full season Starlight Pass with exclusive rewards and premium benefits.",
+        price: 714.45,
+        icon: "STAR",
+        rarity: "rare",
+        stats: { duration: "1 Month", rewards: "Premium", exp: "+50%" }
+    },
+    {
+        id: 4,
+        name: "Diamonds - 2000 Pack",
+        game: "ml",
+        description: "2000 Mobile Legends diamonds for skins, heroes, and premium items.",
+        price: 2749.45,
+        icon: "GEMS",
+        rarity: "common",
+        stats: { amount: "2000", bonus: "+200", instant: "Yes" }
+    },
+    {
+        id: 5,
+        name: "MLBB Account (Mythic)",
+        game: "ml",
+        description: "High-rank Mythic account with 50+ heroes and 20+ skins. Hand-leveled.",
+        price: 10999.45,
+        icon: "RANK",
+        rarity: "legendary",
+        stats: { rank: "Mythic", heroes: "50+", skins: "20+" }
+    },
+    {
+        id: 6,
+        name: "Dominus Crown",
+        game: "roblox",
+        description: "Legendary Dominus hat showing ultimate status. Rare and prestigious item.",
+        price: 16499.45,
+        icon: "CROWN",
+        rarity: "legendary",
+        stats: { type: "Hat", rarity: "Ultra Rare", status: "VIP" }
+    },
+    {
+        id: 7,
+        name: "Robux - 10,000 Pack",
+        game: "roblox",
+        description: "10,000 Robux currency for purchasing items, game passes, and premium content.",
+        price: 5499.45,
+        icon: "ROBUX",
+        rarity: "common",
+        stats: { amount: "10,000", bonus: "+1000", delivery: "Instant" }
+    },
+    {
+        id: 8,
+        name: "Roblox Premium Account",
+        game: "roblox",
+        description: "High-level Roblox account with rare items, limiteds, and premium accessories.",
+        price: 8249.45,
+        icon: "GAME",
+        rarity: "epic",
+        stats: { level: "High", limiteds: "Yes", premium: "Active" }
+    },
+    {
+        id: 9,
+        name: "Golden Wings Package",
+        game: "roblox",
+        description: "Exclusive golden wings accessory with sparkling effects. Limited edition item.",
+        price: 4399.45,
+        icon: "WINGS",
+        rarity: "rare",
+        stats: { color: "Golden", effects: "Sparkle", edition: "Limited" }
+    },
+    {
+        id: 10,
+        name: "Pet Collection Bundle",
+        game: "roblox",
+        description: "Collection of 10 rare pets including legendary and mythical variants.",
+        price: 3299.45,
+        icon: "PETS",
+        rarity: "epic",
+        stats: { pets: "10", legendary: "3", mythical: "2" }
+    },
+    {
+        id: 11,
+        name: "Test GCash Payment",
+        game: "ml",
+        description: "Test item to verify GCash payment integration is working correctly.",
+        price: 1,
+        icon: "TEST",
+        rarity: "common",
+        stats: { purpose: "Testing", amount: "PHP 1", payment: "GCash" }
+    }
+];
+
+const gameNames = {
+    'ml': 'Mobile Legends: Bang Bang',
+    'roblox': 'Roblox'
+};
+
+let cart = [];
+let currentFilter = 'all';
+
+// Currency configuration with real-time exchange rates
+let currencies = {
+    'PHP': { symbol: 'PHP', name: 'Philippine Peso', code: 'PHP', rate: 1.0 },
+    'USD': { symbol: 'USD', name: 'US Dollar', code: 'USD', rate: 0.018 },
+    'EUR': { symbol: 'EUR', name: 'Euro', code: 'EUR', rate: 0.016 },
+    'GBP': { symbol: 'GBP', name: 'British Pound', code: 'GBP', rate: 0.014 },
+    'JPY': { symbol: 'JPY', name: 'Japanese Yen', code: 'JPY', rate: 2.65 },
+    'KRW': { symbol: 'KRW', name: 'Korean Won', code: 'KRW', rate: 23.5 },
+    'SGD': { symbol: 'SGD', name: 'Singapore Dollar', code: 'SGD', rate: 0.024 },
+    'MYR': { symbol: 'MYR', name: 'Malaysian Ringgit', code: 'MYR', rate: 0.082 },
+    'THB': { symbol: 'THB', name: 'Thai Baht', code: 'THB', rate: 0.63 },
+    'VND': { symbol: 'VND', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
+};
+
+let lastCurrencyUpdate = null;
+let currencyUpdateInterval = null;
+let selectedCurrency = 'PHP';
+
+console.log('Items array defined with', items.length, 'items');
 
 // ========================================
 // CRITICAL: Define all onclick functions IMMEDIATELY to prevent ReferenceError
