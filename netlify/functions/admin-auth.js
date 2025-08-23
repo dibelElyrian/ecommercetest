@@ -1,9 +1,9 @@
 const { createClient } = require('@supabase/supabase-js');
 
-// Initialize Supabase client
+// Initialize Supabase client with your existing environment variables
 const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_KEY || ''
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_ANON_KEY  // Using SUPABASE_ANON_KEY instead of SERVICE_KEY
 );
 
 // Secure admin configuration - only use existing Netlify variables
@@ -83,7 +83,8 @@ exports.handler = async (event, context) => {
       headers,
       body: JSON.stringify({
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
+        details: error.message
       })
     };
   }
