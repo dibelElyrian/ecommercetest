@@ -1,4 +1,4 @@
-// IMMEDIATE DEBUG - Add at very start of file
+﻿// IMMEDIATE DEBUG - Add at very start of file
 console.log('TRIOGEL DEBUG: Script file starting to load...');
 
 // Test basic functionality immediately
@@ -538,6 +538,35 @@ function createOrderHistoryModal() {
         </div>
     `;
     document.body.appendChild(modal);
+}
+
+function createForgotPasswordModal() {
+    const modal = document.createElement('div');
+    modal.id = 'forgotPasswordModal';
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeForgotPassword()">&times;</span>
+            <h2>Reset Password</h2>
+            <form id="forgotPasswordForm" class="auth-form">
+                <div class="form-group">
+                    <label>Email Address:</label>
+                    <input type="email" id="forgotPasswordEmail" placeholder="Enter your email" required>
+                </div>
+                <button type="submit" class="auth-btn">Send Reset Link</button>
+                <div class="auth-links">
+                    <button type="button" class="link-btn" onclick="switchToLogin()">Back to Login</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Add form handler
+    const form = document.getElementById('forgotPasswordForm');
+    if (form) {
+        form.addEventListener('submit', handleForgotPassword);
+    }
 }
 
 // NEW: Secure Admin Data Loading Functions (Server-Verified)
@@ -1697,7 +1726,7 @@ window.loginUser = async function(event) {
         const password = form.querySelector('#loginPassword').value;
 
         if (!email || !password) {
-            showNotification('? Please fill in all fields');
+            showNotification('❌ Please fill in all fields');
             return;
         }
 
@@ -1717,15 +1746,15 @@ window.loginUser = async function(event) {
             const result = await window.TriogelAuth.login({ email, password });
             
             if (result.success) {
-                showNotification(`? Welcome back, ${result.user.username}!`);
+                showNotification(`✅ Welcome back, ${result.user.username}!`);
                 closeLoginModal();
                 clearLoginForm();
             } else {
-                showNotification('? Login failed. Please try again.');
+                showNotification('❌ Login failed. Please try again.');
             }
         } catch (error) {
             console.error('Login error:', error);
-            showNotification(`? ${error.message}`);
+            showNotification(`❌ ${error.message}`);
         } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
@@ -1733,7 +1762,7 @@ window.loginUser = async function(event) {
 
     } catch (error) {
         console.error('loginUser error:', error);
-        showNotification('? Login failed. Please try again.');
+        showNotification('❌ Login failed. Please try again.');
     }
 };
 
@@ -1752,7 +1781,7 @@ window.registerUser = async function(event) {
         // Check if all required fields exist
         if (!usernameField || !emailField || !passwordField || !confirmPasswordField) {
             console.error('Required form fields not found');
-            showNotification('? Form fields not found. Please refresh the page.');
+            showNotification('❌ Form fields not found. Please refresh the page.');
             return;
         }
 
@@ -1763,7 +1792,7 @@ window.registerUser = async function(event) {
         const favoriteGame = favoriteGameField ? favoriteGameField.value : 'ml';
 
         if (!username || !email || !password || !confirmPassword) {
-            showNotification('? Please fill in all fields');
+            showNotification('❌ Please fill in all fields');
             return;
         }
 
@@ -1789,15 +1818,15 @@ window.registerUser = async function(event) {
             });
             
             if (result.success) {
-                showNotification(`? Welcome to TRIOGEL, ${result.user.username}!`);
+                showNotification(`✅ Welcome to TRIOGEL, ${result.user.username}!`);
                 closeRegisterModal();
                 clearRegisterForm();
             } else {
-                showNotification('? Registration failed. Please try again.');
+                showNotification('❌ Registration failed. Please try again.');
             }
         } catch (error) {
             console.error('Registration error:', error);
-            showNotification(`? ${error.message}`);
+            showNotification(`❌ ${error.message}`);
         } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
@@ -1805,7 +1834,7 @@ window.registerUser = async function(event) {
 
     } catch (error) {
         console.error('registerUser error:', error);
-        showNotification('? Registration failed. Please try again.');
+        showNotification('❌ Registration failed. Please try again.');
     }
 };
 
@@ -1862,3 +1891,47 @@ window.loadOrderHistory = function(currentUser) {
         `;
     } catch (e) { console.error('loadOrderHistory error:', e); }
 };
+
+// Add missing form clearing functions
+window.clearLoginForm = function() {
+    try {
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.reset();
+        }
+    } catch (e) { console.error('clearLoginForm error:', e); }
+};
+
+window.clearRegisterForm = function() {
+    try {
+        const registerForm = document.getElementById('registerForm');
+        if (registerForm) {
+            registerForm.reset();
+        }
+    } catch (e) { console.error('clearRegisterForm error:', e); }
+};
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
+    init();
+});
+
+// Also initialize on window load as fallback
+window.addEventListener('load', function () {
+    console.log('Window Load event - TRIOGEL fallback initialization...');
+    const itemsGrid = document.getElementById('itemsGrid');
+    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
+        init();
+    }
+});
+
+// Additional fallback - initialize after a short delay if nothing happened
+setTimeout(() => {
+    console.log('Timeout fallback - checking if TRIOGEL needs initialization...');
+    const itemsGrid = document.getElementById('itemsGrid');
+    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
+        console.log('Items grid is empty, forcing initialization...');
+        init();
+    }
+}, 2000);
