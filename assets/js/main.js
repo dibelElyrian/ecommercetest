@@ -249,7 +249,7 @@ window.openAdminPanel = function() {
         
         // Check if user is admin
         if (!window.TriogelAuth?.isAdmin()) {
-            showNotification('Access denied. Admin privileges required.');
+            showNotification('? Access denied. Admin privileges required.');
             return;
         }
         
@@ -280,7 +280,7 @@ window.refreshAdminData = function() {
     try {
         console.log('Refreshing admin data...');
         loadAdminData();
-        showNotification('Admin data refreshed');
+        showNotification('? Admin data refreshed');
     } catch (e) { console.error('refreshAdminData error:', e); }
 };
 
@@ -802,7 +802,7 @@ async function loadAdminData() {
         const isAdminUser = await window.TriogelAuth.isAdmin();
         if (!isAdminUser) {
             console.error('Access denied - admin privileges required');
-            showNotification('Access denied. Admin privileges required.');
+            showNotification('? Access denied. Admin privileges required.');
             closeAdminPanel();
             return;
         }
@@ -853,11 +853,11 @@ async function loadAdminData() {
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
         
-        console.log('Admin data loaded successfully');
+        console.log('? Admin data loaded successfully');
         
     } catch (error) {
         console.error('Error loading admin data:', error);
-        showNotification('Error loading admin data');
+        showNotification('? Error loading admin data');
         closeAdminPanel();
     }
 }
