@@ -1198,10 +1198,18 @@ function setupCurrencySelector() {
     const dropdown = document.getElementById('currencyDropdown');
     if (!dropdown) return;
     dropdown.innerHTML = '';
+    const isLive = !!lastCurrencyUpdate;
     Object.keys(currencies).forEach(code => {
+        const rate = currencies[code].rate;
         const option = document.createElement('div');
         option.className = 'currency-option';
-        option.textContent = `${currencies[code].symbol} - ${currencies[code].name}`;
+        option.innerHTML = `
+            <span>${currencies[code].symbol} - ${currencies[code].name}</span>
+            <span style="margin-left:8px; color:#aaa; font-size:0.9em;">
+                1 PHP = ${rate} ${code}
+                ${isLive ? '<span style="color:#4caf50; font-weight:bold; margin-left:4px;">Live</span>' : ''}
+            </span>
+        `;
         option.onclick = function () {
             selectedCurrency = code;
             updateCurrencySelector();

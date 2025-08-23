@@ -89,6 +89,12 @@ body {
     gap: 20px;
 }
 
+#filterContainer {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
 .game-filter {
     display: flex;
     gap: 15px;
@@ -108,21 +114,15 @@ body {
     backdrop-filter: blur(10px);
     position: relative;
     overflow: hidden;
+    min-width: 120px;
+    text-align: center;
 }
 
-.filter-btn.all-btn.active {
-    background: var(--primary-gradient);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-
-.filter-btn.ml-btn.active {
-    background: var(--ml-gradient);
-    border-color: var(--ml-blue);
-}
-
-.filter-btn.roblox-btn.active {
-    background: var(--roblox-gradient);
-    border-color: var(--roblox-red);
+.filter-btn.active {
+    background: linear-gradient(90deg, #a259ff 0%, #6a36fc 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(162,89,255,0.15);
+    border: none;
 }
 
 .filter-btn:hover {
