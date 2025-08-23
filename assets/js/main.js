@@ -389,18 +389,18 @@ function createAdminModal() {
         <div class="modal-content admin-content">
             <span class="close" onclick="closeAdminPanel()">&times;</span>
             <div class="admin-header">
-                <h2>?? Admin Panel</h2>
+                <h2>Admin Panel</h2>
                 <div class="admin-controls">
-                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">?? Refresh</button>
+                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">Refresh</button>
                     <div class="admin-level-badge" id="adminLevelBadge">Admin</div>
                 </div>
             </div>
             
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="orders">?? Orders</button>
-                <button class="admin-tab" data-tab="items">??? Items</button>
-                <button class="admin-tab" data-tab="customers">?? Customers</button>
-                <button class="admin-tab" data-tab="analytics">?? Analytics</button>
+                <button class="admin-tab active" data-tab="orders">Orders</button>
+                <button class="admin-tab" data-tab="items">Items</button>
+                <button class="admin-tab" data-tab="customers">Customers</button>
+                <button class="admin-tab" data-tab="analytics">Analytics</button>
             </div>
             
             <div class="admin-content-area">
@@ -1935,3 +1935,273 @@ setTimeout(() => {
         init();
     }
 }, 2000);
+
+// Add missing admin display functions
+function displayAdminOrders(orders) {
+    try {
+        const ordersList = document.getElementById('adminOrdersList');
+        if (!ordersList) return;
+        
+        if (!orders || orders.length === 0) {
+            ordersList.innerHTML = '<div class="admin-empty">No orders found</div>';
+            return;
+        }
+        
+        ordersList.innerHTML = orders.map(order => `
+            <div class="admin-order-item">
+                <div class="order-header">
+                    <h4>Order ${order.orderId}</h4>
+                    <span class="order-status status-${order.status || 'pending'}">${(order.status || 'pending').toUpperCase()}</span>
+                </div>
+                <div class="order-details">
+                    <p><strong>Customer:</strong> ${order.email}</p>
+                    <p><strong>Game Username:</strong> ${order.gameUsername}</p>
+                    <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
+                    <p><strong>Payment:</strong> ${order.paymentMethod}</p>
+                    <p><strong>Date:</strong> ${new Date(order.timestamp).toLocaleDateString()}</p>
+                </div>
+                <div class="order-items">
+                    <h5>Items:</h5>
+                    ${order.items.map(item => `
+                        <div class="admin-order-item-detail">
+                            ${item.name} (${item.game.toUpperCase()}) x${item.quantity}
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="admin-order-actions">
+                    <button onclick="updateOrderStatus('${order.orderId}', 'processing')" class="admin-btn processing-btn">Mark Processing</button>
+                    <button onclick="updateOrderStatus('${order.orderId}', 'completed')" class="admin-btn completed-btn">Mark Completed</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('displayAdminOrders error:', error);
+        const ordersList = document.getElementById('adminOrdersList');
+        if (ordersList) {
+            ordersList.innerHTML = '<div class="admin-error">Error displaying orders</div>';
+        }
+    }
+}
+
+async function loadAdminItems() {
+    try {
+        const itemsList = document.getElementById('adminItemsList');
+        if (!itemsList) return;
+        
+        itemsList.innerHTML = '<div class="loading">Loading items...</div>';
+        
+        // For now, display the current items array with admin controls
+        displayAdminItems(items);
+        
+    } catch (error) {
+        console.error('Error loading admin items:', error);
+        const itemsList = document.getElementById('adminItemsList');
+        if (itemsList) {
+            itemsList.innerHTML = '<div class="admin-error">Error loading items</div>';
+        }
+    }
+}
+
+function displayAdminItems(adminItems) {
+    try {
+        const itemsList = document.getElementById('adminItemsList');
+        if (!itemsList) return;
+        
+        if (!adminItems || adminItems.length === 0) {
+            itemsList.innerHTML = '<div class="admin-empty">No items found</div>';
+            return;
+        }
+        
+        itemsList.innerHTML = adminItems.map(item => `
+            <div class="admin-item-card">
+                <div class="admin-item-header">
+                    <h4>${item.name}</h4>
+                    <span class="admin-item-game ${item.game}-tag">${gameNames[item.game]}</span>
+                </div>
+                <div class="admin-item-details">
+                    <p><strong>Price:</strong> ${formatPrice(item.price)}</p>
+                    <p><strong>Rarity:</strong> <span class="rarity-${item.rarity}">${item.rarity}</span></p>
+                    <p><strong>Description:</strong> ${item.description}</p>
+                </div>
+                <div class="admin-item-actions">
+                    <button onclick="editItem(${item.id})" class="admin-btn edit-btn">Edit</button>
+                    <button onclick="toggleItemStatus(${item.id})" class="admin-btn status-btn">Toggle Status</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('displayAdminItems error:', error);
+        const itemsList = document.getElementById('adminItemsList');
+        if (itemsList) {
+            itemsList.innerHTML = '<div class="admin-error">Error displaying items</div>';
+        }
+    }
+}
+
+function displayAdminCustomers(customers) {
+    try {
+        const customersList = document.getElementById('adminCustomersList');
+        if (!customersList) return;
+        
+        if (!customers || customers.length === 0) {
+            customersList.innerHTML = '<div class="admin-empty">No customers found</div>';
+            return;
+        }
+        
+        customersList.innerHTML = customers.map(customer => `
+            <div class="admin-customer-item">
+                <div class="customer-header">
+                    <h4>${customer.email}</h4>
+                    <span class="customer-game-username">${customer.gameUsername || 'N/A'}</span>
+                </div>
+                <div class="customer-stats">
+                    <div class="stat">
+                        <span class="stat-value">${customer.totalOrders}</span>
+                        <span class="stat-label">Orders</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">${formatPrice(customer.totalSpent)}</span>
+                        <span class="stat-label">Total Spent</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">${new Date(customer.firstOrder).toLocaleDateString()}</span>
+                        <span class="stat-label">First Order</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">${new Date(customer.lastOrder).toLocaleDateString()}</span>
+                        <span class="stat-label">Last Order</span>
+                    </div>
+                </div>
+                <div class="admin-customer-actions">
+                    <button onclick="viewCustomerOrders('${customer.email}')" class="admin-btn view-btn">View Orders</button>
+                </div>
+            </div>
+        `).join('');
+        
+    } catch (error) {
+        console.error('displayAdminCustomers error:', error);
+        const customersList = document.getElementById('adminCustomersList');
+        if (customersList) {
+            customersList.innerHTML = '<div class="admin-error">Error displaying customers</div>';
+        }
+    }
+}
+
+function displayAdminAnalytics(analytics) {
+    try {
+        const analyticsContainer = document.getElementById('adminAnalytics');
+        if (!analyticsContainer) return;
+        
+        analyticsContainer.innerHTML = `
+            <div class="admin-analytics-grid">
+                <div class="analytics-card">
+                    <h3>Total Orders</h3>
+                    <div class="analytics-value">${analytics.totalOrders}</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Total Revenue</h3>
+                    <div class="analytics-value">${formatPrice(analytics.totalRevenue)}</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Average Order Value</h3>
+                    <div class="analytics-value">${formatPrice(analytics.averageOrderValue)}</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Recent Orders (7 days)</h3>
+                    <div class="analytics-value">${analytics.recentOrders}</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Conversion Rate</h3>
+                    <div class="analytics-value">${analytics.conversionRate}%</div>
+                </div>
+            </div>
+            
+            <div class="admin-analytics-section">
+                <h3>Order Status Breakdown</h3>
+                <div class="status-breakdown">
+                    <div class="status-item">
+                        <span class="status-label">Pending:</span>
+                        <span class="status-value">${analytics.statusCounts.pending}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Processing:</span>
+                        <span class="status-value">${analytics.statusCounts.processing}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Completed:</span>
+                        <span class="status-value">${analytics.statusCounts.completed}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Cancelled:</span>
+                        <span class="status-value">${analytics.statusCounts.cancelled}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('displayAdminAnalytics error:', error);
+        const analyticsContainer = document.getElementById('adminAnalytics');
+        if (analyticsContainer) {
+            analyticsContainer.innerHTML = '<div class="admin-error">Error displaying analytics</div>';
+        }
+    }
+}
+
+// Add placeholder functions for admin actions
+window.updateOrderStatus = function(orderId, newStatus) {
+    try {
+        console.log('Updating order status:', orderId, newStatus);
+        
+        // Update in localStorage
+        const orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const orderIndex = orders.findIndex(order => order.orderId === orderId);
+        
+        if (orderIndex !== -1) {
+            orders[orderIndex].status = newStatus;
+            localStorage.setItem('triogel-orders', JSON.stringify(orders));
+            
+            // Refresh admin orders display
+            loadAdminOrders();
+            
+            showNotification(`Order ${orderId} status updated to ${newStatus}`);
+        } else {
+            showNotification('Order not found');
+        }
+        
+    } catch (error) {
+        console.error('updateOrderStatus error:', error);
+        showNotification('Error updating order status');
+    }
+};
+
+window.editItem = function(itemId) {
+    console.log('Edit item:', itemId);
+    showNotification('Edit item functionality coming soon');
+};
+
+window.toggleItemStatus = function(itemId) {
+    console.log('Toggle item status:', itemId);
+    showNotification('Toggle item status functionality coming soon');
+};
+
+window.viewCustomerOrders = function(customerEmail) {
+    console.log('View customer orders:', customerEmail);
+    showNotification('View customer orders functionality coming soon');
+};
+
+window.openAddItemModal = function() {
+    console.log('Open add item modal');
+    showNotification('Add item functionality coming soon');
+};
+
+window.filterOrders = function() {
+    const statusFilter = document.getElementById('orderStatusFilter');
+    if (statusFilter) {
+        console.log('Filter orders by status:', statusFilter.value);
+        // Implement filter logic here
+        loadAdminOrders();
+    }
+};
