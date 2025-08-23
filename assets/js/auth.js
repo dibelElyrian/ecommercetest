@@ -155,7 +155,7 @@ class TriogelAuth {
                 const adminButton = document.createElement('button');
                 adminButton.id = 'adminButton';
                 adminButton.className = 'admin-btn';
-                adminButton.innerHTML = 'Admin Panel';
+                adminButton.innerHTML = '?Admin Panel';
                 adminButton.onclick = () => window.openAdminPanel();
                 
                 // Insert before the cart button
