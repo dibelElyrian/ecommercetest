@@ -97,7 +97,7 @@ class TriogelAuth {
      * Initialize authentication state on page load
      */
     async initializeAuth() {
-        console.log('Initializing TRIOGEL authentication...");
+        console.log('Initializing TRIOGEL authentication...');
         
         // Check for existing session
         const savedUser = localStorage.getItem('triogel-user');
