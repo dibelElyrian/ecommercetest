@@ -1918,3 +1918,17 @@ window.registerUser = async function(event) {
         showNotification('? Registration failed. Please try again.');
     }
 };
+
+// Initialize everything when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
+    init();
+});
+
+// Also initialize on window load as fallback
+window.addEventListener('load', function() {
+    console.log('Window Load event - TRIOGEL fallback initialization...');
+    if (!document.getElementById('itemsGrid').innerHTML.trim()) {
+        init();
+    }
+});
