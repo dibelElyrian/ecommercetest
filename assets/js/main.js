@@ -1121,3 +1121,12 @@ function initializeLiveCurrencySystem() {
             console.warn('Failed to fetch live currency rates:', err);
         });
 }
+
+function updateCartCount() {
+    // Find the cart count element (adjust selector as needed)
+    const cartCountElem = document.getElementById('cartCount');
+    if (!cartCountElem) return;
+    // Calculate total quantity in cart
+    const total = Array.isArray(cart) ? cart.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
+    cartCountElem.textContent = total;
+}
