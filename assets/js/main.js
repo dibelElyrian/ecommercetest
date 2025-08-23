@@ -249,7 +249,7 @@ window.openAdminPanel = function() {
         
         // Check if user is admin
         if (!window.TriogelAuth?.isAdmin()) {
-            showNotification('? Access denied. Admin privileges required.');
+            showNotification('Access denied. Admin privileges required.');
             return;
         }
         
@@ -280,7 +280,7 @@ window.refreshAdminData = function() {
     try {
         console.log('Refreshing admin data...');
         loadAdminData();
-        showNotification('? Admin data refreshed');
+        showNotification('Admin data refreshed');
     } catch (e) { console.error('refreshAdminData error:', e); }
 };
 
@@ -536,18 +536,18 @@ function createAdminModal() {
         <div class="modal-content admin-content">
             <span class="close" onclick="closeAdminPanel()">&times;</span>
             <div class="admin-header">
-                <h2>?? Admin Panel</h2>
+                <h2>Admin Panel</h2>
                 <div class="admin-controls">
-                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">?? Refresh</button>
+                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">Refresh</button>
                     <div class="admin-level-badge" id="adminLevelBadge">Admin</div>
                 </div>
             </div>
             
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="orders">?? Orders</button>
-                <button class="admin-tab" data-tab="items">??? Items</button>
-                <button class="admin-tab" data-tab="customers">?? Customers</button>
-                <button class="admin-tab" data-tab="analytics">?? Analytics</button>
+                <button class="admin-tab active" data-tab="orders">Orders</button>
+                <button class="admin-tab" data-tab="items">Items</button>
+                <button class="admin-tab" data-tab="customers">Customers</button>
+                <button class="admin-tab" data-tab="analytics">Analytics</button>
             </div>
             
             <div class="admin-content-area">
@@ -802,7 +802,7 @@ async function loadAdminData() {
         const isAdminUser = await window.TriogelAuth.isAdmin();
         if (!isAdminUser) {
             console.error('Access denied - admin privileges required');
-            showNotification('? Access denied. Admin privileges required.');
+            showNotification('Access denied. Admin privileges required.');
             closeAdminPanel();
             return;
         }
@@ -853,11 +853,11 @@ async function loadAdminData() {
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
         
-        console.log('? Admin data loaded successfully');
+        console.log('Admin data loaded successfully');
         
     } catch (error) {
         console.error('Error loading admin data:', error);
-        showNotification('? Error loading admin data');
+        showNotification('Error loading admin data');
         closeAdminPanel();
     }
 }
@@ -978,46 +978,91 @@ window.updateOrderStatus = async function(orderId, newStatus) {
     }
 };
 
-let cart = [];
-let currentFilter = 'all';
-
-// Core Functions
-// Enhanced price formatting with real-time rates and compliance checking
-function formatPrice(priceInPHP, targetCurrency = selectedCurrency) {
-    if (targetCurrency === 'PHP') {
-        return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+function displayAdminOrders(orders) {
+    try {
+        const ordersList = document.getElementById('adminOrdersList');
+        if (!ordersList) return;
+        
+        if (!orders || orders.length === 0) {
+            ordersList.innerHTML = '<div class="admin-empty">No orders found</div>';
+            return;
+        }
+        
+        ordersList.innerHTML = orders.map(order => {
+            // Handle both database format (triogel_orders) and localStorage format
+            const orderId = order.order_id || order.orderId;
+            const customerEmail = order.customer_email || order.email;
+            const gameUsername = order.customer_game_username || order.gameUsername;
+            const paymentMethod = order.payment_method || order.paymentMethod;
+            const orderTotal = order.order_total || order.total;
+            const orderStatus = order.order_status || order.status || 'pending';
+            const createdAt = order.created_at || order.timestamp;
+            const orderItems = order.triogel_order_items || order.items || [];
+            
+            return `
+                <div class="admin-order-item">
+                    <div class="order-header">
+                        <h4>Order ${orderId}</h4>
+                        <span class="order-status status-${orderStatus}">${orderStatus.toUpperCase()}</span>
+                    </div>
+                    <div class="order-details">
+                        <p><strong>Customer:</strong> ${customerEmail}</p>
+                        <p><strong>Game Username:</strong> ${gameUsername}</p>
+                        <p><strong>Total:</strong> ${formatPrice(orderTotal)}</p>
+                        <p><strong>Payment:</strong> ${paymentMethod}</p>
+                        <p><strong>Date:</strong> ${new Date(createdAt).toLocaleDateString()}</p>
+                    </div>
+                    <div class="order-items">
+                        <h5>Items:</h5>
+                        ${orderItems.map(item => {
+                            // Handle both database and localStorage item formats
+                            const itemName = item.item_name || item.name;
+                            const itemGame = item.item_game || item.game;
+                            const quantity = item.quantity;
+                            
+                            return `
+                                <div class="admin-order-item-detail">
+                                    ${itemName} (${itemGame.toUpperCase()}) x${quantity}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="admin-order-actions">
+                        <button onclick="updateOrderStatus('${orderId}', 'processing')" class="admin-btn processing-btn">Mark Processing</button>
+                        <button onclick="updateOrderStatus('${orderId}', 'completed')" class="admin-btn completed-btn">Mark Completed</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('displayAdminOrders error:', error);
+        const ordersList = document.getElementById('adminOrdersList');
+        if (ordersList) {
+            ordersList.innerHTML = '<div class="admin-error">Error displaying orders</div>';
+        }
     }
-    
-    const rate = currencies[targetCurrency]?.rate || 1;
-    const convertedPrice = priceInPHP * rate;
-    const currencyConfig = currencies[targetCurrency];
-    
-    if (!currencyConfig) {
-        return `PHP ${priceInPHP.toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-    }
-    
-    let formattedAmount;
-    if (targetCurrency === 'JPY' || targetCurrency === 'KRW' || targetCurrency === 'VND') {
-        formattedAmount = Math.round(convertedPrice).toLocaleString();
-    } else {
-        formattedAmount = convertedPrice.toLocaleString('en-US', {minimumFractionDigits: 2});
-    }
-    
-    let priceDisplay = `${currencyConfig.code} ${formattedAmount}`;
-    
-    return priceDisplay;
 }
 
+// Debugging modifications - more detailed logging for item display issues
 function displayItems() {
-    console.log('Displaying items for filter:', currentFilter);
+    console.log('displayItems() called - Displaying items for filter:', currentFilter);
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
         console.error('Items grid element not found!');
         return;
     }
     
+    console.log('Items grid found:', grid);
+    console.log('Available items:', items.length);
+    
     const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
-    console.log(`Items to display: ${filteredItems.length}`);
+    console.log(`Items to display: ${filteredItems.length} (filter: ${currentFilter})`);
+
+    if (filteredItems.length === 0) {
+        grid.innerHTML = '<div class="no-items">No items available for the selected filter.</div>';
+        return;
+    }
 
     grid.innerHTML = filteredItems.map(item => `
         <div class="item-card ${item.game}-item" data-game="${item.game}">
@@ -1042,717 +1087,6 @@ function displayItems() {
             <button class="add-to-cart-btn" onclick="addToCart(${item.id})">Add to Cart</button>
         </div>
     `).join('');
+    
+    console.log('Items displayed successfully, grid innerHTML length:', grid.innerHTML.length);
 }
-
-function addToCart(itemId) {
-    const item = items.find(i => i.id === itemId);
-    if (!item) {
-        console.error('Item not found:', itemId);
-        return;
-    }
-    
-    const existingItem = cart.find(i => i.id === itemId);
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({ ...item, quantity: 1 });
-    }
-
-    updateCartCount();
-    showNotification(`${item.name} added to cart!`);
-}
-
-function updateCartCount() {
-    const cartCountElement = document.getElementById('cartCount');
-    if (cartCountElement) {
-        const count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        cartCountElement.textContent = count;
-    }
-}
-
-// Enhanced currency selection with real-time rate updates
-function setCurrency(currencyCode) {
-    console.log('Changing currency to:', currencyCode);
-    selectedCurrency = currencyCode;
-    updateCurrencySelector();
-    displayItems();
-    
-    const currencyName = currencies[currencyCode]?.name || currencyCode;
-    showNotification(`Currency changed to ${currencyName}`);
-    localStorage.setItem('triogel-currency', currencyCode);
-}
-
-function updateCurrencySelector() {
-    const selectedOption = document.getElementById('selectedCurrency');
-    if (selectedOption && currencies[selectedCurrency]) {
-        selectedOption.textContent = currencies[selectedCurrency].code;
-    }
-}
-
-function setupCurrencySelector() {
-    console.log('Setting up currency selector...');
-    
-    const currencyDropdown = document.getElementById('currencyDropdown');
-    if (!currencyDropdown) {
-        console.error('currencyDropdown element not found');
-        return;
-    }
-    
-    // Add header with refresh button
-    const currentTime = new Date();
-    const updateAge = lastCurrencyUpdate ? 
-        Math.round((currentTime - lastCurrencyUpdate) / 1000 / 60) : 'Never';
-    
-    currencyDropdown.innerHTML = `
-        <div class="currency-dropdown-header">
-            <div class="currency-dropdown-title">Select Currency</div>
-            <button class="currency-refresh-btn" onclick="refreshExchangeRates()">
-                Refresh
-            </button>
-        </div>
-        ${Object.entries(currencies).map(([code, config]) => {
-            const isLive = config.source === 'live';
-            const isFallback = config.source === 'fallback';
-            const isBase = config.source === 'base';
-            const isStatic = !config.source;
-            
-            let statusBadge = '';
-            if (isLive) {
-                statusBadge = '<span class="rate-badge live">LIVE</span>';
-            } else if (isFallback) {
-                statusBadge = '<span class="rate-badge fallback">BACKUP</span>';
-            } else if (isBase) {
-                statusBadge = '<span class="rate-badge base">BASE</span>';
-            } else {
-                statusBadge = '<span class="rate-badge static">STATIC</span>';
-            }
-            
-            return `
-                <div class="currency-option" data-currency="${code}">
-                    <div class="currency-main">
-                        <span class="currency-code">${code}</span>
-                        <span class="currency-name">${config.name}</span>
-                    </div>
-                    <div class="currency-meta">
-                        <span class="currency-rate">1 PHP = ${config.rate.toFixed(code === 'JPY' || code === 'KRW' || code === 'VND' ? 0 : 4)} ${code}</span>
-                        ${statusBadge}
-                    </div>
-                </div>
-            `;
-        }).join('')}
-        <div class="rate-timestamp">
-            Last updated: ${updateAge === 'Never' ? 'Never' : updateAge + ' minutes ago'}
-        </div>
-    `;
-    
-    currencyDropdown.addEventListener('click', (e) => {
-        const option = e.target.closest('.currency-option');
-        if (option) {
-            const currency = option.dataset.currency;
-            setCurrency(currency);
-            toggleCurrencySelector();
-        }
-    });
-    
-    console.log('Currency selector setup complete');
-}
-
-// Initialize everything
-function init() {
-    console.log('TRIOGEL Initializing...');
-    
-    // Initialize live currency system first
-    initializeLiveCurrencySystem();
-    
-    displayItems();
-    updateCartCount();
-    setupFilters();
-    setupEventHandlers();
-    setupCurrencySelector();
-    updateCurrencySelector();
-    
-    // Add authentication status to debug
-    setTimeout(() => {
-        const currentUser = window.TriogelAuth?.getCurrentUser();
-        console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
-        
-        // Show connection status
-        if (navigator.onLine) {
-            console.log('Online - Database authentication available');
-        } else {
-            console.log('Offline - Using localStorage fallback');
-        }
-    }, 1000);
-    
-    console.log('TRIOGEL Initialized successfully!');
-}
-
-// Event Handlers Setup
-function setupEventHandlers() {
-    console.log('Setting up event handlers...');
-    
-    // Authentication form handlers
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', window.loginUser);
-    }
-
-    const registerForm = document.getElementById('registerForm');
-    if (registerForm) {
-        registerForm.addEventListener('submit', window.registerUser);
-    }
-
-    // Order tracking form handler
-    const trackingForm = document.getElementById('trackingForm');
-    if (trackingForm) {
-        trackingForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Order tracking form submitted');
-
-            const orderId = document.getElementById('orderId').value.trim();
-            if (!orderId) {
-                showNotification('Please enter an Order ID');
-                return;
-            }
-            await trackOrderById(orderId);
-        });
-    }
-
-    // Checkout form handler
-    const checkoutForm = document.getElementById('checkoutForm');
-    if (checkoutForm) {
-        checkoutForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Checkout form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Processing Order...';
-            submitBtn.disabled = true;
-
-            try {
-                // Collect form data
-                const orderData = {
-                    orderId: 'TRIO-' + Date.now(),
-                    gameUsername: document.getElementById('gameUsername').value,
-                    email: document.getElementById('email').value,
-                    whatsappNumber: document.getElementById('whatsappNumber').value || '',
-                    paymentMethod: document.getElementById('paymentMethod').value,
-                    currency: selectedCurrency,
-                    serverRegion: document.getElementById('serverRegion').value || '',
-                    customerNotes: document.getElementById('customerNotes').value || '',
-                    customer: {
-                        email: document.getElementById('email').value,
-                        gameUsername: document.getElementById('gameUsername').value,
-                        whatsappNumber: document.getElementById('whatsappNumber').value || '',
-                        serverRegion: document.getElementById('serverRegion').value || ''
-                    },
-                    items: cart.map(item => ({
-                        id: item.id,
-                        name: item.name,
-                        game: item.game,
-                        price: item.price,
-                        quantity: item.quantity
-                    })),
-                    total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-                    timestamp: new Date().toISOString()
-                };
-
-                console.log('Processing order:', orderData);
-
-                try {
-                    const response = await fetch('/.netlify/functions/process-order', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(orderData)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        console.log('Order processed successfully:', result);
-                        
-                        // Save order locally for tracking
-                        saveOrderLocally(orderData);
-                        
-                        // Clear cart and close checkout
-                        cart = [];
-                        updateCartCount();
-                        closeCheckout();
-                        
-                        // Check for GCash payment and show appropriate notification
-                        if (orderData.paymentMethod === 'gcash') {
-                            const gcashDetails = `Order ${orderData.orderId} confirmed!
-
-GCash Payment Required:
-Amount: PHP ${orderData.total.toFixed(2)}
-GCash Number: ${result.paymentResult?.gcash_number || 'Will be sent via email'}
-Reference: ${result.paymentResult?.reference || orderData.orderId}
-
-Email payment screenshot to: ${orderData.email}
-We'll process your order within 1-24 hours!`;
-                            
-                            if (typeof showGcashNotification === 'function') {
-                                showGcashNotification(gcashDetails);
-                            } else {
-                                showNotification(gcashDetails);
-                            }
-                        } else {
-                            showNotification(`Order ${orderData.orderId} confirmed! Check your email for details.`);
-                        }
-                        
-                    } else {
-                        const errorData = await response.json().catch(() => ({}));
-                        console.error('Server response error:', response.status, errorData);
-                        throw new Error(`Server error: ${response.status} - ${errorData.error || response.statusText}`);
-                    }
-                } catch (netError) {
-                    console.log('Server not available, using local fallback...', netError.message);
-                    
-                    // Fallback: save order locally and show user
-                    saveOrderLocally(orderData);
-                    
-                    // Clear cart and close checkout
-                    cart = [];
-                    updateCartCount();
-                    closeCheckout();
-                    
-                    // Show local save notification
-                    showNotification(`Order ${orderData.orderId} saved locally! We'll process it when servers are available.`);
-                }
-
-            } catch (error) {
-                console.error('Checkout error:', error);
-                showNotification('Order failed. Please try again.');
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
-    }
-}
-
-// Add missing essential functions to complete the system
-window.displayCartItems = function() {
-    try {
-        const cartModal = document.getElementById('cartModal');
-        const cartItemsContainer = document.getElementById('cartItems');
-        const cartTotalElement = document.getElementById('cartTotal');
-        
-        if (!cartItemsContainer) {
-            console.error('Cart items container not found');
-            return;
-        }
-        
-        if (!cart || cart.length === 0) {
-            cartItemsContainer.innerHTML = '<div class="cart-empty">Your cart is empty</div>';
-            if (cartTotalElement) cartTotalElement.textContent = formatPrice(0);
-            return;
-        }
-        
-        cartItemsContainer.innerHTML = cart.map(item => `
-            <div class="cart-item">
-                <div class="cart-item-info">
-                    <div class="cart-item-name">${item.name}</div>
-                    <div class="cart-item-price">${formatPrice(item.price)}</div>
-                    <div class="cart-item-quantity">Qty: ${item.quantity}</div>
-                </div>
-                <button class="remove-btn" onclick="removeFromCart(${item.id})">Remove</button>
-            </div>
-        `).join('');
-        
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        if (cartTotalElement) cartTotalElement.textContent = formatPrice(total);
-        
-    } catch (e) { console.error('displayCartItems error:', e); }
-};
-
-window.displayOrderSummary = function() {
-    try {
-        const orderSummaryContainer = document.getElementById('orderSummary');
-        if (!orderSummaryContainer) {
-            console.error('Order summary container not found');
-            return;
-        }
-        
-        if (!cart || cart.length === 0) {
-            orderSummaryContainer.innerHTML = '<div>No items in cart</div>';
-            return;
-        }
-        
-        const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        
-        orderSummaryContainer.innerHTML = `
-            <h3>Order Summary</h3>
-            <div class="order-items">
-                ${cart.map(item => `
-                    <div class="order-item">
-                        <span>${item.name} x${item.quantity}</span>
-                        <span>${formatPrice(item.price * item.quantity)}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <div class="order-total">
-                <strong>Total: ${formatPrice(total)}</strong>
-            </div>
-        `;
-        
-    } catch (e) { console.error('displayOrderSummary error:', e); }
-};
-
-window.showNotification = function(message) {
-    try {
-        console.log('Notification:', message);
-        
-        // Create or update notification element
-        let notification = document.getElementById('notification');
-        if (!notification) {
-            notification = document.createElement('div');
-            notification.id = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: rgba(103, 126, 234, 0.95);
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                font-size: 0.9rem;
-                font-weight: 600;
-                z-index: 2000;
-                max-width: 300px;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.2);
-                transition: all 0.3s ease;
-                opacity: 0;
-            `;
-            document.body.appendChild(notification);
-        }
-        
-        notification.textContent = message;
-        notification.style.opacity = '1';
-        
-        // Auto-hide after 4 seconds
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.remove();
-                }
-            }, 300);
-        }, 4000);
-        
-    } catch (e) { console.error('showNotification error:', e); }
-};
-
-window.setupFilters = function() {
-    try {
-        console.log('Setting up game filters...');
-        
-        const filterButtons = document.querySelectorAll('.filter-btn');
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                // Add active class to clicked button
-                button.classList.add('active');
-                
-                // Set current filter
-                const filter = button.dataset.game;
-                currentFilter = filter;
-                
-                console.log('Filter changed to:', filter);
-                displayItems();
-            });
-        });
-        
-        console.log('Game filters setup complete');
-    } catch (e) { console.error('setupFilters error:', e); }
-};
-
-window.saveOrderLocally = function(orderData) {
-    try {
-        console.log('Saving order locally:', orderData.orderId);
-        
-        // Get existing orders
-        const existingOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        
-        // Add new order
-        existingOrders.push(orderData);
-        
-        // Save back to localStorage
-        localStorage.setItem('triogel-orders', JSON.stringify(existingOrders));
-        
-        console.log('Order saved locally successfully');
-    } catch (e) { console.error('saveOrderLocally error:', e); }
-};
-
-window.trackOrderById = function(orderId) {
-    try {
-        console.log('Tracking order:', orderId);
-        
-        // Search in local storage first
-        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        const foundOrder = localOrders.find(order => order.orderId === orderId);
-        
-        const resultDiv = document.getElementById('orderResult');
-        if (!resultDiv) {
-            console.error('Order result container not found');
-            return;
-        }
-        
-        if (foundOrder) {
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `
-                <div class="order-found">
-                    <h3>Order Found: ${foundOrder.orderId}</h3>
-                    <div class="order-details">
-                        <p><strong>Game Username:</strong> ${foundOrder.gameUsername}</p>
-                        <p><strong>Email:</strong> ${foundOrder.email}</p>
-                        <p><strong>Payment Method:</strong> ${foundOrder.paymentMethod}</p>
-                        <p><strong>Total:</strong> ${formatPrice(foundOrder.total)}</p>
-                        <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
-                        <p><strong>Date:</strong> ${new Date(foundOrder.timestamp).toLocaleString()}</p>
-                    </div>
-                    <div class="order-items-list">
-                        <h4>Items:</h4>
-                        ${foundOrder.items.map(item => `
-                            <div class="order-item-detail">
-                                ${item.name} (${item.game.toUpperCase()}) x${item.quantity} - ${formatPrice(item.price * item.quantity)}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        } else {
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `
-                <div class="order-not-found">
-                    <h3>Order Not Found</h3>
-                    <p>No order found with ID: ${orderId}</p>
-                    <p>Please check your order ID and try again.</p>
-                </div>
-            `;
-        }
-        
-    } catch (e) { console.error('trackOrderById error:', e); }
-};
-
-// Login user function - Fixed to handle undefined TriogelAuth
-window.loginUser = async function(event) {
-    event.preventDefault();
-    
-    try {
-        const form = event.target;
-        const email = form.querySelector('#loginEmail').value;
-        const password = form.querySelector('#loginPassword').value;
-
-        if (!email || !password) {
-            showNotification('❌ Please fill in all fields');
-            return;
-        }
-
-        // Show loading state
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
-        submitButton.textContent = 'Signing in...';
-        submitButton.disabled = true;
-
-        try {
-            // Wait for TriogelAuth to be available if not ready
-            if (!window.TriogelAuth) {
-                console.log('TriogelAuth not ready, waiting...');
-                await initializeAuthenticationSystem();
-            }
-
-            const result = await window.TriogelAuth.login({ email, password });
-            
-            if (result.success) {
-                showNotification(`✅ Welcome back, ${result.user.username}!`);
-                closeLoginModal();
-                clearLoginForm();
-            } else {
-                showNotification('❌ Login failed. Please try again.');
-            }
-        } catch (error) {
-            console.error('Login error:', error);
-            showNotification(`❌ ${error.message}`);
-        } finally {
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
-        }
-
-    } catch (error) {
-        console.error('loginUser error:', error);
-        showNotification('❌ Login failed. Please try again.');
-    }
-};
-
-// Register user function - Fixed to handle undefined TriogelAuth
-window.registerUser = async function(event) {
-    event.preventDefault();
-    
-    try {
-        const form = event.target;
-        const usernameField = form.querySelector('#registerUsername');
-        const emailField = form.querySelector('#registerEmail');
-        const passwordField = form.querySelector('#registerPassword');
-        const confirmPasswordField = form.querySelector('#confirmPassword');
-        const favoriteGameField = form.querySelector('#favoriteGame');
-
-        // Check if all required fields exist
-        if (!usernameField || !emailField || !passwordField || !confirmPasswordField) {
-            console.error('Required form fields not found');
-            showNotification('❌ Form fields not found. Please refresh the page.');
-            return;
-        }
-
-        const username = usernameField.value;
-        const email = emailField.value;
-        const password = passwordField.value;
-        const confirmPassword = confirmPasswordField.value;
-        const favoriteGame = favoriteGameField ? favoriteGameField.value : 'ml';
-
-        if (!username || !email || !password || !confirmPassword) {
-            showNotification('❌ Please fill in all fields');
-            return;
-        }
-
-        // Show loading state
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalText = submitButton.textContent;
-        submitButton.textContent = 'Creating account...';
-        submitButton.disabled = true;
-
-        try {
-            // Wait for TriogelAuth to be available if not ready
-            if (!window.TriogelAuth) {
-                console.log('TriogelAuth not ready, waiting...');
-                await initializeAuthenticationSystem();
-            }
-
-            const result = await window.TriogelAuth.register({
-                username,
-                email,
-                password,
-                confirmPassword,
-                favoriteGame
-            });
-            
-            if (result.success) {
-                showNotification(`✅ Welcome to TRIOGEL, ${result.user.username}!`);
-                closeRegisterModal();
-                clearRegisterForm();
-            } else {
-                showNotification('❌ Registration failed. Please try again.');
-            }
-        } catch (error) {
-            console.error('Registration error:', error);
-            showNotification(`❌ ${error.message}`);
-        } finally {
-            submitButton.textContent = originalText;
-            submitButton.disabled = false;
-        }
-
-    } catch (error) {
-        console.error('registerUser error:', error);
-        showNotification('❌ Registration failed. Please try again.');
-    }
-};
-
-// Add missing functions for profile and order history functionality
-window.populateProfileForm = function(currentUser) {
-    try {
-        const profileUsername = document.getElementById('profileUsername');
-        const profileEmail = document.getElementById('profileEmail');
-        const profileFavoriteGame = document.getElementById('profileFavoriteGame');
-        
-        if (profileUsername) profileUsername.value = currentUser.username || '';
-        if (profileEmail) profileEmail.value = currentUser.email || '';
-        if (profileFavoriteGame) profileFavoriteGame.value = currentUser.favoriteGame || 'ml';
-    } catch (e) { console.error('populateProfileForm error:', e); }
-};
-
-window.loadOrderHistory = function(currentUser) {
-    try {
-        const orderHistoryContent = document.getElementById('orderHistoryContent');
-        if (!orderHistoryContent) return;
-        
-        // Get orders from localStorage
-        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        const userOrders = localOrders.filter(order => 
-            order.email && order.email.toLowerCase() === currentUser.email.toLowerCase()
-        );
-        
-        if (userOrders.length === 0) {
-            orderHistoryContent.innerHTML = '<div class="no-orders">No orders found</div>';
-            return;
-        }
-        
-        orderHistoryContent.innerHTML = `
-            <div class="order-history-list">
-                ${userOrders.map(order => `
-                    <div class="order-history-item">
-                        <div class="order-header">
-                            <h4>Order ${order.orderId}</h4>
-                            <span class="order-date">${new Date(order.timestamp).toLocaleDateString()}</span>
-                        </div>
-                        <div class="order-details">
-                            <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
-                            <p><strong>Payment Method:</strong> ${order.paymentMethod}</p>
-                            <p><strong>Status:</strong> <span class="status-pending">Pending</span></p>
-                        </div>
-                        <div class="order-items">
-                            ${order.items.map(item => `
-                                <div class="order-item">${item.name} x${item.quantity}</div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } catch (e) { console.error('loadOrderHistory error:', e); }
-};
-
-// Add missing form clearing functions
-window.clearLoginForm = function() {
-    try {
-        const loginForm = document.getElementById('loginForm');
-        if (loginForm) {
-            loginForm.reset();
-        }
-    } catch (e) { console.error('clearLoginForm error:', e); }
-};
-
-window.clearRegisterForm = function() {
-    try {
-        const registerForm = document.getElementById('registerForm');
-        if (registerForm) {
-            registerForm.reset();
-        }
-    } catch (e) { console.error('clearRegisterForm error:', e); }
-};
-
-// Initialize everything when DOM is ready
-document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
-    init();
-});
-
-// Also initialize on window load as fallback
-window.addEventListener('load', function () {
-    console.log('Window Load event - TRIOGEL fallback initialization...');
-    const itemsGrid = document.getElementById('itemsGrid');
-    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
-        init();
-    }
-});
-
-// Additional fallback - initialize after a short delay if nothing happened
-setTimeout(() => {
-    console.log('Timeout fallback - checking if TRIOGEL needs initialization...');
-    const itemsGrid = document.getElementById('itemsGrid');
-    if (itemsGrid && !itemsGrid.innerHTML.trim()) {
-        console.log('Items grid is empty, forcing initialization...');
-        init();
-    }
-}, 2000);
