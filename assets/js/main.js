@@ -1424,55 +1424,12 @@ function setupEventHandlers() {
     // Authentication form handlers
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
-        loginForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Login form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Logging in...';
-            submitBtn.disabled = true;
-
-            try {
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                await loginUser(email, password);
-            } catch (error) {
-                showNotification(`Login failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
+        loginForm.addEventListener('submit', window.loginUser);
     }
 
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
-        registerForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('Register form submitted');
-
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = 'Creating Account...';
-            submitBtn.disabled = true;
-
-            try {
-                const userData = {
-                    username: document.getElementById('registerUsername').value,
-                    email: document.getElementById('registerEmail').value,
-                    password: document.getElementById('registerPassword').value,
-                    confirmPassword: document.getElementById('confirmPassword').value,
-                    favoriteGame: document.getElementById('favoriteGame').value
-                };
-                await registerUser(userData);
-            } catch (error) {
-                showNotification(`Registration failed: ${error.message}`);
-            } finally {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }
-        });
+        registerForm.addEventListener('submit', window.registerUser);
     }
 
     // Order tracking form handler
