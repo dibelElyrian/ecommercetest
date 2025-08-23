@@ -102,7 +102,7 @@ window.openAdminPanel = function() {
         
         // Check if user is admin
         if (!window.TriogelAuth?.isAdmin()) {
-            showNotification('? Access denied. Admin privileges required.');
+            showNotification('Access denied. Admin privileges required.');
             return;
         }
         
@@ -133,7 +133,7 @@ window.refreshAdminData = function() {
     try {
         console.log('Refreshing admin data...');
         loadAdminData();
-        showNotification('? Admin data refreshed');
+        showNotification('Admin data refreshed');
     } catch (e) { console.error('refreshAdminData error:', e); }
 };
 
@@ -582,7 +582,7 @@ async function loadAdminData() {
         const isAdminUser = await window.TriogelAuth.isAdmin();
         if (!isAdminUser) {
             console.error('Access denied - admin privileges required');
-            showNotification('? Access denied. Admin privileges required.');
+            showNotification('Access denied. Admin privileges required.');
             closeAdminPanel();
             return;
         }
@@ -633,11 +633,11 @@ async function loadAdminData() {
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
         
-        console.log('? Admin data loaded successfully');
+        console.log('Admin data loaded successfully');
         
     } catch (error) {
         console.error('Error loading admin data:', error);
-        showNotification('? Error loading admin data');
+        showNotification('Error loading admin data');
         closeAdminPanel();
     }
 }
@@ -1726,7 +1726,7 @@ window.loginUser = async function(event) {
         const password = form.querySelector('#loginPassword').value;
 
         if (!email || !password) {
-            showNotification('❌ Please fill in all fields');
+            showNotification('Please fill in all fields');
             return;
         }
 
@@ -1746,15 +1746,15 @@ window.loginUser = async function(event) {
             const result = await window.TriogelAuth.login({ email, password });
             
             if (result.success) {
-                showNotification(`✅ Welcome back, ${result.user.username}!`);
+                showNotification(`Welcome back, ${result.user.username}!`);
                 closeLoginModal();
                 clearLoginForm();
             } else {
-                showNotification('❌ Login failed. Please try again.');
+                showNotification('Login failed. Please try again.');
             }
         } catch (error) {
             console.error('Login error:', error);
-            showNotification(`❌ ${error.message}`);
+            showNotification(`${error.message}`);
         } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
@@ -1762,7 +1762,7 @@ window.loginUser = async function(event) {
 
     } catch (error) {
         console.error('loginUser error:', error);
-        showNotification('❌ Login failed. Please try again.');
+        showNotification('Login failed. Please try again.');
     }
 };
 
@@ -1781,7 +1781,7 @@ window.registerUser = async function(event) {
         // Check if all required fields exist
         if (!usernameField || !emailField || !passwordField || !confirmPasswordField) {
             console.error('Required form fields not found');
-            showNotification('❌ Form fields not found. Please refresh the page.');
+            showNotification('Form fields not found. Please refresh the page.');
             return;
         }
 
@@ -1792,7 +1792,7 @@ window.registerUser = async function(event) {
         const favoriteGame = favoriteGameField ? favoriteGameField.value : 'ml';
 
         if (!username || !email || !password || !confirmPassword) {
-            showNotification('❌ Please fill in all fields');
+            showNotification('Please fill in all fields');
             return;
         }
 
@@ -1818,15 +1818,15 @@ window.registerUser = async function(event) {
             });
             
             if (result.success) {
-                showNotification(`✅ Welcome to TRIOGEL, ${result.user.username}!`);
+                showNotification(`Welcome to TRIOGEL, ${result.user.username}!`);
                 closeRegisterModal();
                 clearRegisterForm();
             } else {
-                showNotification('❌ Registration failed. Please try again.');
+                showNotification('Registration failed. Please try again.');
             }
         } catch (error) {
             console.error('Registration error:', error);
-            showNotification(`❌ ${error.message}`);
+            showNotification(`${error.message}`);
         } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
@@ -1834,7 +1834,7 @@ window.registerUser = async function(event) {
 
     } catch (error) {
         console.error('registerUser error:', error);
-        showNotification('❌ Registration failed. Please try again.');
+        showNotification('Registration failed. Please try again.');
     }
 };
 
