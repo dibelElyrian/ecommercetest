@@ -21,7 +21,8 @@ const essentialFunctions = [
     'toggleCurrencySelector', 'toggleUserDropdown', 'closeUserDropdown',
     'switchToLogin', 'switchToRegister', 'logoutUser', 'initAuth', 'initializeCurrencySystem',
     'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
-    'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword'
+    'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword',
+    'openAdminPanel', 'closeAdminPanel', 'refreshAdminData'
 ];
 
 // Ensure all functions exist globally (even as placeholders initially)
@@ -92,6 +93,48 @@ window.closeRegisterModal = function() {
         document.getElementById('registerModal').style.display = 'none';
         if (typeof clearRegisterForm === 'function') clearRegisterForm();
     } catch (e) { console.error('closeRegisterModal error:', e); }
+};
+
+// NEW: Admin Panel Functions
+window.openAdminPanel = function() {
+    try {
+        console.log('Opening admin panel...');
+        
+        // Check if user is admin
+        if (!window.TriogelAuth?.isAdmin()) {
+            showNotification('? Access denied. Admin privileges required.');
+            return;
+        }
+        
+        // Check if modal exists, if not create it dynamically
+        let adminModal = document.getElementById('adminModal');
+        if (!adminModal) {
+            createAdminModal();
+            adminModal = document.getElementById('adminModal');
+        }
+        
+        // Load admin data
+        loadAdminData();
+        
+        adminModal.style.display = 'block';
+        document.body.classList.add('admin-mode');
+    } catch (e) { console.error('openAdminPanel error:', e); }
+};
+
+window.closeAdminPanel = function() {
+    try {
+        const adminModal = document.getElementById('adminModal');
+        if (adminModal) adminModal.style.display = 'none';
+        document.body.classList.remove('admin-mode');
+    } catch (e) { console.error('closeAdminPanel error:', e); }
+};
+
+window.refreshAdminData = function() {
+    try {
+        console.log('Refreshing admin data...');
+        loadAdminData();
+        showNotification('? Admin data refreshed');
+    } catch (e) { console.error('refreshAdminData error:', e); }
 };
 
 // NEW: User Profile Modal Functions
@@ -373,6 +416,102 @@ window.logoutUser = function() {
 };
 
 // NEW: Helper functions for dynamic modal creation
+function createAdminModal() {
+    const modal = document.createElement('div');
+    modal.id = 'adminModal';
+    modal.className = 'modal admin-modal';
+    modal.innerHTML = `
+        <div class="modal-content admin-content">
+            <span class="close" onclick="closeAdminPanel()">&times;</span>
+            <div class="admin-header">
+                <h2>?? Admin Panel</h2>
+                <div class="admin-controls">
+                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">?? Refresh</button>
+                    <div class="admin-level-badge" id="adminLevelBadge">Admin</div>
+                </div>
+            </div>
+            
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="orders">?? Orders</button>
+                <button class="admin-tab" data-tab="items">??? Items</button>
+                <button class="admin-tab" data-tab="customers">?? Customers</button>
+                <button class="admin-tab" data-tab="analytics">?? Analytics</button>
+            </div>
+            
+            <div class="admin-content-area">
+                <!-- Orders Tab -->
+                <div class="admin-tab-content active" id="admin-orders">
+                    <div class="admin-section-header">
+                        <h3>Order Management</h3>
+                        <div class="admin-filters">
+                            <select id="orderStatusFilter" onchange="filterOrders()">
+                                <option value="">All Orders</option>
+                                <option value="pending">Pending</option>
+                                <option value="processing">Processing</option>
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="adminOrdersList" class="admin-orders-list">
+                        <div class="loading">Loading orders...</div>
+                    </div>
+                </div>
+                
+                <!-- Items Tab -->
+                <div class="admin-tab-content" id="admin-items">
+                    <div class="admin-section-header">
+                        <h3>Item Management</h3>
+                        <button onclick="openAddItemModal()" class="admin-btn add-btn">+ Add New Item</button>
+                    </div>
+                    <div id="adminItemsList" class="admin-items-list">
+                        <div class="loading">Loading items...</div>
+                    </div>
+                </div>
+                
+                <!-- Customers Tab -->
+                <div class="admin-tab-content" id="admin-customers">
+                    <div class="admin-section-header">
+                        <h3>Customer Management</h3>
+                    </div>
+                    <div id="adminCustomersList" class="admin-customers-list">
+                        <div class="loading">Loading customers...</div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Tab -->
+                <div class="admin-tab-content" id="admin-analytics">
+                    <div class="admin-section-header">
+                        <h3>Analytics Dashboard</h3>
+                    </div>
+                    <div id="adminAnalytics" class="admin-analytics">
+                        <div class="loading">Loading analytics...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Add tab switching functionality
+    const tabs = modal.querySelectorAll('.admin-tab');
+    const contents = modal.querySelectorAll('.admin-tab-content');
+    
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetTab = tab.dataset.tab;
+            
+            // Remove active class from all tabs and contents
+            tabs.forEach(t => t.classList.remove('active'));
+            contents.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(`admin-${targetTab}`).classList.add('active');
+        });
+    });
+}
+
 function createProfileModal() {
     const modal = document.createElement('div');
     modal.id = 'profileModal';
@@ -481,198 +620,293 @@ function createForgotPasswordModal() {
     }
 }
 
-// NEW: Helper functions for modal functionality
-function populateProfileForm(user) {
+// NEW: Secure Admin Data Loading Functions (Server-Verified)
+async function loadAdminData() {
     try {
-        const usernameInput = document.getElementById('profileUsername');
-        const emailInput = document.getElementById('profileEmail');
-        const favoriteGameSelect = document.getElementById('profileFavoriteGame');
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (!currentUser) {
+            console.error('User not logged in');
+            return;
+        }
         
-        if (usernameInput) usernameInput.value = user.username || '';
-        if (emailInput) emailInput.value = user.email || '';
-        if (favoriteGameSelect) favoriteGameSelect.value = user.favorite_game || 'ml';
-    } catch (e) { console.error('populateProfileForm error:', e); }
+        // Server-side admin verification
+        const isAdminUser = await window.TriogelAuth.isAdmin();
+        if (!isAdminUser) {
+            console.error('Access denied - admin privileges required');
+            showNotification('? Access denied. Admin privileges required.');
+            closeAdminPanel();
+            return;
+        }
+        
+        const adminLevel = await window.TriogelAuth.getAdminLevel();
+        const permissions = await window.TriogelAuth.getAdminPermissions();
+        
+        console.log(`Loading admin data for level ${adminLevel} user`);
+        
+        // Update admin level badge
+        const adminLevelBadge = document.getElementById('adminLevelBadge');
+        if (adminLevelBadge) {
+            const levelText = adminLevel === 3 ? 'Super Admin' : 
+                             adminLevel === 2 ? 'Manager' : 'Basic Admin';
+            adminLevelBadge.textContent = levelText;
+            adminLevelBadge.className = `admin-level-badge level-${adminLevel}`;
+        }
+        
+        // Load data based on permissions
+        if (permissions.canViewOrders) {
+            await loadAdminOrders();
+        }
+        
+        // Load items management if permitted
+        if (permissions.canManageItems) {
+            await loadAdminItems();
+        } else {
+            // Hide items tab if no permission
+            const itemsTab = document.querySelector('[data-tab="items"]');
+            if (itemsTab) itemsTab.style.display = 'none';
+        }
+        
+        // Load customers if permitted
+        if (permissions.canViewCustomers) {
+            await loadAdminCustomers();
+        } else {
+            // Hide customers tab if no permission
+            const customersTab = document.querySelector('[data-tab="customers"]');
+            if (customersTab) customersTab.style.display = 'none';
+        }
+        
+        // Load analytics if permitted
+        if (permissions.canAccessAnalytics) {
+            await loadAdminAnalytics();
+        } else {
+            // Hide analytics tab if no permission
+            const analyticsTab = document.querySelector('[data-tab="analytics"]');
+            if (analyticsTab) analyticsTab.style.display = 'none';
+        }
+        
+        console.log('? Admin data loaded successfully');
+        
+    } catch (error) {
+        console.error('Error loading admin data:', error);
+        showNotification('? Error loading admin data');
+        closeAdminPanel();
+    }
 }
 
-function loadOrderHistory(user) {
+async function loadAdminOrders() {
     try {
-        const content = document.getElementById('orderHistoryContent');
-        if (!content) return;
+        const ordersList = document.getElementById('adminOrdersList');
+        if (!ordersList) return;
         
-        // Get orders from localStorage (and eventually from database)
+        ordersList.innerHTML = '<div class="loading">Loading orders...</div>';
+        
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const permissions = await window.TriogelAuth.getAdminPermissions();
+        
+        if (!permissions.canViewOrders) {
+            ordersList.innerHTML = '<div class="admin-error">Access denied - insufficient permissions</div>';
+            return;
+        }
+        
+        // Try to fetch from secure admin API first
+        try {
+            const response = await fetch('/.netlify/functions/admin-api', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'get_orders',
+                    adminEmail: currentUser.email,
+                    sessionToken: currentUser.sessionToken,
+                    limit: 50
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    displayAdminOrders(data.orders || []);
+                    return;
+                } else {
+                    console.warn('Admin API returned error:', data.error);
+                }
+            }
+        } catch (serverError) {
+            console.log('Admin API not available, using local data:', serverError.message);
+        }
+        
+        // Fallback to localStorage (with permission check)
         const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        const userOrders = localOrders.filter(order => 
-            order.email && user.email && order.email.toLowerCase() === user.email.toLowerCase()
-        );
+        displayAdminOrders(localOrders);
         
-        if (userOrders.length === 0) {
-            content.innerHTML = `
-                <div class="no-orders">
-                    <p>No orders found</p>
-                    <p>Start shopping to see your order history here!</p>
-                </div>
-            `;
+    } catch (error) {
+        console.error('Error loading admin orders:', error);
+        const ordersList = document.getElementById('adminOrdersList');
+        if (ordersList) {
+            ordersList.innerHTML = '<div class="admin-error">Error loading orders</div>';
+        }
+    }
+}
+
+async function loadAdminCustomers() {
+    try {
+        const customersList = document.getElementById('adminCustomersList');
+        if (!customersList) return;
+        
+        customersList.innerHTML = '<div class="loading">Loading customers...</div>';
+        
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const permissions = await window.TriogelAuth.getAdminPermissions();
+        
+        if (!permissions.canViewCustomers) {
+            customersList.innerHTML = '<div class="admin-error">Access denied - insufficient permissions</div>';
             return;
         }
         
-        content.innerHTML = `
-            <div class="orders-list">
-                ${userOrders.map(order => `
-                    <div class="order-item">
-                        <div class="order-header">
-                            <span class="order-id">${order.orderId}</span>
-                            <span class="order-date">${new Date(order.timestamp).toLocaleDateString()}</span>
-                            <span class="order-status status-pending">Pending</span>
-                        </div>
-                        <div class="order-details">
-                            <div class="order-total">Total: ${formatPrice(order.total)}</div>
-                            <div class="order-items-count">${order.items.length} item(s)</div>
-                            <div class="order-payment">${order.paymentMethod}</div>
-                        </div>
-                        <div class="order-items">
-                            ${order.items.map(item => `
-                                <div class="order-item-detail">
-                                    ${item.name} (${item.game.toUpperCase()}) x${item.quantity}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } catch (e) { console.error('loadOrderHistory error:', e); }
+        // Try secure admin API first
+        try {
+            const response = await fetch('/.netlify/functions/admin-api', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'get_customers',
+                    adminEmail: currentUser.email,
+                    sessionToken: currentUser.sessionToken
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    displayAdminCustomers(data.customers || []);
+                    return;
+                }
+            }
+        } catch (serverError) {
+            console.log('Customer API not available, using local data');
+        }
+        
+        // Fallback: Get customer data from orders (with privacy consideration)
+        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const customers = {};
+        
+        localOrders.forEach(order => {
+            const email = order.email || order.customer_email;
+            if (!customers[email]) {
+                customers[email] = {
+                    email: email,
+                    gameUsername: order.gameUsername || order.customer_game_username,
+                    // Limit exposed data for privacy
+                    totalOrders: 0,
+                    totalSpent: 0,
+                    firstOrder: order.timestamp || order.created_at,
+                    lastOrder: order.timestamp || order.created_at
+                };
+            }
+            customers[email].totalOrders++;
+            customers[email].totalSpent += parseFloat(order.total || order.total_amount);
+            
+            const orderDate = new Date(order.timestamp || order.created_at);
+            if (orderDate > new Date(customers[email].lastOrder)) {
+                customers[email].lastOrder = order.timestamp || order.created_at;
+            }
+            if (orderDate < new Date(customers[email].firstOrder)) {
+                customers[email].firstOrder = order.timestamp || order.created_at;
+            }
+        });
+        
+        displayAdminCustomers(Object.values(customers));
+        
+    } catch (error) {
+        console.error('Error loading admin customers:', error);
+        const customersList = document.getElementById('adminCustomersList');
+        if (customersList) {
+            customersList.innerHTML = '<div class="admin-error">Error loading customers</div>';
+        }
+    }
 }
 
-function loadWishlist(user) {
+async function loadAdminAnalytics() {
     try {
-        const content = document.getElementById('wishlistContent');
-        if (!content) return;
+        const analytics = document.getElementById('adminAnalytics');
+        if (!analytics) return;
         
-        // Get wishlist from localStorage (feature to be implemented)
-        const wishlist = JSON.parse(localStorage.getItem(`triogel-wishlist-${user.id}`) || '[]');
+        analytics.innerHTML = '<div class="loading">Loading analytics...</div>';
         
-        if (wishlist.length === 0) {
-            content.innerHTML = `
-                <div class="no-wishlist">
-                    <p>Your wishlist is empty</p>
-                    <p>Browse items and add them to your wishlist!</p>
-                </div>
-            `;
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const permissions = await window.TriogelAuth.getAdminPermissions();
+        
+        if (!permissions.canAccessAnalytics) {
+            analytics.innerHTML = '<div class="admin-error">Access denied - insufficient permissions</div>';
             return;
         }
         
-        // Display wishlist items (to be implemented)
-        content.innerHTML = `
-            <div class="wishlist-items">
-                <p>Wishlist feature coming soon!</p>
-            </div>
-        `;
-    } catch (e) { console.error('loadWishlist error:', e); }
-}
-
-async function handleProfileUpdate(e) {
-    e.preventDefault();
-    
-    try {
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = 'Updating...';
-        submitBtn.disabled = true;
-        
-        const newPassword = document.getElementById('profileNewPassword').value;
-        const confirmPassword = document.getElementById('profileConfirmPassword').value;
-        
-        if (newPassword && newPassword !== confirmPassword) {
-            throw new Error('New passwords do not match');
+        // Try secure admin API first
+        try {
+            const response = await fetch('/.netlify/functions/admin-api', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'get_analytics',
+                    adminEmail: currentUser.email,
+                    sessionToken: currentUser.sessionToken
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    displayAdminAnalytics(data.analytics);
+                    return;
+                }
+            }
+        } catch (serverError) {
+            console.log('Analytics API not available, using local data');
         }
         
-        const updateData = {
-            username: document.getElementById('profileUsername').value,
-            favoriteGame: document.getElementById('profileFavoriteGame').value
+        // Fallback: Calculate analytics from local orders
+        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        
+        const totalOrders = localOrders.length;
+        const totalRevenue = localOrders.reduce((sum, order) => sum + parseFloat(order.total || order.total_amount), 0);
+        const averageOrder = totalRevenue / (totalOrders || 1);
+        
+        const statusCounts = {
+            pending: localOrders.filter(o => (o.status || 'pending') === 'pending').length,
+            processing: localOrders.filter(o => (o.status || 'pending') === 'processing').length,
+            completed: localOrders.filter(o => (o.status || 'pending') === 'completed').length,
+            cancelled: localOrders.filter(o => (o.status || 'pending') === 'cancelled').length
         };
         
-        if (newPassword) {
-            updateData.password = newPassword;
-        }
+        // Recent orders (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const recentOrders = localOrders.filter(order => 
+            new Date(order.timestamp || order.created_at) >= sevenDaysAgo
+        ).length;
         
-        // Here you would call the API to update the profile
-        // For now, just update locally
-        const currentUser = window.TriogelAuth?.getCurrentUser();
-        if (currentUser) {
-            currentUser.username = updateData.username;
-            currentUser.favorite_game = updateData.favoriteGame;
-            localStorage.setItem('triogel-user', JSON.stringify(currentUser));
-            
-            // Update UI
-            window.TriogelAuth.showUserSection();
-        }
-        
-        showNotification('Profile updated successfully!');
-        closeProfileModal();
+        displayAdminAnalytics({
+            totalOrders,
+            totalRevenue,
+            averageOrderValue: averageOrder,
+            statusCounts,
+            recentOrders,
+            conversionRate: totalOrders > 0 ? (statusCounts.completed / totalOrders * 100).toFixed(2) : 0
+        });
         
     } catch (error) {
-        showNotification(`Profile update failed: ${error.message}`);
-    } finally {
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = 'Update Profile';
-            submitBtn.disabled = false;
+        console.error('Error loading admin analytics:', error);
+        const analytics = document.getElementById('adminAnalytics');
+        if (analytics) {
+            analytics.innerHTML = '<div class="admin-error">Error loading analytics</div>';
         }
     }
 }
-
-async function handleForgotPassword(e) {
-    e.preventDefault();
-    
-    try {
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.innerHTML = 'Sending...';
-        submitBtn.disabled = true;
-        
-        const email = document.getElementById('forgotPasswordEmail').value;
-        
-        // Here you would call the API to send reset email
-        // For now, just show a message
-        showNotification('Password reset instructions sent to your email!');
-        closeForgotPassword();
-        
-    } catch (error) {
-        showNotification(`Password reset failed: ${error.message}`);
-    } finally {
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = 'Send Reset Link';
-            submitBtn.disabled = false;
-        }
-    }
-}
-
-// Validation function for onclick functions
-function validateOnclickFunctions() {
-    const requiredFunctions = [
-        'openCart', 'closeCart', 'openOrderTracking', 'closeOrderTracking',
-        'openLoginModal', 'closeLoginModal', 'openRegisterModal', 'closeRegisterModal',
-        'proceedToCheckout', 'closeCheckout', 'toggleCurrencySelector',
-        'toggleUserDropdown', 'closeUserDropdown', 'addToCart', 'removeFromCart',
-        'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
-        'openWishlistModal', 'closeWishlistModal', 'openForgotPassword', 'closeForgotPassword'
-    ];
-    
-    const missingFunctions = requiredFunctions.filter(name => typeof window[name] !== 'function');
-    
-    if (missingFunctions.length > 0) {
-        console.error('MISSING ONCLICK FUNCTIONS:', missingFunctions);
-        console.error('This will cause ReferenceError when buttons are clicked!');
-        return false;
-    }
-    
-    console.log('All onclick functions are properly defined');
-    return true;
-}
-
-// Run validation immediately
-setTimeout(() => validateOnclickFunctions(), 100);
 
 // Currency configuration with real-time exchange rates
 let currencies = {

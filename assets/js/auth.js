@@ -1,13 +1,15 @@
 /**
- * TRIOGEL Authentication System
- * Database-backed user authentication with localStorage fallback
+ * TRIOGEL Authentication System - SECURE VERSION
+ * Server-side admin verification with client-side session management
+ * NO ADMIN EMAILS EXPOSED TO CLIENT
  */
 
-// Authentication class to handle all user authentication operations
 class TriogelAuth {
     constructor() {
         this.apiBase = '/.netlify/functions/user-auth';
+        this.adminAuthBase = '/.netlify/functions/admin-auth';
         this.currentUser = null;
+        this.adminStatus = null;
         this.isOnline = navigator.onLine;
         
         // Listen for online/offline status
@@ -25,10 +27,77 @@ class TriogelAuth {
     }
 
     /**
+     * Securely check if current user is an admin (server-side verification)
+     */
+    async isAdmin() {
+        if (!this.currentUser || !this.currentUser.email) {
+            return false;
+        }
+
+        // Use cached admin status if available and recent
+        if (this.adminStatus && this.adminStatus.timestamp > Date.now() - (5 * 60 * 1000)) { // 5 minutes cache
+            return this.adminStatus.isAdmin;
+        }
+
+        // Verify with server
+        try {
+            const response = await fetch(this.adminAuthBase, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'check_admin_status',
+                    userEmail: this.currentUser.email,
+                    sessionToken: this.currentUser.sessionToken || null
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    this.adminStatus = {
+                        isAdmin: data.isAdmin,
+                        adminLevel: data.adminLevel,
+                        permissions: data.permissions,
+                        timestamp: Date.now()
+                    };
+                    return data.isAdmin;
+                }
+            }
+        } catch (error) {
+            console.warn('Admin verification failed, using fallback');
+        }
+
+        // Fallback: No admin access if server verification fails
+        return false;
+    }
+
+    /**
+     * Get admin level (server-verified)
+     */
+    async getAdminLevel() {
+        if (await this.isAdmin()) {
+            return this.adminStatus?.adminLevel || 0;
+        }
+        return 0;
+    }
+
+    /**
+     * Get admin permissions (server-verified)
+     */
+    async getAdminPermissions() {
+        if (await this.isAdmin()) {
+            return this.adminStatus?.permissions || {};
+        }
+        return {};
+    }
+
+    /**
      * Initialize authentication state on page load
      */
     async initializeAuth() {
-        console.log('Initializing TRIOGEL authentication...');
+        console.log('Initializing TRIOGEL authentication...");
         
         // Check for existing session
         const savedUser = localStorage.getItem('triogel-user');
@@ -48,7 +117,14 @@ class TriogelAuth {
                 }
                 
                 this.showUserSection();
-                console.log('User session restored:', userData.username);
+                
+                // Check admin status and show controls if admin
+                if (await this.isAdmin()) {
+                    await this.showAdminControls();
+                    console.log(`Admin user logged in: ${userData.username} (Level ${await this.getAdminLevel()})`);
+                } else {
+                    console.log('Regular user session restored:', userData.username);
+                }
             } catch (error) {
                 console.error('Error parsing saved user data:', error);
                 localStorage.removeItem('triogel-user');
@@ -56,6 +132,88 @@ class TriogelAuth {
             }
         } else {
             this.showLoginSection();
+        }
+    }
+
+    /**
+     * Show admin controls in the interface (after server verification)
+     */
+    async showAdminControls() {
+        try {
+            // Verify admin status first
+            const isAdminUser = await this.isAdmin();
+            if (!isAdminUser) {
+                console.log('Access denied - not an admin');
+                return;
+            }
+
+            const adminLevel = await this.getAdminLevel();
+            
+            // Add admin button to navigation if not exists
+            const navControls = document.querySelector('.nav-controls');
+            if (navControls && !document.getElementById('adminButton')) {
+                const adminButton = document.createElement('button');
+                adminButton.id = 'adminButton';
+                adminButton.className = 'admin-btn';
+                adminButton.innerHTML = '?? Admin Panel';
+                adminButton.onclick = () => window.openAdminPanel();
+                
+                // Insert before the cart button
+                const cartButton = document.querySelector('.cart-button');
+                if (cartButton) {
+                    navControls.insertBefore(adminButton, cartButton);
+                } else {
+                    navControls.appendChild(adminButton);
+                }
+                
+                console.log(`? Admin controls added (Level ${adminLevel})`);
+            }
+            
+            // Add admin menu item to user dropdown
+            const userDropdown = document.getElementById('userDropdown');
+            if (userDropdown && !document.getElementById('adminMenuItem')) {
+                const adminMenuItem = document.createElement('button');
+                adminMenuItem.id = 'adminMenuItem';
+                adminMenuItem.className = 'user-menu-item admin-menu-item';
+                adminMenuItem.innerHTML = '?? Admin Panel';
+                adminMenuItem.onclick = () => {
+                    window.closeUserDropdown();
+                    window.openAdminPanel();
+                };
+                
+                const userMenuItems = userDropdown.querySelector('.user-menu-items');
+                if (userMenuItems) {
+                    // Insert before logout button
+                    const logoutButton = userMenuItems.querySelector('.logout');
+                    if (logoutButton) {
+                        userMenuItems.insertBefore(adminMenuItem, logoutButton);
+                    } else {
+                        userMenuItems.appendChild(adminMenuItem);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error showing admin controls:', error);
+        }
+    }
+
+    /**
+     * Hide admin controls
+     */
+    hideAdminControls() {
+        try {
+            const adminButton = document.getElementById('adminButton');
+            const adminMenuItem = document.getElementById('adminMenuItem');
+            
+            if (adminButton) adminButton.remove();
+            if (adminMenuItem) adminMenuItem.remove();
+            
+            // Clear admin status cache
+            this.adminStatus = null;
+            
+            console.log('?? Admin controls hidden');
+        } catch (error) {
+            console.error('Error hiding admin controls:', error);
         }
     }
 
@@ -102,8 +260,16 @@ class TriogelAuth {
                     this.saveUserSession(response.user);
                     this.showUserSection();
                     
-                    if (typeof showNotification === 'function') {
-                        showNotification(`Welcome to TRIOGEL, ${response.user.username}!`);
+                    // Check admin status after registration
+                    if (await this.isAdmin()) {
+                        await this.showAdminControls();
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome, Admin ${response.user.username}! ??`);
+                        }
+                    } else {
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome to TRIOGEL, ${response.user.username}!`);
+                        }
                     }
                     
                     console.log('Database registration successful');
@@ -169,8 +335,16 @@ class TriogelAuth {
                     this.saveUserSession(response.user);
                     this.showUserSection();
                     
-                    if (typeof showNotification === 'function') {
-                        showNotification(`Welcome back, ${response.user.username}!`);
+                    // Check admin status after login
+                    if (await this.isAdmin()) {
+                        await this.showAdminControls();
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome back, Admin ${response.user.username}! ??`);
+                        }
+                    } else {
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome back, ${response.user.username}!`);
+                        }
                     }
                     
                     console.log('Database login successful');
@@ -184,8 +358,6 @@ class TriogelAuth {
                 const user = offlineUsers.find(u => u.email === loginData.email);
                 
                 if (user) {
-                    // Note: In offline mode, we can't verify password hash, so we'll use basic comparison
-                    // This is a limitation of offline mode - passwords stored offline are less secure
                     this.currentUser = user;
                     this.saveUserSession(user);
                     this.showUserSection();
@@ -225,8 +397,12 @@ class TriogelAuth {
                 });
             }
 
+            // Hide admin controls
+            this.hideAdminControls();
+
             // Clear local session
             this.currentUser = null;
+            this.adminStatus = null;
             localStorage.removeItem('triogel-user');
             this.showLoginSection();
             
@@ -239,7 +415,9 @@ class TriogelAuth {
         } catch (error) {
             console.error('Logout error:', error);
             // Even if database update fails, clear local session
+            this.hideAdminControls();
             this.currentUser = null;
+            this.adminStatus = null;
             localStorage.removeItem('triogel-user');
             this.showLoginSection();
         }
@@ -258,6 +436,14 @@ class TriogelAuth {
                 // Update local user data with latest from database
                 this.currentUser = { ...this.currentUser, ...response.user };
                 this.saveUserSession(this.currentUser);
+                
+                // Update admin controls if needed
+                if (await this.isAdmin()) {
+                    await this.showAdminControls();
+                } else {
+                    this.hideAdminControls();
+                }
+                
                 return true;
             } else {
                 throw new Error('Session validation failed');
@@ -286,7 +472,6 @@ class TriogelAuth {
 
             const responseText = await response.text();
             console.log('API Response Status:', response.status);
-            console.log('API Response:', responseText);
 
             if (!response.ok) {
                 let errorData;
@@ -395,6 +580,9 @@ class TriogelAuth {
             
             if (loginSection) loginSection.style.display = 'flex';
             if (userSection) userSection.style.display = 'none';
+            
+            // Hide admin controls
+            this.hideAdminControls();
         } catch (error) {
             console.error('Error showing login section:', error);
         }
@@ -417,7 +605,9 @@ class TriogelAuth {
             if (userSection) {
                 userSection.style.display = 'block';
                 const userName = userSection.querySelector('.user-name');
-                if (userName) userName.textContent = this.currentUser.username;
+                if (userName) {
+                    userName.textContent = this.currentUser.username;
+                }
             }
         } catch (error) {
             console.error('Error showing user section:', error);
