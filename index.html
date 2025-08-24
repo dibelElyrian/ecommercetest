@@ -26,62 +26,74 @@
 
         <!-- Navigation Section -->
         <div class="nav-section">
-            <div id="filterContainer"></div>
-            <div class="nav-controls" style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                <!-- Currency Selector -->
-                <div class="currency-selector">
-                    <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
-                        <span id="selectedCurrency">PHP</span>
-                        <span class="currency-arrow">▼</span>
-                    </button>
-                    <div class="currency-dropdown" id="currencyDropdown">
-                        <!-- Currency options will be populated by JavaScript -->
-                    </div>
-                </div>
-
-                <!-- User Account Section -->
-                <div id="loginSection" class="user-account-section">
-                    <button class="account-btn login-btn" onclick="openLoginModal()">
-                        Login
-                    </button>
-                    <button class="account-btn register-btn" onclick="openRegisterModal()">
-                        Register
-                    </button>
-                </div>
-
-                <div id="userSection" class="user-account-section" style="display: none;">
-                    <div class="user-dropdown">
-                        <button class="user-info-btn" onclick="toggleUserDropdown()">
-                            <div id="userWelcome" class="user-welcome">
-                                <span class="user-name">Player</span>
-                            </div>
-                            <span class="user-arrow">▼</span>
+            <div class="nav-bar">
+                <div id="filterContainer"></div>
+                <div class="nav-controls">
+                    <!-- Currency Selector -->
+                    <div class="currency-selector">
+                        <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
+                            <span id="selectedCurrency">PHP</span>
+                            <span class="currency-arrow">▼</span>
                         </button>
-                        <div class="user-dropdown-menu" id="userDropdown">
-                            <div id="userStats" class="user-stats"></div>
-                            <div class="user-menu-items">
-                                <button onclick="openProfileModal()" class="user-menu-item">
-                                    Profile Settings
-                                </button>
-                                <button onclick="openOrderHistoryModal()" class="user-menu-item">
-                                    Order History
-                                </button>
-                                <button onclick="logoutUser()" class="user-menu-item logout">
-                                    Logout
-                                </button>
+                        <div class="currency-dropdown" id="currencyDropdown">
+                            <!-- Currency options will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <!-- Language Selector -->
+                    <div class="language-selector">
+                        <button class="currency-button" id="languageSelector" onclick="toggleLanguageSelector()">
+                            <span id="selectedLanguage">🇺🇸</span>
+                            <span class="currency-arrow">▼</span>
+                        </button>
+                        <div class="currency-dropdown" id="languageDropdown">
+                            <!--Language options will be populated by JavaScript-->
+                        </div>
+                    </div>
+
+                    <!-- User Account Section -->
+                    <div id="loginSection" class="user-account-section">
+                        <button class="account-btn login-btn" onclick="openLoginModal()">
+                            Login
+                        </button>
+                        <button class="account-btn register-btn" onclick="openRegisterModal()">
+                            Register
+                        </button>
+                    </div>
+
+                    <div id="userSection" class="user-account-section" style="display: none;">
+                        <div class="user-dropdown">
+                            <button class="user-info-btn" onclick="toggleUserDropdown()">
+                                <div id="userWelcome" class="user-welcome">
+                                    <span class="user-name">Player</span>
+                                </div>
+                                <span class="user-arrow">▼</span>
+                            </button>
+                            <div class="user-dropdown-menu" id="userDropdown">
+                                <div id="userStats" class="user-stats"></div>
+                                <div class="user-menu-items">
+                                    <button onclick="openProfileModal()" class="user-menu-item">
+                                        Profile Settings
+                                    </button>
+                                    <button onclick="openOrderHistoryModal()" class="user-menu-item">
+                                        Order History
+                                    </button>
+                                    <button onclick="logoutUser()" class="user-menu-item logout">
+                                        Logout
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <button class="track-order-btn" onclick="openOrderTracking()">
-                    Track Order
-                </button>
-                
-                <button class="cart-button" onclick="openCart()">
-                    Cart
-                    <span class="cart-count" id="cartCount">0</span>
-                </button>
+                    <button class="track-order-btn" onclick="openOrderTracking()">
+                        Track Order
+                    </button>
+
+                    <button class="cart-button" onclick="openCart()">
+                        Cart
+                        <span class="cart-count" id="cartCount">0</span>
+                    </button>
+                </div>
             </div>
         </div>
 

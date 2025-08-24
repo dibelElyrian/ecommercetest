@@ -150,9 +150,19 @@ let currencies = {
     'VND': { symbol: 'VND', name: 'Vietnamese Dong', code: 'VND', rate: 440 }
 };
 
+// Language options
+const languages = {
+    'EN': { symbol: 'EN', code: 'en', name: 'English', flag: '🇺🇸' },
+    'FIL': { symbol: 'FIL', code: 'fil', name: 'Filipino', flag: '🇵🇭' },
+    'ES': { symbol: 'ES', code: 'es', name: 'Español', flag: '🇪🇸' },
+    'ZH': { symbol: 'ZH', code: 'zh', name: '中文', flag: '🇨🇳' },
+    'JA': { symbol: 'JA', code: 'ja', name: '日本語', flag: '🇯🇵' }
+};
+
 let lastCurrencyUpdate = null;
 let currencyUpdateInterval = null;
 let selectedCurrency = 'PHP';
+let selectedLanguage = 'EN';
 
 console.log('Items array defined with', items.length, 'items');
 
@@ -452,7 +462,7 @@ window.addToCart = function(itemId) {
 window.removeFromCart = function(itemId) {
     try {
         if (typeof cart !== 'undefined' && Array.isArray(cart)) {
-            window.cart = cart.filter(item => item.id !== itemId);
+            cart = cart.filter(item => item.id !== itemId);
             if (typeof updateCartCount === 'function') updateCartCount();
             if (typeof displayCartItems === 'function') displayCartItems();
         }
@@ -841,7 +851,6 @@ document.addEventListener('DOMContentLoaded', function () {
         console.error('Items grid not found in DOM!');
         return;
     }
-    
     init();
 });
 
@@ -887,6 +896,7 @@ function init() {
     setupEventHandlers();
     setupCurrencySelector();
     updateCurrencySelector();
+    setupLanguageSelector();
     
     // Add authentication status to debug
     setTimeout(() => {
@@ -1300,6 +1310,33 @@ function setupEventHandlers() {
     const cartIcon = document.getElementById('cartIcon');
     if (cartIcon) cartIcon.onclick = openCart;
 }
+document.addEventListener('click', function (event) {
+    const currencyDropdown = document.getElementById('currencyDropdown');
+    const currencySelector = document.getElementById('currencySelector');
+    const languageDropdown = document.getElementById('languageDropdown');
+    const languageSelector = document.getElementById('languageSelector');
+
+    if (currencyDropdown && currencySelector)
+    {
+        // If dropdown is open and click is outside selector and dropdown, close it
+        if (currencyDropdown.style.display === 'block') {
+            if (!currencySelector.contains(event.target) && !currencyDropdown.contains(event.target)) {
+                currencyDropdown.style.display = 'none';
+                currencySelector.classList.remove('active');
+            }
+        }
+    }
+    if (languageDropdown && languageSelector)
+    {
+        // If dropdown is open and click is outside selector and dropdown, close it
+        if (languageDropdown.style.display === 'block') {
+            if (!languageSelector.contains(event.target) && !languageDropdown.contains(event.target)) {
+                languageDropdown.style.display = 'none';
+                languageSelector.classList.remove('active');
+            }
+        }
+    }
+});
 function setupCurrencySelector() {
     const dropdown = document.getElementById('currencyDropdown');
     if (!dropdown) return;
@@ -1320,18 +1357,61 @@ function setupCurrencySelector() {
             selectedCurrency = code;
             updateCurrencySelector();
             displayItems();
+            // Close dropdown after selection
+            dropdown.style.display = 'none';
+            const selector = document.getElementById('currencySelector');
+            if (selector) selector.classList.remove('active');
         };
         dropdown.appendChild(option);
     });
 }
+window.toggleLanguageSelector = function() {
+    const dropdown = document.getElementById('languageDropdown');
+    const selector = document.getElementById('languageSelector');
+    if (dropdown && selector) {
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        selector.classList.toggle('active', !isOpen);
+    }
+};
+
+function setupLanguageSelector() {
+    const dropdown = document.getElementById('languageDropdown');
+    if (!dropdown) return;
+    dropdown.innerHTML = '';
+    Object.keys(languages).forEach(code => {
+        const option = document.createElement('div');
+        option.className = 'currency-option';
+        option.innerHTML = `
+            <span>${languages[code].flag} ${languages[code].name}</span>
+        `;
+        option.onclick = function () {
+            selectedLanguage = code;
+            updateLanguageSelector();
+            // Close dropdown after selection
+            dropdown.style.display = 'none';
+            const selector = document.getElementById('languageSelector');
+            if (selector) selector.classList.remove('active');
+        };
+        dropdown.appendChild(option);
+    });
+}
+
 function updateCurrencySelector() {
-    const selector = document.getElementById('currencySelector');
-    if (selector && currencies[selectedCurrency]) {
-        selector.textContent = `${currencies[selectedCurrency].symbol} (${currencies[selectedCurrency].code})`;
+    const currencyText = document.getElementById('selectedCurrency');
+    if (currencyText && currencies[selectedCurrency])
+    {
+        currencyText.textContent = currencies[selectedCurrency].symbol;
+    }
+}
+function updateLanguageSelector() {
+    const currencyText = document.getElementById('selectedLanguage');
+    if (currencyText && languages[selectedLanguage]) {
+        currencyText.textContent = languages[selectedLanguage].flag;
     }
 }
 function displayCartItems() {
-    const cartList = document.getElementById('cartItemsList');
+    const cartList = document.getElementById('cartItems');
     if (!cartList) return;
     if (!cart || cart.length === 0) {
         cartList.innerHTML = '<div class="empty-cart">Your cart is empty.</div>';
@@ -1342,7 +1422,7 @@ function displayCartItems() {
             <span class="cart-item-name">${item.name}</span>
             <span class="cart-item-qty">x${item.quantity}</span>
             <span class="cart-item-price">${formatPrice(item.price * item.quantity)}</span>
-            <button class="remove-cart-btn" onclick="removeFromCart(${item.id})">&times;</button>
+            <button class="remove-cart-btn" data-id="${item.id}" aria-label="Remove from cart">&times;</button>
         </div>
     `).join('');
     // Optionally show total
@@ -1351,6 +1431,13 @@ function displayCartItems() {
         const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
         cartTotalElem.textContent = formatPrice(total);
     }
+    // Event delegation for remove buttons
+    cartList.onclick = function (e) {
+        if (e.target.classList.contains('remove-cart-btn')) {
+            const itemId = parseInt(e.target.getAttribute('data-id'));
+            removeFromCart(itemId);
+        }
+    };
 }
 function showNotification(message, type = 'info') {
     let notif = document.getElementById('notification');
