@@ -1,7 +1,4 @@
-/**
- * TRIOGEL Admin Utilities
- * Enhanced admin functions for order management, customer service, and data operations
- */
+// TRIOGEL Admin Utilities - Production Version
 
 // Enhanced Admin Action Functions
 window.updateOrderStatus = async function(orderId, newStatus) {

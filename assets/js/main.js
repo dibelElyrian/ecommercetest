@@ -1,14 +1,4 @@
-﻿// IMMEDIATE DEBUG - Add at very start of file
-console.log('TRIOGEL DEBUG: Script file starting to load...');
-
-
-// Test basic functionality immediately
-window.addEventListener('load', function() {
-    console.log('TRIOGEL DEBUG: Window loaded event fired');
-});
-
-// TRIOGEL JavaScript - Clean Version
-console.log('Loading TRIOGEL JavaScript...');
+﻿// TRIOGEL Main JavaScript - Production Version
 
 // ========================================
 // CRITICAL: Define items array and other data IMMEDIATELY
@@ -164,8 +154,6 @@ let currencyUpdateInterval = null;
 let selectedCurrency = 'PHP';
 let selectedLanguage = 'EN';
 
-console.log('Items array defined with', items.length, 'items');
-
 // ========================================
 // CRITICAL: Define all onclick functions IMMEDIATELY to prevent ReferenceError
 // ========================================
@@ -186,7 +174,6 @@ const essentialFunctions = [
 essentialFunctions.forEach(funcName => {
     if (typeof window[funcName] !== 'function') {
         window[funcName] = function(...args) {
-            console.log(`${funcName} called (placeholder)`, args);
         };
     }
 });
@@ -194,7 +181,6 @@ essentialFunctions.forEach(funcName => {
 // Define modal functions immediately
 window.openCart = function() {
     try {
-        console.log('Opening cart...');
         document.getElementById('cartModal').style.display = 'block';
         if (typeof displayCartItems === 'function') displayCartItems();
     } catch (e) { console.error('openCart error:', e); }
@@ -255,7 +241,6 @@ window.closeRegisterModal = function() {
 // NEW: Admin Panel Functions
 window.openAdminPanel = function() {
     try {
-        console.log('Opening admin panel...');
         
         // Check if user is admin
         if (!window.TriogelAuth?.isAdmin()) {
@@ -288,7 +273,6 @@ window.closeAdminPanel = function() {
 
 window.refreshAdminData = function() {
     try {
-        console.log('Refreshing admin data...');
         loadAdminData();
         showNotification('Admin data refreshed');
     } catch (e) { console.error('refreshAdminData error:', e); }
@@ -297,7 +281,6 @@ window.refreshAdminData = function() {
 // NEW: User Profile Modal Functions
 window.openProfileModal = function() {
     try {
-        console.log('Opening profile modal...');
         
         // Check if user is logged in
         const currentUser = window.TriogelAuth?.getCurrentUser();
@@ -332,7 +315,6 @@ window.closeProfileModal = function() {
 // NEW: Order History Modal Functions
 window.openOrderHistoryModal = function() {
     try {
-        console.log('Opening order history modal...');
         
         // Check if user is logged in
         const currentUser = window.TriogelAuth?.getCurrentUser();
@@ -367,7 +349,6 @@ window.closeOrderHistoryModal = function() {
 // NEW: Forgot Password Modal Functions
 window.openForgotPassword = function() {
     try {
-        console.log('Opening forgot password modal...');
         
         // Close login modal first
         closeLoginModal();
@@ -1171,19 +1152,13 @@ function displayAdminOrders(orders) {
 
 // Debugging modifications - more detailed logging for item display issues
 function displayItems() {
-    console.log('displayItems() called - Displaying items for filter:', currentFilter);
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
         console.error('Items grid element not found!');
         return;
     }
     
-    console.log('Items grid found:', grid);
-    console.log('Available items:', items.length);
-    
     const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
-    console.log(`Items to display: ${filteredItems.length} (filter: ${currentFilter})`);
-
     if (filteredItems.length === 0) {
         grid.innerHTML = '<div class="no-items">No items available for the selected filter.</div>';
         return;
@@ -1212,8 +1187,6 @@ function displayItems() {
             <button class="add-to-cart-btn" onclick="addToCart(${item.id})">Add to Cart</button>
         </div>
     `).join('');
-    
-    console.log('Items displayed successfully, grid innerHTML length:', grid.innerHTML.length);
 }
 
 function formatPrice(price) {

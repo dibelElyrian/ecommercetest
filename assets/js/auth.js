@@ -1,8 +1,4 @@
-/**
- * TRIOGEL Authentication System - SECURE VERSION
- * Server-side admin verification with client-side session management
- * NO ADMIN EMAILS EXPOSED TO CLIENT
- */
+// TRIOGEL Authentication System - Production Version
 
 class TriogelAuth {
     constructor() {
