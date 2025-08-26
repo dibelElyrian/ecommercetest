@@ -1,102 +1,96 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRIOGEL - Premium Mobile Legends & Roblox Items</title>
-    <!-- Prevent favicon requests to avoid 404 console errors -->
-    <link rel="icon" href="data:,">
+    <title>LilyBlock - In-Game Store</title>
     <link rel="stylesheet" href="assets/css/main.css">
-    <style>
-        /* Force proper font rendering for emojis and symbols */
-        .item-image, .currency-symbol, .currency-button, .item-price, .cart-total {
-            -webkit-font-feature-settings: "liga" off;
-            font-feature-settings: "liga" off;
-            text-rendering: optimizeLegibility;
-        }
-    </style>
+    <link rel="icon" type="image/png" href="assets/img/favicon.png">
 </head>
+
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-            <h1>TRIOGEL</h1>
-            <p>Virtual Gaming Items Marketplace | Trusted Community Trading</p>
+    <div class="nav-bar">
+        <div class="nav-left">
+            <header class="headerimg">
+            </header>
+
+            <!-- Filter Section -->
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="ml">Mobile Legends: Bang Bang</button>
+            <button class="filter-btn" data-filter="roblox">Roblox</button>
         </div>
 
-        <!-- Navigation Section -->
-        <div class="nav-section">
-            <div class="nav-bar">
-                <div id="filterContainer"></div>
-                <div class="nav-controls">
-                    <!-- Currency Selector -->
-                    <div class="currency-selector">
-                        <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
-                            <span id="selectedCurrency">PHP</span>
-                            <span class="currency-arrow">▼</span>
-                        </button>
-                        <div class="currency-dropdown" id="currencyDropdown">
-                            <!-- Currency options will be populated by JavaScript -->
-                        </div>
-                    </div>
-                    <!-- Language Selector -->
-                    <div class="language-selector">
-                        <button class="currency-button" id="languageSelector" onclick="toggleLanguageSelector()">
-                            <span id="selectedLanguage">🇺🇸</span>
-                            <span class="currency-arrow">▼</span>
-                        </button>
-                        <div class="currency-dropdown" id="languageDropdown">
-                            <!--Language options will be populated by JavaScript-->
-                        </div>
-                    </div>
-
-                    <!-- User Account Section -->
-                    <div id="loginSection" class="user-account-section">
-                        <button class="account-btn login-btn" onclick="openLoginModal()">
-                            Login
-                        </button>
-                        <button class="account-btn register-btn" onclick="openRegisterModal()">
-                            Register
-                        </button>
-                    </div>
-
-                    <div id="userSection" class="user-account-section" style="display: none;">
-                        <div class="user-dropdown">
-                            <button class="user-info-btn" onclick="toggleUserDropdown()">
-                                <div id="userWelcome" class="user-welcome">
-                                    <span class="user-name">Player</span>
-                                </div>
-                                <span class="user-arrow">▼</span>
-                            </button>
-                            <div class="user-dropdown-menu" id="userDropdown">
-                                <div id="userStats" class="user-stats"></div>
-                                <div class="user-menu-items">
-                                    <button onclick="openProfileModal()" class="user-menu-item">
-                                        Profile Settings
-                                    </button>
-                                    <button onclick="openOrderHistoryModal()" class="user-menu-item">
-                                        Order History
-                                    </button>
-                                    <button onclick="logoutUser()" class="user-menu-item logout">
-                                        Logout
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button class="track-order-btn" onclick="openOrderTracking()">
-                        Track Order
-                    </button>
-
-                    <button class="cart-button" onclick="openCart()">
-                        Cart
-                        <span class="cart-count" id="cartCount">0</span>
-                    </button>
+        <div class="nav-right">
+            <!-- Currency Selector -->
+            <div class="currency-selector">
+                <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
+                    <span id="selectedCurrency">PHP</span>
+                    <span class="currency-arrow">▼</span>
+                </button>
+                <div class="currency-dropdown" id="currencyDropdown">
+                    <!-- Currency options will be populated by JavaScript -->
                 </div>
             </div>
-        </div>
 
+            <!-- Language Selector -->
+            <div class="language-selector">
+                <button class="currency-button" id="languageSelector" onclick="toggleLanguageSelector()">
+                    <span id="selectedLanguage">🇺🇸</span>
+                    <span class="currency-arrow">▼</span>
+                </button>
+                <div class="currency-dropdown" id="languageDropdown">
+                    <!--Language options will be populated by JavaScript-->
+                </div>
+            </div>
+
+            <!-- User Account Section -->
+            <div id="loginSection" class="user-account-section">
+                <button class="account-btn login-btn" onclick="openLoginModal()">
+                    Login
+                </button>
+                <button class="account-btn register-btn" onclick="openRegisterModal()">
+                    Register
+                </button>
+            </div>
+
+            <div id="userSection" class="user-account-section" style="display: none;">
+                <div class="user-dropdown">
+                    <button class="user-info-btn" onclick="toggleUserDropdown()">
+                        <div id="userWelcome" class="user-welcome">
+                            <span class="user-name">Player</span>
+                        </div>
+                        <span class="user-arrow">▼</span>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdown">
+                        <div id="userStats" class="user-stats"></div>
+                        <div class="user-menu-items">
+                            <button onclick="openProfileModal()" class="user-menu-item">
+                                Profile Settings
+                            </button>
+                            <button onclick="openOrderHistoryModal()" class="user-menu-item">
+                                Order History
+                            </button>
+                            <button onclick="logoutUser()" class="user-menu-item logout">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="track-order-btn" onclick="openOrderTracking()">
+                Track Order
+            </button>
+
+            <button class="cart-button" onclick="openCart()">
+                Cart
+                <span class="cart-count" id="cartCount">0</span>
+            </button>
+        </div>
+    </div>
+    <div class="container">
         <!-- Items Grid -->
         <div class="items-grid" id="itemsGrid">
             <!-- Items will be populated by JavaScript -->
@@ -182,7 +176,6 @@
         </div>
     </div>
 
-    <!-- Login Modal -->
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeLoginModal()">&times;</span>
@@ -205,7 +198,6 @@
         </div>
     </div>
 
-    <!-- Register Modal -->
     <div id="registerModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeRegisterModal()">&times;</span>
@@ -244,16 +236,11 @@
         </div>
     </div>
 
-    <!-- Notifications -->
-    <div id="ownerNotification" class="owner-notification">
-        New TRIOGEL order received!
-    </div>
-
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-sections">
-                <div class="footer-section">
+                <nav class="footer-section">
                     <h3>Help & Info</h3>
                     <ul class="footer-links">
                         <li><a href="#about">About TRIOGEL</a></li>
@@ -263,8 +250,8 @@
                         <li><a href="#delivery">Delivery Terms</a></li>
                         <li><a href="#refund">Refund Policy</a></li>
                     </ul>
-                </div>
-                <div class="footer-section">
+                </nav>
+                <nav class="footer-section">
                     <h3>Popular Games</h3>
                     <ul class="footer-links">
                         <li><a href="#ml">Mobile Legends</a></li>
@@ -274,8 +261,8 @@
                         <li><a href="#valorant">Valorant</a></li>
                         <li><a href="#fortnite">Fortnite</a></li>
                     </ul>
-                </div>
-                <div class="footer-section">
+                </nav>
+                <nav class="footer-section">
                     <h3>Contact & Follow Us</h3>
                     <ul class="footer-links">
                         <li><a href="#contact">Contact Us</a></li>
@@ -284,11 +271,11 @@
                         <li><a href="https://twitter.com/TRIOGEL" target="_blank">Twitter</a></li>
                         <li><a href="https://www.youtube.com/TRIOGEL" target="_blank">YouTube</a></li>
                     </ul>
-                </div>
+                </nav>
             </div>
-            <div class="footer-bottom" style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 30px; text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-top: 40px;">
+            <div class="footer-bottom">
                 <p>Virtual Gaming Items Marketplace | Trusted Community Trading</p>
-                <div style="margin-top: 15px; font-size: 0.8rem; opacity: 0.7;">
+                <div class="disclaimer">
                     <p>TRIOGEL is not affiliated with or endorsed by Moonton (Mobile Legends) or Roblox Corporation.</p>
                     <p>All game names and trademarks are property of their respective owners.</p>
                 </div>

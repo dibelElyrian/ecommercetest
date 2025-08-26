@@ -1219,47 +1219,22 @@ function updateCartCount() {
     const total = Array.isArray(cart) ? cart.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
     cartCountElem.textContent = total;
 }
-
 function setupFilters() {
-    // Find or create the filter container
-    let filterContainer = document.getElementById('filterContainer');
-    if (!filterContainer) {
-        filterContainer = document.createElement('div');
-        filterContainer.id = 'filterContainer';
-        filterContainer.className = 'item-filters';
-        // Insert before itemsGrid if possible
-        const itemsGrid = document.getElementById('itemsGrid');
-        if (itemsGrid && itemsGrid.parentNode) {
-            itemsGrid.parentNode.insertBefore(filterContainer, itemsGrid);
-        } else {
-            document.body.insertBefore(filterContainer, document.body.firstChild);
+    const filterContainer = document.getElementById('filterContainer');
+    if (!filterContainer) return;
+
+    // Remove dynamic creation, just update active state and listeners
+    const buttons = filterContainer.querySelectorAll('.filter-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === currentFilter) {
+            btn.classList.add('active');
         }
-    } else {
-        filterContainer.innerHTML = '';
-    }
-
-    // Create "All" filter button
-    const allBtn = document.createElement('button');
-    allBtn.textContent = 'All';
-    allBtn.className = currentFilter === 'all' ? 'filter-btn active' : 'filter-btn';
-    allBtn.onclick = function () {
-        currentFilter = 'all';
-        displayItems();
-        setupFilters();
-    };
-    filterContainer.appendChild(allBtn);
-
-    // Create filter buttons for each game
-    Object.keys(gameNames).forEach(gameKey => {
-        const btn = document.createElement('button');
-        btn.textContent = gameNames[gameKey];
-        btn.className = currentFilter === gameKey ? 'filter-btn active' : 'filter-btn';
         btn.onclick = function () {
-            currentFilter = gameKey;
+            currentFilter = btn.dataset.filter;
             displayItems();
             setupFilters();
         };
-        filterContainer.appendChild(btn);
     });
 }
 function setupEventHandlers() {
