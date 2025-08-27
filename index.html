@@ -18,12 +18,11 @@
 
             <!-- Filter Section -->
             <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="ml">Mobile Legends: Bang Bang</button>
+            <button class="filter-btn" data-filter="ml">Mobile Legends</button>
             <button class="filter-btn" data-filter="roblox">Roblox</button>
         </div>
 
         <div class="nav-right">
-            <!-- Currency Selector -->
             <div class="currency-selector">
                 <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
                     <span id="selectedCurrency">PHP</span>
@@ -33,8 +32,6 @@
                     <!-- Currency options will be populated by JavaScript -->
                 </div>
             </div>
-
-            <!-- Language Selector -->
             <div class="language-selector">
                 <button class="currency-button" id="languageSelector" onclick="toggleLanguageSelector()">
                     <span id="selectedLanguage">🇺🇸</span>
@@ -91,10 +88,65 @@
         </div>
     </div>
     <div class="container">
-        <!-- Items Grid -->
+        <!-- Items Grid - FIRST -->
         <div class="items-grid" id="itemsGrid">
             <!-- Items will be populated by JavaScript -->
         </div>
+
+        <!-- How It Works Section - SECOND -->
+        <div class="how-it-works">
+            <h2 class="how-title">How It Works</h2>
+            <div class="how-steps">
+                <div class="how-step">
+                    <div class="how-icon">🔍</div>
+                    <div class="how-label">Browse Items</div>
+                    <div class="how-desc">Explore our catalog and filter by your favorite game.</div>
+                </div>
+                <div class="how-step">
+                    <div class="how-icon">🛒</div>
+                    <div class="how-label">Add to Cart</div>
+                    <div class="how-desc">Select items and add them to your shopping cart.</div>
+                </div>
+                <div class="how-step">
+                    <div class="how-icon">📝</div>
+                    <div class="how-label">Checkout</div>
+                    <div class="how-desc">Enter your game username and contact details.</div>
+                </div>
+                <div class="how-step">
+                    <div class="how-icon">💳</div>
+                    <div class="how-label">Pay Securely</div>
+                    <div class="how-desc">Choose a payment method and complete your purchase.</div>
+                </div>
+                <div class="how-step">
+                    <div class="how-icon">🤝</div>
+                    <div class="how-label">Staff Delivery</div>
+                    <div class="how-desc">Our staff will contact you to trade items in-game.</div>
+                </div>
+            </div>
+        </div>
+        <!-- End How It Works Section -->
+        <!-- Testimonials Section - THIRD -->
+        <div class="testimonials">
+            <h2 class="testimonials-title">What Our Customers Say</h2>
+            <div class="testimonial-list">
+                <div class="no-testimonials">No customer testimonials yet.</div>
+            </div>
+        </div>
+        <!-- End Testimonials Section -->
+
+        <!-- Trust Indicators Bar -->
+        <div class="trust-bar">
+            <div class="trust-badge">
+                <span>DTI Registered</span>
+            </div>
+            <div class="trust-legal">
+                <span>GDPR & Data Privacy Act Compliant</span>
+            </div>
+            <div class="trust-contact">
+                <span>Staff Contact: <a href="mailto:support@triogel.com">support@triogel.com</a> | WhatsApp: <a href="https://wa.me/639123456789" target="_blank">+63 912 345 6789</a></span>
+            </div>
+        </div>
+        <!-- End Trust Indicators Bar -->
     </div>
 
     <!-- Modals -->
@@ -111,7 +163,12 @@
     <div id="checkoutModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeCheckout()">&times;</span>
-            <h2>Checkout</h2>
+            <div class="checkout-steps">
+                <div class="step active">1. Review</div>
+                <div class="step">2. Info</div>
+                <div class="step">3. Payment</div>
+                <div class="step">4. Confirm</div>
+            </div>
             <div id="checkoutContent">
                 <form id="checkoutForm">
                     <div class="form-group">
@@ -156,6 +213,11 @@
                     <div class="order-summary" id="orderSummary"></div>
                     <button type="submit" class="checkout-btn">Complete Purchase</button>
                 </form>
+            </div>
+            <div class="trust-indicators">
+                <img src="assets/img/security-badge.png" alt="Secure Payment" />
+                <a href="#refund">Refund Policy</a>
+                <a href="#contact">Contact Us</a>
             </div>
         </div>
     </div>
@@ -223,7 +285,7 @@
                     <label>Favorite Game:</label>
                     <select id="favoriteGame" required>
                         <option value="">Select your main game</option>
-                        <option value="ml">Mobile Legends: Bang Bang</option>
+                        <option value="ml">Mobile Legends</option>
                         <option value="roblox">Roblox</option>
                         <option value="other">Other</option>
                     </select>
@@ -236,7 +298,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-sections">
@@ -288,4 +349,5 @@
     <script src="assets/js/admin-utils.js" defer></script>
     <script src="assets/js/main.js" defer></script>
 </body>
+
 </html>
