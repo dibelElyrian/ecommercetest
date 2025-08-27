@@ -125,6 +125,7 @@ const gameNames = {
 
 let cart = [];
 let currentFilter = 'all';
+let notificationTimeout;
 
 // Currency configuration with real-time exchange rates
 let currencies = {
@@ -1398,7 +1399,15 @@ function showNotification(message, type = 'info') {
     notif.textContent = message;
     notif.className = `notification ${type}`;
     notif.style.display = 'block';
-    setTimeout(() => { notif.style.display = 'none'; }, 2500);
+
+    // Clear previous timeout if exists
+    if (notificationTimeout) {
+        clearTimeout(notificationTimeout);
+    }
+    notificationTimeout = setTimeout(() => {
+        notif.style.display = 'none';
+        notificationTimeout = null;
+    }, 2500);
 }
 function populateProfileForm(user) {
     if (!user) return;

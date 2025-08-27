@@ -167,12 +167,11 @@ body {
 
 #filterContainer {
     display: flex;
-    gap: 15px;
+    justify-content: space-evenly;
     align-items: center;
     margin-bottom: 0;
-    flex: 1 1 auto;
-    flex-shrink: 1;
     min-width: 0;
+    width: 500px;
 }
 
 /* Ensure filter buttons and currency dropdown have similar height/padding */
@@ -3042,16 +3041,6 @@ body {
     flex-wrap: wrap;
 }
 
-#filterContainer {
-    display: flex;
-    gap: 15px;
-    align-items: center;
-    margin-bottom: 0;
-    flex: 1 1 auto;
-    flex-shrink: 1;
-    min-width: 0;
-}
-
 /* Ensure filter buttons and currency dropdown have similar height/padding */
 .filter-btn, .currency-button {
     min-height: 48px;
@@ -5368,4 +5357,9 @@ body {
         min-width: 0;
         width: 100%;
     }
+}
+#LoginToTriogelLabe, #JoinTriogelLabel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
