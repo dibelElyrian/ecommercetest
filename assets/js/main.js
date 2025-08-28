@@ -5,14 +5,6 @@
 // ========================================
 
 // TRIOGEL Items Database - MUST BE DEFINED EARLY
-const { createClient } = require('@supabase/supabase-js');
-
-// Initialize Supabase client with your existing environment variables
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY  // Using SUPABASE_ANON_KEY instead of SERVICE_KEY
-);
-
 let items = [];
 let cart = [];
 let currentFilter = 'all';
@@ -411,18 +403,23 @@ window.logoutUser = function() {
 };
 
 async function fetchItems() {
-    const { data, error } = await supabase
-        .from('items')
-        .select('*')
-        .eq('active', true)
-        .gt('stock', 0);
-
-    if (error) {
-        console.error('Supabase fetch error:', error);
-        return;
+    try {
+        const response = await fetch('/.netlify/functions/get-items');
+        const result = await response.json();
+        if (result.success && Array.isArray(result.items)) {
+            items = result.items;
+            displayItems();
+        } else {
+            showNotification('Failed to load items', 'error');
+            items = [];
+            displayItems();
+        }
+    } catch (error) {
+        console.error('Fetch items error:', error);
+        showNotification('Error loading items', 'error');
+        items = [];
+        displayItems();
     }
-    items = data || [];
-    displayItems();
 }
 // REAL-TIME CURRENCY FETCHING SYSTEM
 async function fetchLiveExchangeRates() {
