@@ -9,6 +9,10 @@ let items = [];
 let cart = [];
 let currentFilter = 'all';
 let notificationTimeout;
+const gameNames = {
+    'ml': 'Mobile Legends: Bang Bang',
+    'roblox': 'Roblox'
+};
 
 // Currency configuration with real-time exchange rates
 let currencies = {
