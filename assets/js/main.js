@@ -781,6 +781,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
+    // Checkout form handler
     const checkoutForm = document.getElementById('checkoutForm');
     if (checkoutForm) {
         checkoutForm.onsubmit = async function (e) {

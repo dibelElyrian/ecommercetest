@@ -171,6 +171,17 @@ exports.handler = async (event, context) => {
           throw itemsError;
         }
 
+        // Atomic decrement of item stock after order items are inserted
+        for (const item of orderData.items) {
+          const { error: stockError } = await supabase
+            .rpc('decrement_stock', { item_id: item.id, qty: item.quantity });
+
+          if (stockError) {
+            console.error(`❌ Error decrementing stock for item ${item.id}:`, stockError);
+            // Optionally: handle rollback or notify admin
+          }
+        }
+
         console.log('✅ Order items saved to database');
         databaseSaved = true;
 
