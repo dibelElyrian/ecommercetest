@@ -409,13 +409,18 @@ async function fetchItems() {
         if (result.success && Array.isArray(result.items)) {
             items = result.items;
         } else {
-            showNotification('Failed to load items', 'error');
+            // Friendly error for local/dev
+            showNotification('Cannot connect to database (local mode)', 'error');
             items = [];
         }
     } catch (error) {
-        console.error('Fetch items error:', error);
-        showNotification('Error loading items', 'error');
+        // Friendly error for local/dev
+        showNotification('Cannot connect to database (local mode)', 'error');
         items = [];
+        // Optionally log error only in production
+        if (window.location.hostname !== 'localhost') {
+            console.error('Fetch items error:', error);
+        }
     }
 }
 // REAL-TIME CURRENCY FETCHING SYSTEM
@@ -753,7 +758,10 @@ setTimeout(() => {
 // Initialize everything
 function init() {
     console.log('TRIOGEL Initializing...');
-    
+    if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
+        showNotification('No items available. Cannot connect to database (local mode)', 'error');
+        return;
+    }
     // Check if items array exists
     if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
         console.error('Items array is not available or empty!', items);
