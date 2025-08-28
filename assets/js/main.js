@@ -762,11 +762,21 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
+            const loginBtn = loginForm.querySelector('.auth-btn');
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = `<span class="spinner"></span> Logging in...`;
+            }
             try {
                 await window.TriogelAuth.login({ email, password });
                 closeLoginModal();
             } catch (err) {
                 showNotification(err.message, 'error');
+            } finally {
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `Login`;
+                }
             }
         };
     }

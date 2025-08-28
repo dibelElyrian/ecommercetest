@@ -35,6 +35,7 @@ exports.handler = async (event, context) => {
     const status = queryParams.status || null;
     const limit = parseInt(queryParams.limit) || 50;
     const offset = parseInt(queryParams.offset) || 0;
+    const email = queryParams.email || null;
 
     console.log('?? Fetching TRIOGEL orders:', { status, limit, offset });
 
@@ -42,6 +43,9 @@ exports.handler = async (event, context) => {
     let url = `${SUPABASE_URL}/rest/v1/triogel_orders?order=created_at.desc&limit=${limit}&offset=${offset}`;
     if (status && status !== 'all') {
       url += `&status=eq.${status}`;
+    }
+    if (email) {
+      url += `&customer_email=eq.${encodeURIComponent(email)}`;
     }
 
     // Fetch orders from database
