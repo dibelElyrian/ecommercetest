@@ -737,6 +737,38 @@ document.addEventListener('DOMContentLoaded', function () {
     fetchItems().then(() => {
         init();
     });
+    // Register form handler
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.onsubmit = async function (e) {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const favoriteGame = document.getElementById('registerFavoriteGame')?.value || 'ml';
+            try {
+                await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
+            } catch (err) {
+                showNotification(err.message, 'error');
+            }
+        };
+    }
+
+    // Login form handler
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.onsubmit = async function (e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            try {
+                await window.TriogelAuth.login({ email, password });
+            } catch (err) {
+                showNotification(err.message, 'error');
+            }
+        };
+    }
 });
 
 // Also initialize on window load as fallback
