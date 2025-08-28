@@ -90,6 +90,42 @@
             </button>
         </div>
     </div>
+    <!-- Mobile Nav Bar (visible only on mobile) -->
+    <nav class="mobile-nav-bar">
+        <div class="mobile-nav-logo">
+            <img src="assets/img/lbbg.png" alt="Site Logo" />
+        </div>
+        <div class="mobile-nav-icons">
+            <button class="mobile-cart-btn" aria-label="Cart">🛒</button>
+            <button class="mobile-profile-btn" aria-label="Profile">👤</button>
+            <button class="mobile-menu-btn" aria-label="Menu">&#9776;</button>
+        </div>
+    </nav>
+
+    <!-- Mobile Drawer (hidden by default) -->
+    <div class="mobile-nav-drawer" id="mobileNavDrawer">
+        <button class="mobile-drawer-close" aria-label="Close">&times;</button>
+        <ul class="mobile-nav-links">
+            <li><a href="#">All Items</a></li>
+            <li><a href="#">Mobile Legends</a></li>
+            <li><a href="#">Roblox</a></li>
+            <!-- Add more links as needed -->
+        </ul>
+        <div class="mobile-drawer-actions">
+            <button class="mobile-login-btn">Login</button>
+            <button class="mobile-register-btn">Register</button>
+            <select class="mobile-currency-selector">
+                <option>USD</option>
+                <option>PHP</option>
+                <!-- Add more currencies -->
+            </select>
+            <select class="mobile-language-selector">
+                <option>EN</option>
+                <option>PH</option>
+                <!-- Add more languages -->
+            </select>
+        </div>
+    </div>
     <div class="container">
         <!-- Items Grid - FIRST -->
         <div class="items-grid" id="itemsGrid">
@@ -165,12 +201,6 @@
     <div id="checkoutModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeCheckout()">&times;</span>
-            <div class="checkout-steps">
-                <div class="step active">1. Review</div>
-                <div class="step">2. Info</div>
-                <div class="step">3. Payment</div>
-                <div class="step">4. Confirm</div>
-            </div>
             <div id="checkoutContent">
                 <form id="checkoutForm">
                     <div class="form-group">
@@ -212,13 +242,8 @@
                         <label>Special Instructions (Optional):</label>
                         <input type="text" id="customerNotes" placeholder="Any specific delivery instructions or questions?">
                     </div>
-                    <div class="order-summary" id="orderSummary"></div>
                     <button type="submit" class="checkout-btn">Complete Purchase</button>
                 </form>
-            </div>
-            <div class="trust-indicators">
-                <a href="#refund">Refund Policy</a>
-                <a href="#contact">Contact Us</a>
             </div>
         </div>
     </div>

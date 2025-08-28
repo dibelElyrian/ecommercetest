@@ -127,10 +127,10 @@ exports.handler = async (event, context) => {
             customer_whatsapp: orderData.whatsappNumber || null,
             payment_method: orderData.paymentMethod,
             currency: orderData.currency || 'PHP',
-            server_region: orderData.serverRegion || null,
+            customer_region: orderData.serverRegion || null,
             customer_notes: orderData.customerNotes || null,
-            order_total: orderData.total,
-            order_status: 'pending',
+            total_amount: orderData.total,
+            status: 'pending',
             payment_reference: paymentResult?.reference || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -148,13 +148,13 @@ exports.handler = async (event, context) => {
 
         // Insert order items
         const orderItems = orderData.items.map(item => ({
-          order_id: orderDbId, // Use the database ID, not the order_id string
+          order_id: orderData.orderId,
           item_id: item.id,
           item_name: item.name,
           item_game: item.game,
           item_price: item.price,
           quantity: item.quantity,
-          total_price: item.price * item.quantity
+          subtotal: item.price * item.quantity
         }));
 
         const { error: itemsError } = await supabase

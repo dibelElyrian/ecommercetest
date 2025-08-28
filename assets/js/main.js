@@ -780,6 +780,99 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         };
     }
+
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.onsubmit = async function (e) {
+            e.preventDefault();
+
+            // Collect form data
+            const email = document.getElementById('email').value;
+            const gameUsername = document.getElementById('gameUsername').value;
+            const whatsappNumber = document.getElementById('whatsappNumber')?.value || '';
+            const customerRegion = document.getElementById('serverRegion')?.value || '';
+            const customerNotes = document.getElementById('customerNotes')?.value || '';
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const currency = selectedCurrency;
+            const orderId = generateOrderId();
+            const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+            // Prepare items for backend
+            const itemsForOrder = cart.map(item => ({
+                id: item.id,
+                name: item.name,
+                game: item.game,
+                price: item.price,
+                quantity: item.quantity
+            }));
+
+            // Build order data
+            const orderData = {
+                orderId,
+                email,
+                gameUsername,
+                whatsappNumber,
+                customerRegion,
+                customerNotes,
+                paymentMethod,
+                currency,
+                total,
+                items: itemsForOrder,
+                timestamp: new Date().toISOString()
+            };
+
+            // Show loading state
+            const completeBtn = checkoutForm.querySelector('.complete-purchase-btn');
+            if (completeBtn) {
+                completeBtn.disabled = true;
+                completeBtn.innerHTML = `<span class="spinner"></span> Processing...`;
+            }
+
+            try {
+                const response = await fetch('/.netlify/functions/process-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Order placed successfully!', 'success');
+                    cart = [];
+                    updateCartCount();
+                    displayCartItems();
+                    document.getElementById('checkoutModal').style.display = 'none';
+                } else {
+                    showNotification(result.message || 'Order failed', 'error');
+                }
+            } catch (err) {
+                showNotification('Order processing error', 'error');
+            } finally {
+                if (completeBtn) {
+                    completeBtn.disabled = false;
+                    completeBtn.innerHTML = `Complete Purchase`;
+                }
+            }
+        };
+    }
+
+    //Mobile Design
+    const menuBtn = document.querySelector('.mobile-menu-btn');
+    const drawer = document.getElementById('mobileNavDrawer');
+    const closeBtn = document.querySelector('.mobile-drawer-close');
+    if (menuBtn && drawer && closeBtn) {
+        menuBtn.addEventListener('click', () => {
+            drawer.classList.add('open');
+        });
+        closeBtn.addEventListener('click', () => {
+            drawer.classList.remove('open');
+        });
+        // Optional: close drawer when clicking outside
+        drawer.addEventListener('click', (e) => {
+            if (e.target === drawer) {
+                drawer.classList.remove('open');
+            }
+        });
+    }
 });
 
 // Also initialize on window load as fallback
@@ -1476,4 +1569,10 @@ function clearRegisterForm() {
     if (passwordInput) passwordInput.value = '';
     if (confirmPasswordInput) confirmPasswordInput.value = '';
     if (favoriteGameInput) favoriteGameInput.value = 'ml'; // or your default value
+}
+function generateOrderId() {
+    // Generates a random 16-character hex string prefixed with TRIO-
+    const arr = new Uint8Array(8);
+    window.crypto.getRandomValues(arr);
+    return 'TRIO-' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
