@@ -408,17 +408,14 @@ async function fetchItems() {
         const result = await response.json();
         if (result.success && Array.isArray(result.items)) {
             items = result.items;
-            displayItems();
         } else {
             showNotification('Failed to load items', 'error');
             items = [];
-            displayItems();
         }
     } catch (error) {
         console.error('Fetch items error:', error);
         showNotification('Error loading items', 'error');
         items = [];
-        displayItems();
     }
 }
 // REAL-TIME CURRENCY FETCHING SYSTEM
@@ -728,14 +725,9 @@ function createForgotPasswordModal() {
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
-    
-    // Ensure the items grid exists before initializing
-    const itemsGrid = document.getElementById('itemsGrid');
-    if (!itemsGrid) {
-        console.error('Items grid not found in DOM!');
-        return;
-    }
-    init();
+    fetchItems().then(() => {
+        init();
+    });
 });
 
 // Also initialize on window load as fallback
@@ -775,7 +767,6 @@ function init() {
     
     // Display items - this is the key function
     displayItems();
-    fetchItems();
     updateCartCount();
     setupFilters();
     setupEventHandlers();
