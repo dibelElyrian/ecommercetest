@@ -308,7 +308,9 @@ body {
 .item-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
+    min-height: 48px;
+    gap: 12px;
     margin-bottom: 18px;
 }
 
@@ -319,6 +321,12 @@ body {
     font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 170px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .game-tag.ml-tag {

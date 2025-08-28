@@ -764,6 +764,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const password = document.getElementById('loginPassword').value;
             try {
                 await window.TriogelAuth.login({ email, password });
+                closeLoginModal();
             } catch (err) {
                 showNotification(err.message, 'error');
             }
@@ -1472,4 +1473,23 @@ function loadAdminAnalytics() {
         <div><strong>Total Orders:</strong> ${orders.length}</div>
         <div><strong>Total Sales:</strong> ${formatPrice(totalSales)}</div>
     `;
+}
+function clearLoginForm() {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+}
+
+function clearRegisterForm() {
+    const usernameInput = document.getElementById('registerUsername');
+    const emailInput = document.getElementById('registerEmail');
+    const passwordInput = document.getElementById('registerPassword');
+    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    const favoriteGameInput = document.getElementById('registerFavoriteGame');
+    if (usernameInput) usernameInput.value = '';
+    if (emailInput) emailInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+    if (confirmPasswordInput) confirmPasswordInput.value = '';
+    if (favoriteGameInput) favoriteGameInput.value = 'ml'; // or your default value
 }
