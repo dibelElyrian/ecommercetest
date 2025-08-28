@@ -1060,7 +1060,7 @@ function displayItems() {
         console.error('Items grid element not found!');
         return;
     }
-    
+
     const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
     if (filteredItems.length === 0) {
         grid.innerHTML = '<div class="no-items">No items available for the selected filter.</div>';
@@ -1071,21 +1071,14 @@ function displayItems() {
         <div class="item-card ${item.game}-item" data-game="${item.game}">
             <div class="item-header">
                 <div class="game-tag ${item.game}-tag">${gameNames[item.game]}</div>
-                <div class="rarity-badge rarity-${item.rarity}">${item.rarity}</div>
+                <div class="rarity-badge rarity-${item.rarity}">${item.rarity || ''}</div>
             </div>
             <div class="item-image ${item.game}-bg">
-                <div class="item-icon">${item.icon}</div>
+                ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="item-img" />` : ''}
             </div>
             <div class="item-name">${item.name}</div>
-            <div class="item-description">${item.description}</div>
-            <div class="item-stats">
-                ${Object.entries(item.stats).map(([key, value]) => `
-                    <div class="stat">
-                        <div class="stat-value">${value}</div>
-                        <div class="stat-label">${key}</div>
-                    </div>
-                `).join('')}
-            </div>
+            <div class="item-description">${item.description || ''}</div>
+            <div class="item-stock">Stock: ${item.stock ?? 0}</div>
             <div class="item-price">${formatPrice(item.price)}</div>
             <button class="add-to-cart-btn" onclick="addToCart(${item.id})">Add to Cart</button>
         </div>
