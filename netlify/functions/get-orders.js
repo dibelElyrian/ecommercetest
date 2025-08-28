@@ -65,6 +65,32 @@ exports.handler = async (event, context) => {
     const orders = await response.json();
     console.log(`? Retrieved ${orders.length} orders from database`);
 
+    // Fetch order items for these orders
+    let orderItemsMap = {};
+    if (orders.length > 0) {
+      const orderIds = orders.map(o => o.order_id);
+      const itemsUrl = `${SUPABASE_URL}/rest/v1/triogel_order_items?order_id=in.(${orderIds.map(id => `"${id}"`).join(",")})`;
+      const itemsResponse = await fetch(itemsUrl, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (itemsResponse.ok) {
+        const items = await itemsResponse.json();
+        // Group items by order_id
+        items.forEach(item => {
+          if (!orderItemsMap[item.order_id]) orderItemsMap[item.order_id] = [];
+          orderItemsMap[item.order_id].push(item);
+        });
+      }
+      // Attach items to each order
+      orders.forEach(order => {
+        order.items = orderItemsMap[order.order_id] || [];
+      });
+    }
+
     // Get order statistics
     const statsResponse = await fetch(
       `${SUPABASE_URL}/rest/v1/triogel_orders?select=status,total_amount`,

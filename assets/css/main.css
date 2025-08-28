@@ -1174,37 +1174,71 @@ body {
 
 /* Mobile-specific enhancements */
 @media (max-width: 768px) {
+    .notification {
+        top: 16px;
+        right: 8px;
+        left: 8px;
+        max-width: calc(100vw - 16px);
+        padding: 14px 12px;
+        font-size: 1rem;
+        border-radius: 14px;
+        box-shadow: 0 4px 18px rgba(102,126,234,0.18);
+    }
+
+    .nav-bar {
+        flex-wrap: wrap;
+        flex-direction: column;
+        align-items: stretch;
+        height: auto;
+        padding: 12px 8px;
+        gap: 10px;
+    }
+
+    .nav-left,
+    .nav-right {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .nav-bar .headerimg {
+        width: 120px;
+        height: 48px;
+        background-size: cover;
+    }
+
     .header h1 {
         font-size: 3rem;
     }
-    
+
     .header p {
         font-size: 1.1rem;
     }
-    
+
     .nav-section {
         flex-direction: column;
         align-items: stretch;
         gap: 15px;
     }
-    
+
     .nav-controls {
         justify-content: center;
         flex-wrap: wrap;
         gap: 10px;
     }
-    
+
     .items-grid {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .modal-content {
         margin: 20px;
         padding: 30px;
         max-width: calc(100% - 40px);
     }
-    
+
     .currency-dropdown,
     .user-dropdown-menu {
         left: 50%;
@@ -1212,11 +1246,11 @@ body {
         right: auto;
         min-width: 280px;
     }
-    
+
     .footer {
         padding: 40px 20px 30px;
     }
-    
+
     .footer-sections {
         grid-template-columns: 1fr;
         gap: 30px;
@@ -2872,6 +2906,21 @@ body.admin-mode {
         min-width: 0;
         width: 100%;
     }
+    .testimonial-list {
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .testimonial {
+        margin: 0 auto;
+        min-width: 0;
+        width: 100%;
+    }
+    .trust-bar {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
 }
 
 /* Trust Bar Styles */
@@ -2917,14 +2966,6 @@ body.admin-mode {
         color: var(--accent-blue);
         text-decoration: underline;
     }
-
-@media (max-width: 900px) {
-    .trust-bar {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
-    }
-}
 
 /* Testimonials Section Styles */
 .testimonials {
@@ -2987,18 +3028,6 @@ body.admin-mode {
     font-weight: 900;
 }
 
-@media (max-width: 900px) {
-    .testimonial-list {
-        flex-direction: column;
-        gap: 18px;
-    }
-
-    .testimonial {
-        margin: 0 auto;
-        min-width: 0;
-        width: 100%;
-    }
-}
 #LoginToTriogelLabel, #JoinTriogelLabel {
     display: flex;
     align-items: center;

@@ -838,7 +838,7 @@ function init() {
         if (navigator.onLine) {
             console.log('Online - Database authentication available');
         } else {
-            console.log('Offline - Using localStorage fallback');
+            console.log('Offline');
         }
     }, 1000);
     
@@ -963,12 +963,7 @@ async function loadAdminOrders() {
             }
         } catch (serverError) {
             console.log('Admin API not available, using local data:', serverError.message);
-        }
-        
-        // Fallback to localStorage (with permission check)
-        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        displayAdminOrders(localOrders);
-        
+        }    
     } catch (error) {
         console.error('Error loading admin orders:', error);
         const ordersList = document.getElementById('adminOrdersList');
@@ -1009,25 +1004,8 @@ window.updateOrderStatus = async function(orderId, newStatus) {
                 }
             }
         } catch (serverError) {
-            console.log('Database update failed, updating localStorage:', serverError.message);
+            console.log('Database update failed:', serverError.message);
         }
-        
-        // Fallback: Update in localStorage
-        const orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-        const orderIndex = orders.findIndex(order => order.orderId === orderId);
-        
-        if (orderIndex !== -1) {
-            orders[orderIndex].status = newStatus;
-            localStorage.setItem('triogel-orders', JSON.stringify(orders));
-            
-            // Refresh admin orders display
-            loadAdminOrders();
-            
-            showNotification(`Order ${orderId} status updated to ${newStatus} (local only)`);
-        } else {
-            showNotification('Order not found');
-        }
-        
     } catch (error) {
         console.error('updateOrderStatus error:', error);
         showNotification('Error updating order status');
@@ -1045,7 +1023,7 @@ function displayAdminOrders(orders) {
         }
         
         ordersList.innerHTML = orders.map(order => {
-            // Handle both database format (triogel_orders) and localStorage format
+            // Handle database format (triogel_orders)
             const orderId = order.order_id || order.orderId;
             const customerEmail = order.customer_email || order.email;
             const gameUsername = order.customer_game_username || order.gameUsername;
@@ -1071,7 +1049,7 @@ function displayAdminOrders(orders) {
                     <div class="order-items">
                         <h5>Items:</h5>
                         ${orderItems.map(item => {
-                            // Handle both database and localStorage item formats
+                            // Handle database item formats
                             const itemName = item.item_name || item.name;
                             const itemGame = item.item_game || item.game;
                             const quantity = item.quantity;
@@ -1374,27 +1352,42 @@ function handleProfileUpdate(event) {
         .then(() => showNotification('Profile updated!', 'success'))
         .catch(() => showNotification('Failed to update profile', 'error'));
 }
-function loadOrderHistory(user) {
+async function loadOrderHistory(user) {
     const historyContent = document.getElementById('orderHistoryContent');
     if (!historyContent || !user) return;
     historyContent.innerHTML = '<div class="loading">Loading your orders...</div>';
-    // Example: fetch from localStorage or API
-    let orders = [];
+
     try {
-        orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]')
-            .filter(order => order.email === user.email);
-    } catch { }
-    if (!orders.length) {
-        historyContent.innerHTML = '<div class="empty-orders">No orders found.</div>';
-        return;
+        const response = await fetch(`/.netlify/functions/get-orders?email=${encodeURIComponent(user.email)}`);
+        const result = await response.json();
+        const orders = (result.success && Array.isArray(result.data)) ? result.data : [];
+
+        if (!orders.length) {
+            historyContent.innerHTML = '<div class="empty-orders">No orders found.</div>';
+            return;
+        }
+
+        historyContent.innerHTML = orders.map(order => `
+            <div class="order-history-item">
+                <div><strong>Order #${order.order_id}</strong> - ${order.status || 'pending'}</div>
+                <div>${new Date(order.created_at).toLocaleString()}</div>
+                <div>Total: ${formatPrice(order.total_amount)}</div>
+                <div>Payment: ${order.payment_method}</div>
+                <div>Game Username: ${order.customer_game_username}</div>
+                <div>Notes: ${order.customer_notes || ''}</div>
+                <div class="order-items">
+                    <strong>Items:</strong>
+                    ${order.items && order.items.length ? order.items.map(item => `
+                        <div class="order-item-detail">
+                            ${item.item_name} (${item.item_game}) x${item.quantity} - ${formatPrice(item.item_price)} each
+                        </div>
+                    `).join('') : '<div class="order-item-detail">No items found.</div>'}
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        historyContent.innerHTML = '<div class="empty-orders">Failed to load orders.</div>';
     }
-    historyContent.innerHTML = orders.map(order => `
-        <div class="order-history-item">
-            <div><strong>Order #${order.orderId || order.order_id}</strong> - ${order.status || 'pending'}</div>
-            <div>${new Date(order.timestamp || order.created_at).toLocaleString()}</div>
-            <div>Total: ${formatPrice(order.total || order.order_total)}</div>
-        </div>
-    `).join('');
 }
 function handleForgotPassword(event) {
     event.preventDefault();
@@ -1448,25 +1441,6 @@ function loadAdminItems() {
             <span>${formatPrice(item.price)}</span>
             <span>${gameNames[item.game]}</span>
             <span>${item.rarity}</span>
-        </div>
-    `).join('');
-}
-function loadAdminCustomers() {
-    const customersList = document.getElementById('adminCustomersList');
-    if (!customersList) return;
-    // Example: fetch from localStorage or API
-    let customers = [];
-    try {
-        customers = JSON.parse(localStorage.getItem('triogel-customers') || '[]');
-    } catch { }
-    if (!customers.length) {
-        customersList.innerHTML = '<div class="empty-customers">No customers found.</div>';
-        return;
-    }
-    customersList.innerHTML = customers.map(cust => `
-        <div class="admin-customer">
-            <span>${cust.username || cust.email}</span>
-            <span>${cust.email}</span>
         </div>
     `).join('');
 }
