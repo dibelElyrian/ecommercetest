@@ -125,15 +125,15 @@ exports.handler = async (event, context) => {
             customer_email: orderData.email,
             customer_game_username: orderData.gameUsername,
             customer_whatsapp: orderData.whatsappNumber || null,
-            payment_method: orderData.paymentMethod,
-            currency: orderData.currency || 'PHP',
             customer_region: orderData.serverRegion || null,
+            payment_method: orderData.paymentMethod,
             customer_notes: orderData.customerNotes || null,
             total_amount: orderData.total,
             status: 'pending',
-            payment_reference: paymentResult?.reference || null,
             created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            currency: orderData.currency || 'PHP',
+            payment_reference: paymentResult?.reference || null
           })
           .select()
           .single();
