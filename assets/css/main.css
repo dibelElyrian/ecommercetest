@@ -66,8 +66,6 @@ body {
     z-index: 1;
     background: var(--dark-bg);
     transition: height 0.3s, padding 0.3s;
-    overflow-x: auto;
-    overflow-y: hidden;
 }
 
 .cart-button,
@@ -946,16 +944,13 @@ body {
     border: 1px solid rgba(102, 126, 234, 0.3);
     border-radius: 20px;
     padding: 8px 0;
-    min-width: 300px;
-    max-width: 350px;
+    width: max-content;
+    overflow-x: hidden;
     max-height: 400px;
     overflow-y: auto;
     z-index: 2000;
     backdrop-filter: blur(25px);
-    box-shadow: 
-        0 25px 50px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(102, 126, 234, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(102, 126, 234, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
     display: none;
     animation: slideIn 0.3s ease;
 }

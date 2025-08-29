@@ -745,7 +745,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const username = document.getElementById('registerUsername').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
-            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
             const favoriteGame = document.getElementById('registerFavoriteGame')?.value || 'ml';
             try {
                 await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
@@ -1278,6 +1278,8 @@ document.addEventListener('click', function (event) {
     const currencySelector = document.getElementById('currencySelector');
     const languageDropdown = document.getElementById('languageDropdown');
     const languageSelector = document.getElementById('languageSelector');
+    const userDropdown = document.getElementById('userDropdown');
+    const userBtn = document.querySelector('.user-info-btn');
 
     if (currencyDropdown && currencySelector)
     {
@@ -1296,6 +1298,13 @@ document.addEventListener('click', function (event) {
             if (!languageSelector.contains(event.target) && !languageDropdown.contains(event.target)) {
                 languageDropdown.style.display = 'none';
                 languageSelector.classList.remove('active');
+            }
+        }
+    }
+    if (userDropdown && userBtn) {
+        if (userDropdown.style.display === 'block') {
+            if (!userBtn.contains(event.target) && !userDropdown.contains(event.target)) {
+                window.closeUserDropdown();
             }
         }
     }

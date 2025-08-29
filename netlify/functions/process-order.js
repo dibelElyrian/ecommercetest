@@ -116,7 +116,6 @@ exports.handler = async (event, context) => {
     if (supabase) {
       try {
         console.log('💾 Saving order to Supabase database...');
-
         // Insert main order record
         const { data: orderResult, error: orderError } = await supabase
           .from('triogel_orders')
@@ -143,7 +142,7 @@ exports.handler = async (event, context) => {
           throw orderError;
         }
 
-        orderDbId = orderResult.id;
+        orderDbId = orderResult.orderId;
         console.log('✅ Order saved to database with ID:', orderDbId);
 
         // Insert order items
@@ -225,7 +224,7 @@ exports.handler = async (event, context) => {
         footer: {
           text: 'TRIOGEL Gaming Marketplace • Database: ' + (databaseSaved ? 'Saved ✅' : 'Failed ❌')
         },
-        timestamp: orderData.timestamp
+          timestamp: new Date().toISOString()
       }]
     };
 
