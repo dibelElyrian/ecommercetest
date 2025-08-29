@@ -9,7 +9,7 @@ const supabase = createClient(
 // Secure admin configuration - only use existing Netlify variables
 const ADMIN_CONFIG = {
   // Only use SUPER_ADMIN_EMAILS since that's what exists in Netlify
-  adminEmails: (process.env.SUPER_ADMIN_EMAILS || 'admin@triogel.com,ryanserdan@gmail.com').split(',').map(email => email.trim()).filter(Boolean)
+  adminEmails: (process.env.SUPER_ADMIN_EMAILS).split(',').map(email => email.trim()).filter(Boolean)
 };
 
 /**

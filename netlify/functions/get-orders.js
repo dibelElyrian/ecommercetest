@@ -69,7 +69,7 @@ exports.handler = async (event, context) => {
     let orderItemsMap = {};
     if (orders.length > 0) {
       const orderIds = orders.map(o => o.order_id);
-      const itemsUrl = `${SUPABASE_URL}/rest/v1/triogel_order_items?order_id=in.(${orderIds.map(id => `"${id}"`).join(",")})`;
+      const itemsUrl = `${SUPABASE_URL}/rest/v1/triogel_order_items?order_id=in.(${orderIds.join(",")})`;
       const itemsResponse = await fetch(itemsUrl, {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -78,7 +78,7 @@ exports.handler = async (event, context) => {
         }
       });
       if (itemsResponse.ok) {
-        const items = await itemsResponse.json();
+        const items = await itemsResponse.json();      
         // Group items by order_id
         items.forEach(item => {
           if (!orderItemsMap[item.order_id]) orderItemsMap[item.order_id] = [];
@@ -89,7 +89,7 @@ exports.handler = async (event, context) => {
       orders.forEach(order => {
         order.items = orderItemsMap[order.order_id] || [];
       });
-    }
+      }
 
     // Get order statistics
     const statsResponse = await fetch(

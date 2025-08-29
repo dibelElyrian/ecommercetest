@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // Use service key for admin operations
+  process.env.SUPABASE_SERVICEROLE_KEY // Use service key for admin operations
 );
 
 exports.handler = async (event, context) => {
@@ -32,12 +32,10 @@ exports.handler = async (event, context) => {
     const { action, adminEmail, adminLevel } = body;
 
     // Admin emails configuration - CHANGE THESE FOR PRODUCTION
-    const adminEmails = [
-      'admin@triogel.com',
-      'ryanserdan@gmail.com',
-      'owner@triogel.com',
-      'manager@triogel.com'
-    ];
+    const adminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(e => e);
 
     // Verify admin access (basic check)
     if (!adminEmail || !adminEmails.includes(adminEmail.toLowerCase())) {
@@ -59,8 +57,8 @@ exports.handler = async (event, context) => {
       case 'update_order_status':
         return await updateOrderStatus(body);
       
-      case 'get_customers':
-        return await getCustomers(body);
+      case 'get_users':
+        return await getUsers(body);
       
       case 'get_analytics':
         return await getAnalytics(body);
@@ -187,15 +185,15 @@ exports.handler = async (event, context) => {
     }
   }
 
-  async function getCustomers(params) {
+  async function getUsers(params) {
     try {
       const { limit = 100 } = params;
 
-      // Get customer summary from orders
-      const { data: customers, error } = await supabase
-        .from('triogel_customers')
+      // Get user summary from triogel_users
+      const { data: users, error } = await supabase
+        .from('triogel_users')
         .select('*')
-        .order('total_spent', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (error) throw error;
@@ -205,13 +203,13 @@ exports.handler = async (event, context) => {
         headers,
         body: JSON.stringify({
           success: true,
-          customers: customers || [],
-          count: customers?.length || 0
+          users: users || [],
+          count: users?.length || 0
         })
       };
 
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('Error fetching users:', error);
       throw error;
     }
   }

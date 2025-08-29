@@ -6,6 +6,10 @@ const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
 );
+const supabaseAdmin = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICEROLE_KEY
+);
 
 // CORS headers
 const headers = {
@@ -70,7 +74,26 @@ async function handleRegistration(userData) {
     try {
         const { username, email, password, favorite_game } = userData;
 
-        // Check if user already exists (this works with anon key + RLS)
+        // 1. Create Supabase Auth user (service role key required)
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password,
+            email_confirm: true
+        });
+
+        if (authError) {
+            console.error('Error creating Supabase auth user:', authError);
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({
+                    error: 'Supabase auth registration failed',
+                    message: authError.message
+                })
+            };
+        }
+
+        // 2. Check if user already exists in triogel_users
         const { data: existingUsers, error: checkError } = await supabase
             .from('triogel_users')
             .select('email')
@@ -82,39 +105,42 @@ async function handleRegistration(userData) {
         }
 
         if (existingUsers && existingUsers.length > 0) {
+            // Optionally: delete Supabase auth user if custom insert fails
+            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
             return {
                 statusCode: 400,
                 headers,
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'User already exists',
-                    message: 'An account with this email already exists' 
+                    message: 'An account with this email already exists'
                 })
             };
         }
 
-        // Hash password
+        // 3. Hash password for custom table
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Insert new user (RLS allows INSERT for registration)
+        // 4. Insert into triogel_users
         const { data: newUser, error: insertError } = await supabase
             .from('triogel_users')
-            .insert([
-                {
-                    username: username,
-                    email: email,
-                    password_hash: hashedPassword,
-                    favorite_game: favorite_game || 'ml',
-                    created_at: new Date().toISOString(),
-                    last_login: new Date().toISOString(),
-                    session_active: true
-                }
-            ])
+            .insert([{
+                username: username,
+                email: email,
+                password_hash: hashedPassword,
+                favorite_game: favorite_game || 'ml',
+                created_at: new Date().toISOString(),
+                last_login: new Date().toISOString(),
+                session_active: true,
+                supabase_user_id: authUser.user.id // Store Supabase user id for reference
+            }])
             .select()
             .single();
 
         if (insertError) {
             console.error('Error creating user:', insertError);
+            // Optionally: delete Supabase auth user if custom insert fails
+            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
             throw new Error('Failed to create user account');
         }
 
@@ -138,9 +164,9 @@ async function handleRegistration(userData) {
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Registration failed',
-                message: error.message 
+                message: error.message
             })
         };
     }

@@ -561,7 +561,7 @@ function createAdminModal() {
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="orders">Orders</button>
                 <button class="admin-tab" data-tab="items">Items</button>
-                <button class="admin-tab" data-tab="customers">Customers</button>
+                <button class="admin-tab" data-tab="users">Users</button>
                 <button class="admin-tab" data-tab="analytics">Analytics</button>
             </div>
             
@@ -597,12 +597,12 @@ function createAdminModal() {
                 </div>
                 
                 <!-- Customers Tab -->
-                <div class="admin-tab-content" id="admin-customers">
+                <div class="admin-tab-content" id="admin-users">
                     <div class="admin-section-header">
                         <h3>Customer Management</h3>
                     </div>
-                    <div id="adminCustomersList" class="admin-customers-list">
-                        <div class="loading">Loading customers...</div>
+                    <div id="adminUsersList" class="admin-users-list">
+                        <div class="loading">Loading users...</div>
                     </div>
                 </div>
                 
@@ -987,10 +987,10 @@ async function loadAdminData() {
         
         // Load customers if permitted
         if (permissions.canViewCustomers) {
-            await loadAdminCustomers();
+            await loadAdminUsers();
         } else {
             // Hide customers tab if no permission
-            const customersTab = document.querySelector('[data-tab="customers"]');
+            const customersTab = document.querySelector('[data-tab="users"]');
             if (customersTab) customersTab.style.display = 'none';
         }
         
@@ -1466,30 +1466,45 @@ async function loadOrderHistory(user) {
         const orders = (result.success && Array.isArray(result.data)) ? result.data : [];
 
         if (!orders.length) {
-            historyContent.innerHTML = '<div class="empty-orders">No orders found.</div>';
+            historyContent.innerHTML = '<div class="no-user-orders">No orders found.</div>';
             return;
         }
 
-        historyContent.innerHTML = orders.map(order => `
-            <div class="order-history-item">
-                <div><strong>Order #${order.order_id}</strong> - ${order.status || 'pending'}</div>
-                <div>${new Date(order.created_at).toLocaleString()}</div>
-                <div>Total: ${formatPrice(order.total_amount)}</div>
-                <div>Payment: ${order.payment_method}</div>
-                <div>Game Username: ${order.customer_game_username}</div>
-                <div>Notes: ${order.customer_notes || ''}</div>
-                <div class="order-items">
-                    <strong>Items:</strong>
-                    ${order.items && order.items.length ? order.items.map(item => `
-                        <div class="order-item-detail">
-                            ${item.item_name} (${item.item_game}) x${item.quantity} - ${formatPrice(item.item_price)} each
+        historyContent.innerHTML = `
+            <div class="user-orders-list">
+                ${orders.map(order => `
+                    <div class="user-order-card">
+                        <div class="user-order-header">
+                            <div class="user-order-id-row">
+                                <span class="user-order-id">${order.order_id}</span>
+                            </div>
+                            <div class="user-order-header-flex">
+                                <div class="user-order-header-left">
+                                    <div class="user-order-username"><strong>Game Username:</strong> ${order.customer_game_username}</div>
+                                    <div class="user-order-payment"><strong>Payment:</strong> ${order.payment_method}</div>
+                                    <div class="user-order-total"><strong>Total:</strong> ${formatPrice(order.total_amount)}</div>
+                                    <span class="user-order-notes"><strong>Notes:</strong> ${order.customer_notes || ''}</span>
+                                </div>
+                                <div class="user-order-header-right">
+                                    <div class="user-order-status status-${order.status || 'pending'}">${(order.status || 'pending').toUpperCase()}</div>
+                                    <div class="user-order-date">${new Date(order.created_at).toLocaleString()}</div>
+                                </div>
+                            </div>
                         </div>
-                    `).join('') : '<div class="order-item-detail">No items found.</div>'}
-                </div>
+                        <div class="user-order-items">
+                            <strong>Items:</strong>
+                            ${order.items && order.items.length ? order.items.map(item => `
+                                <div class="user-order-item-detail">
+                                    ${item.item_name} (${item.item_game}) x${item.quantity} - ${formatPrice(item.item_price)} each
+                                </div>
+                            `).join('') : '<div class="user-order-item-detail">No items found.</div>'}
+                        </div>
+                    </div>
+                `).join('')}
             </div>
-        `).join('');
+        `;
     } catch (err) {
-        historyContent.innerHTML = '<div class="empty-orders">Failed to load orders.</div>';
+        historyContent.innerHTML = '<div class="no-user-orders">Failed to load orders.</div>';
     }
 }
 function handleForgotPassword(event) {
@@ -1560,6 +1575,46 @@ function loadAdminAnalytics() {
         <div><strong>Total Orders:</strong> ${orders.length}</div>
         <div><strong>Total Sales:</strong> ${formatPrice(totalSales)}</div>
     `;
+}
+async function loadAdminUsers() {
+    try {
+        const usersList = document.getElementById('adminUsersList');
+        if (!usersList) return;
+        usersList.innerHTML = '<div class="loading">Loading users...</div>';
+
+        const response = await fetch('/.netlify/functions/admin-api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get_users',
+                adminEmail: window.TriogelAuth?.getCurrentUser()?.email
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && Array.isArray(data.users)) {
+                usersList.innerHTML = data.users.map(user => `
+                    <div class="admin-user-item">
+                        <strong>${user.email}</strong>
+                        <span>Username: ${user.username}</span>
+                        <span>Favorite Game: ${user.favorite_game}</span>
+                        <span>Created: ${new Date(user.created_at).toLocaleString()}</span>
+                    </div>
+                `).join('');
+            } else {
+                usersList.innerHTML = '<div class="admin-empty">No users found</div>';
+            }
+        } else {
+            usersList.innerHTML = '<div class="admin-error">Failed to load users</div>';
+        }
+    } catch (error) {
+        console.error('Error loading admin users:', error);
+        const usersList = document.getElementById('adminUsersList');
+        if (usersList) {
+            usersList.innerHTML = '<div class="admin-error">Error loading users</div>';
+        }
+    }
 }
 function clearLoginForm() {
     const emailInput = document.getElementById('loginEmail');

@@ -74,7 +74,7 @@ exports.handler = async (event, context) => {
                             item_game,
                             item_price,
                             quantity,
-                            total_price
+                            subtotal
                         )
                     `)
                     .eq('customer_email', userEmail)
@@ -128,7 +128,7 @@ exports.handler = async (event, context) => {
                             item_game,
                             item_price,
                             quantity,
-                            total_price
+                            subtotal
                         )
                     `)
                     .order('created_at', { ascending: false })
@@ -178,7 +178,7 @@ exports.handler = async (event, context) => {
                             item_game,
                             item_price,
                             quantity,
-                            total_price
+                            subtotal
                         )
                     `)
                     .eq('order_id', orderId)
