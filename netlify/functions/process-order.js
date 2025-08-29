@@ -30,24 +30,24 @@ exports.handler = async (event, context) => {
   try {
     const orderData = JSON.parse(event.body);
     console.log('📦 Processing TRIOGEL order:', orderData.orderId);
-    
+
     // Environment variables for integrations
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
     const GCASH_NUMBER = process.env.GCASH_NUMBER;
     const GCASH_NAME = process.env.GCASH_NAME;
-    
+
     // Initialize Supabase client
     let supabase = null;
     if (SUPABASE_URL && SUPABASE_KEY) {
       supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     }
-    
+
     if (!DISCORD_WEBHOOK_URL) {
       console.warn('⚠️ Discord webhook URL not configured');
     }
-    
+
     if (!supabase) {
       console.warn('⚠️ Supabase database not configured');
     } else {
@@ -63,12 +63,12 @@ exports.handler = async (event, context) => {
     if (orderData.paymentMethod === 'gcash') {
       try {
         console.log('💳 Setting up manual GCash payment...');
-        
+
         // Generate unique payment reference
         const paymentReference = `TRIO-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-        
+
         const phpAmount = orderData.total.toFixed(2);
-        
+
         if (GCASH_NUMBER && GCASH_NAME) {
           paymentResult = {
             success: true,
@@ -112,11 +112,11 @@ exports.handler = async (event, context) => {
     // SUPABASE DATABASE INTEGRATION - Save order
     let databaseSaved = false;
     let orderDbId = null;
-    
+
     if (supabase) {
       try {
         console.log('💾 Saving order to Supabase database...');
-        
+
         // Insert main order record
         const { data: orderResult, error: orderError } = await supabase
           .from('triogel_orders')
@@ -255,12 +255,12 @@ exports.handler = async (event, context) => {
       });
     }
 
-    // Send to Discord if webhook URL is configured
+    // Send to Discord only if databaseSaved is true and webhook URL is configured
     let discordSent = false;
-    if (DISCORD_WEBHOOK_URL) {
+    if (DISCORD_WEBHOOK_URL && databaseSaved) {
       try {
         console.log('📡 Sending Discord notification...');
-        
+
         const discordResponse = await fetch(DISCORD_WEBHOOK_URL, {
           method: 'POST',
           headers: {
@@ -294,37 +294,59 @@ exports.handler = async (event, context) => {
       paymentSuccess: paymentResult?.success
     });
 
-    // Return success response
-    return {
-        statusCode: 200,
+    // Return error response if database was not saved
+    if (!databaseSaved) {
+      return {
+        statusCode: 500,
         headers,
         body: JSON.stringify({
-            success: true,
-            message: 'Order processed successfully',
-            orderId: orderData.orderId,
-            orderDbId: orderDbId,
-            discordSent: discordSent,
-            databaseSaved: databaseSaved,
-            paymentResult: {
-              ...paymentResult,
-              contact_method: 'email'
-            },
-            integrations: {
-                discord: !!DISCORD_WEBHOOK_URL,
-                database: databaseSaved,
-                manual_gcash: !!GCASH_NUMBER
-            }
+          success: false,
+          message: 'Order failed to save to database',
+          orderId: orderData.orderId,
+          orderDbId: orderDbId,
+          discordSent: false,
+          databaseSaved: false,
+          paymentResult: paymentResult,
+          integrations: {
+            discord: !!DISCORD_WEBHOOK_URL,
+            database: false,
+            manual_gcash: !!GCASH_NUMBER
+          }
         })
+      };
+    }
+
+    // Return success response
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        success: true,
+        message: 'Order processed successfully',
+        orderId: orderData.orderId,
+        orderDbId: orderDbId,
+        discordSent: discordSent,
+        databaseSaved: databaseSaved,
+        paymentResult: {
+          ...paymentResult,
+          contact_method: 'email'
+        },
+        integrations: {
+          discord: !!DISCORD_WEBHOOK_URL,
+          database: databaseSaved,
+          manual_gcash: !!GCASH_NUMBER
+        }
+      })
     };
 
   } catch (error) {
     console.error('💥 Error processing TRIOGEL order:', error);
-    
+
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        error: 'Failed to process order',  
+      body: JSON.stringify({
+        error: 'Failed to process order',
         details: error.message,
         orderId: event.body ? JSON.parse(event.body).orderId : 'unknown'
       })
