@@ -1495,7 +1495,7 @@ async function loadOrderHistory(user) {
                             <strong>Items:</strong>
                             ${order.items && order.items.length ? order.items.map(item => `
                                 <div class="user-order-item-detail">
-                                    ${item.item_name} (${item.item_game}) x${item.quantity} - ${formatPrice(item.item_price)} each
+                                    ${item.item_name} (${item.item_game}) x${item.quantity} - ${formatPrice(item.subtotal)} subtotal
                                 </div>
                             `).join('') : '<div class="user-order-item-detail">No items found.</div>'}
                         </div>

@@ -1,4 +1,5 @@
 // TRIOGEL Authentication System - Production Version
+const SESSION_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 class TriogelAuth {
     constructor() {
@@ -94,36 +95,57 @@ class TriogelAuth {
      */
     async initializeAuth() {
         console.log('Initializing TRIOGEL authentication...');
-        
+
         // Check for existing session
-        const savedUser = localStorage.getItem('triogel-user');
-        
-        if (savedUser) {
+        const savedSession = localStorage.getItem('triogel-session');
+
+        if (savedSession) {
             try {
-                const userData = JSON.parse(savedUser);
-                this.currentUser = userData;
-                
-                // Validate session with database if online
-                if (this.isOnline && userData.id) {
+                const sessionData = JSON.parse(savedSession);
+
+                // --- SESSION EXPIRATION CHECK ---
+                if (!sessionData.sessionTimestamp || Date.now() - sessionData.sessionTimestamp > SESSION_EXPIRATION_MS) {
+                    console.log('Session expired, logging out...');
+                    localStorage.removeItem('triogel-session');
+                    this.currentUser = null;
+                    this.showLoginSection();
+                    this.showSessionTimeoutPopup('Your session has expired. Please log in again.');
+                    return;
+                }
+                // --- END SESSION EXPIRATION CHECK ---
+
+                // Fetch user profile from backend using session info
+                let userProfile = null;
+                if (this.isOnline && sessionData.id) {
                     try {
-                        await this.validateSession(userData.id);
+                        const response = await this.makeAuthRequest('get_profile', { userId: sessionData.id });
+                        if (response.success) {
+                            userProfile = response.user;
+                        }
                     } catch (error) {
-                        console.warn('Session validation failed, using local data:', error);
+                        console.warn('Session validation failed, using minimal session data:', error);
                     }
                 }
-                
+
+                // Fallback to minimal session if profile fetch fails
+                this.currentUser = userProfile || { id: sessionData.id };
+
                 this.showUserSection();
-                
+
                 // Check admin status and show controls if admin
                 if (await this.isAdmin()) {
                     await this.showAdminControls();
-                    console.log(`Admin user logged in: ${userData.username} (Level ${await this.getAdminLevel()})`);
+                    if (userProfile && userProfile.username) {
+                        console.log(`Admin user logged in: ${userProfile.username} (Level ${await this.getAdminLevel()})`);
+                    }
                 } else {
-                    console.log('Regular user session restored:', userData.username);
+                    if (userProfile && userProfile.username) {
+                        console.log('Regular user session restored:', userProfile.username);
+                    }
                 }
             } catch (error) {
-                console.error('Error parsing saved user data:', error);
-                localStorage.removeItem('triogel-user');
+                console.error('Error parsing saved session data:', error);
+                localStorage.removeItem('triogel-session');
                 this.showLoginSection();
             }
         } else {
@@ -386,7 +408,7 @@ class TriogelAuth {
                 // Update session in database
                 await this.makeAuthRequest('update_session', {
                     userId: this.currentUser.id,
-                    sessionData: { 
+                    sessionData: {
                         session_active: false,
                         last_logout: new Date().toISOString()
                     }
@@ -399,13 +421,13 @@ class TriogelAuth {
             // Clear local session
             this.currentUser = null;
             this.adminStatus = null;
-            localStorage.removeItem('triogel-user');
+            localStorage.removeItem('triogel-session');
             this.showLoginSection();
-            
+
             if (typeof showNotification === 'function') {
                 showNotification('Logged out successfully!');
             }
-            
+
             console.log('Logout successful');
 
         } catch (error) {
@@ -414,7 +436,7 @@ class TriogelAuth {
             this.hideAdminControls();
             this.currentUser = null;
             this.adminStatus = null;
-            localStorage.removeItem('triogel-user');
+            localStorage.removeItem('triogel-session');
             this.showLoginSection();
         }
     }
@@ -511,11 +533,15 @@ class TriogelAuth {
      */
     saveUserSession(user) {
         try {
-            // Remove sensitive data before storing
-            const { password_hash, ...safeUser } = user;
-            localStorage.setItem('triogel-user', JSON.stringify(safeUser));
+            // Store only minimal session info
+            const sessionData = {
+                id: user.id,
+                sessionToken: user.sessionToken,
+                sessionTimestamp: Date.now()
+            };
+            localStorage.setItem('triogel-session', JSON.stringify(sessionData));
         } catch (error) {
-            console.error('Error saving user session:', error);
+            console.error('Error saving session:', error);
         }
     }
 
@@ -622,6 +648,47 @@ class TriogelAuth {
      */
     isLoggedIn() {
         return this.currentUser !== null;
+    }
+
+    showSessionTimeoutPopup(message) {
+        // Remove any existing popup
+        const existing = document.getElementById('sessionTimeoutPopup');
+        if (existing) existing.remove();
+
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'sessionTimeoutPopup';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.background = 'rgba(0,0,0,0.6)';
+        overlay.style.zIndex = '9999';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+
+        // Create modal box
+        const modal = document.createElement('div');
+        modal.style.background = '#222';
+        modal.style.color = '#fff';
+        modal.style.padding = '2rem';
+        modal.style.borderRadius = '8px';
+        modal.style.boxShadow = '0 2px 16px rgba(0,0,0,0.3)';
+        modal.style.textAlign = 'center';
+        modal.innerHTML = `
+        <h2>Session Expired</h2>
+        <p>${message}</p>
+        <button id="sessionTimeoutCloseBtn" style="margin-top:1rem;padding:0.5rem 1.5rem;font-size:1rem;border:none;border-radius:4px;background:#e74c3c;color:#fff;cursor:pointer;">OK</button>
+    `;
+
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        document.getElementById('sessionTimeoutCloseBtn').onclick = function () {
+            overlay.remove();
+        };
     }
 }
 

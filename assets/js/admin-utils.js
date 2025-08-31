@@ -183,13 +183,13 @@ window.exportOrders = function() {
     }
 };
 
-window.backupData = function() {
+window.backupData = function () {
     try {
         console.log('Creating data backup...');
-        
+
         const backupData = {
             orders: JSON.parse(localStorage.getItem('triogel-orders') || '[]'),
-            users: JSON.parse(localStorage.getItem('triogel-user') || 'null'),
+            session: JSON.parse(localStorage.getItem('triogel-session') || 'null'),
             offlineUsers: JSON.parse(localStorage.getItem('triogel-offline-users') || '[]'),
             currencyCache: JSON.parse(localStorage.getItem('triogel-currency-cache') || '{}'),
             timestamp: new Date().toISOString(),
@@ -197,10 +197,10 @@ window.backupData = function() {
             totalOrders: JSON.parse(localStorage.getItem('triogel-orders') || '[]').length,
             adminInfo: {
                 exportedBy: window.TriogelAuth?.getCurrentUser()?.username || 'Unknown',
-                adminLevel: window.TriogelAuth?.getAdminLevel() || 0
+                adminLevel: typeof window.TriogelAuth?.getAdminLevel === 'function' ? window.TriogelAuth.getAdminLevel() : 0
             }
         };
-        
+
         const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -208,9 +208,9 @@ window.backupData = function() {
         link.download = `triogel-backup-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
         window.URL.revokeObjectURL(url);
-        
+
         showNotification('? Data backup created successfully');
-        
+
     } catch (error) {
         console.error('Error creating backup:', error);
         showNotification('? Error creating backup');
