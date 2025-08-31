@@ -748,7 +748,14 @@ document.addEventListener('DOMContentLoaded', function () {
             const confirmPassword = document.getElementById('confirmPassword').value;
             const favoriteGame = document.getElementById('registerFavoriteGame')?.value || 'ml';
             try {
-                await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
+                const response = await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
+                if (response && response.success && !response.user.offline) {
+                    showNotification('Registration successful! Please check your email for the verification code.', 'success');
+                    showOtpModal(email);
+                }
+                else {
+                    showNotification(response?.message || 'Registration failed', 'error');
+                }
             } catch (err) {
                 showNotification(err.message, 'error');
             }
@@ -772,6 +779,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 closeLoginModal();
             } catch (err) {
                 showNotification(err.message, 'error');
+                // If error is about email not verified, show OTP modal
+                if (err.message && err.message.toLowerCase().includes('not verified')) {
+                    if (typeof showOtpModal === 'function') {
+                        showOtpModal(email);
+                    }
+                }
             } finally {
                 if (loginBtn) {
                     loginBtn.disabled = false;
@@ -1640,4 +1653,86 @@ function generateOrderId() {
     const arr = new Uint8Array(8);
     window.crypto.getRandomValues(arr);
     return 'TRIO-' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+function showOtpModal(email) {
+    // Remove any existing modal
+    const existing = document.getElementById('otpModal');
+    if (existing) existing.remove();
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'otpModal';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.background = 'rgba(0,0,0,0.7)';
+    modal.style.zIndex = '9999';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+
+    modal.innerHTML = `
+        <div style="background:#222;padding:2rem;border-radius:8px;text-align:center;max-width:350px;">
+            <h2>Email Verification</h2>
+            <p>Enter the 6-digit code sent to <b>${email}</b></p>
+            <input id="otpInput" type="text" maxlength="6" style="font-size:1.2rem;text-align:center;width:120px;" />
+            <br>
+            <button id="otpSubmitBtn" style="margin-top:1rem;">Verify</button>
+            <button id="otpResendBtn" style="margin-top:1rem;">Resend OTP</button>
+            <div id="otpError" style="color:#e74c3c;margin-top:1rem;"></div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('otpSubmitBtn').onclick = async function () {
+        const otp = document.getElementById('otpInput').value.trim();
+        if (!otp || otp.length !== 6) {
+            document.getElementById('otpError').textContent = 'Please enter a valid 6-digit code.';
+            return;
+        }
+        // Call backend to verify
+        try {
+            const res = await fetch('/.netlify/functions/user-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'verify_otp', email, otp })
+            });
+            const result = await res.json();
+            if (result.success) {
+                modal.remove();
+                showNotification('Email verified! Registration complete.', 'success');
+                // Fetch user profile and save session
+                const response = await window.TriogelAuth.makeAuthRequest('get_profile', { userId: window.TriogelAuth.currentUser.id });
+                if (response.success) {
+                    window.TriogelAuth.currentUser = response.user;
+                    window.TriogelAuth.saveUserSession(response.user);
+                    window.TriogelAuth.showUserSection();
+                }
+            } else {
+                document.getElementById('otpError').textContent = result.message || 'Verification failed.';
+            }
+        } catch (err) {
+            document.getElementById('otpError').textContent = 'Network error. Try again.';
+        }
+    };
+
+    document.getElementById('otpResendBtn').onclick = async function () {
+        try {
+            const res = await fetch('/.netlify/functions/user-auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'resend_otp', email })
+            });
+            const result = await res.json();
+            if (result.success) {
+                document.getElementById('otpError').textContent = 'A new code has been sent to your email.';
+            } else {
+                document.getElementById('otpError').textContent = result.message || 'Failed to resend OTP.';
+            }
+        } catch (err) {
+            document.getElementById('otpError').textContent = 'Network error. Try again.';
+        }
+    };
 }

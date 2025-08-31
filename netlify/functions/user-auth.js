@@ -1,5 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcrypt');
+const { Resend } = require('resend');
 
 // Initialize Supabase client with anon key (RLS-compliant)
 const supabase = createClient(
@@ -17,6 +18,8 @@ const headers = {
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
+
+const resend = new Resend(process.env.RESEND_MAILSENDER);
 
 exports.handler = async (event, context) => {
     // Handle CORS preflight requests
@@ -37,7 +40,7 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const { action, userData, credentials, userId, sessionData } = JSON.parse(event.body);
+        const { action, userData, credentials, userId, sessionData, email, otp } = JSON.parse(event.body);
         console.log('User auth action:', action);
 
         switch (action) {
@@ -49,6 +52,10 @@ exports.handler = async (event, context) => {
                 return await handleSessionUpdate(userId, sessionData);
             case 'get_profile':
                 return await handleGetProfile(userId);
+            case 'verify_otp':
+                return await handleVerifyOtp(email, otp);
+            case 'resend_otp':
+                return await handleResendOtp(email);
             default:
                 return {
                     statusCode: 400,
@@ -68,107 +75,190 @@ exports.handler = async (event, context) => {
         };
     }
 };
+// Helper to send OTP email using Resend
+async function sendEmail(targetMails, code) {
+    const result = await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: ['delivered@resend.dev'],//change to targetMails when in production(need domain setup)
+        subject: `Your Triogel Verification Code ${code}`,
+        html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 10 minutes.</p>`
+    });
 
+    if (result.error || result.statusCode >= 400) {
+        console.error('Resend email API error:', result);
+        // Extract the error message for frontend
+        let errorMessage = 'Unknown error';
+        if (result.error) {
+            if (typeof result.error === 'string') {
+                errorMessage = result.error;
+            } else if (result.error.error) {
+                errorMessage = result.error.error;
+            } else {
+                errorMessage = JSON.stringify(result.error);
+            }
+        }
+        throw new Error(errorMessage);
+    }
+}
+// OTP verification handler
+async function handleVerifyOtp(email, otp) {
+    try {
+        const { data: user, error } = await supabase
+            .from('triogel_users')
+            .select('*')
+            .eq('email', email)
+            .eq('verification_code', otp)
+            .eq('email_verified', false)
+            .single();
+
+        // Place your logs here:
+        console.log('Current UTC:', new Date().toISOString());
+        if (user) {
+            console.log('OTP expiry UTC:', user.verification_expires_at);
+        } else {
+            console.log('No user found for OTP verification.');
+        }
+
+        if (error || !user || new Date(user.verification_expires_at) < new Date().toISOString()) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Invalid or expired code' }) };
+        }
+
+        await supabase
+            .from('triogel_users')
+            .update({
+                email_verified: true,
+                verification_code: null,
+                verification_expires_at: null
+            })
+            .eq('id', user.id);
+
+        return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'Email verified' }) };
+    } catch (error) {
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: error.message }) };
+    }
+}
+// Handler function for resending OTP
+async function handleResendOtp(email) {
+    try {
+        // Check if user exists and is not verified
+        const { data: user, error: fetchError } = await supabase
+            .from('triogel_users')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (fetchError || !user) {
+            return { statusCode: 404, headers, body: JSON.stringify({ success: false, message: 'User not found' }) };
+        }
+        if (user.email_verified) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Email already verified' }) };
+        }
+
+        // Generate new OTP
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+        // Update user record
+        const { error: updateError } = await supabase
+            .from('triogel_users')
+            .update({
+                verification_code: code,
+                verification_expires_at: expiresAt
+            })
+            .eq('id', user.id);
+
+        if (updateError) {
+            return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Failed to update OTP' }) };
+        }
+
+        // Send OTP email
+        await sendEmail(email, code);
+
+        return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'OTP resent' }) };
+    } catch (error) {
+        return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: error.message }) };
+    }
+}
 // Handle user registration
 async function handleRegistration(userData) {
     try {
         const { username, email, password, favorite_game } = userData;
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min expiry
 
-        // 1. Create Supabase Auth user (service role key required)
+        // Create Supabase Auth user
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
             email_confirm: true
         });
-
         if (authError) {
-            console.error('Error creating Supabase auth user:', authError);
-            return {
-                statusCode: 400,
-                headers,
-                body: JSON.stringify({
-                    error: 'Supabase auth registration failed',
-                    message: authError.message
-                })
-            };
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Supabase auth registration failed', message: authError.message }) };
         }
 
-        // 2. Check if user already exists in triogel_users
-        const { data: existingUsers, error: checkError } = await supabase
-            .from('triogel_users')
-            .select('email')
-            .eq('email', email);
-
-        if (checkError) {
-            console.error('Error checking existing user:', checkError);
-            throw new Error('Database error during registration');
-        }
-
-        if (existingUsers && existingUsers.length > 0) {
-            // Optionally: delete Supabase auth user if custom insert fails
+        // Send OTP email
+        try {
+            await sendEmail(email, code);
+        } catch (emailError) {
             await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
             return {
                 statusCode: 400,
                 headers,
                 body: JSON.stringify({
-                    error: 'User already exists',
-                    message: 'An account with this email already exists'
+                    error: 'Email sending failed',
+                    message: emailError.message || String(emailError)
                 })
             };
         }
 
-        // 3. Hash password for custom table
+        // Check if user exists
+        const { data: existingUsers } = await supabase.from('triogel_users').select('email').eq('email', email);
+        if (existingUsers && existingUsers.length > 0) {
+            await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'User already exists', message: 'An account with this email already exists' }) };
+        }
+
+        // Hash password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // 4. Insert into triogel_users
+        // Insert user with OTP fields
         const { data: newUser, error: insertError } = await supabase
             .from('triogel_users')
             .insert([{
-                username: username,
-                email: email,
+                username,
+                email,
                 password_hash: hashedPassword,
                 favorite_game: favorite_game || 'ml',
                 created_at: new Date().toISOString(),
                 last_login: new Date().toISOString(),
                 session_active: true,
-                supabase_user_id: authUser.user.id // Store Supabase user id for reference
+                supabase_user_id: authUser.user.id,
+                email_verified: false,
+                verification_code: code,
+                verification_expires_at: expiresAt
             }])
             .select()
             .single();
 
         if (insertError) {
-            console.error('Error creating user:', insertError);
-            // Optionally: delete Supabase auth user if custom insert fails
+            console.error('Supabase insert error:', insertError);
             await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
             throw new Error('Failed to create user account');
         }
 
-        console.log('User registered successfully:', newUser.email);
-
-        // Return user data without password
-        const { password_hash, ...userResponse } = newUser;
-
+        const { password_hash, verification_code, verification_expires_at, ...userResponse } = newUser;
         return {
             statusCode: 200,
             headers,
             body: JSON.stringify({
                 success: true,
-                message: 'User registered successfully',
+                message: 'User registered. Verification code sent to email.',
                 user: userResponse
             })
         };
-
     } catch (error) {
-        console.error('Registration error:', error);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({
-                error: 'Registration failed',
-                message: error.message
-            })
-        };
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Registration failed', message: error.message }) };
     }
 }
 
@@ -177,7 +267,7 @@ async function handleLogin(credentials) {
     try {
         const { email, password } = credentials;
 
-        // Get user from database (works with anon key)
+        // Get user from database
         const { data: users, error: fetchError } = await supabase
             .from('triogel_users')
             .select('*')
@@ -192,14 +282,28 @@ async function handleLogin(credentials) {
             return {
                 statusCode: 401,
                 headers,
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'Invalid credentials',
-                    message: 'Invalid email or password' 
+                    message: 'Invalid email or password'
                 })
             };
         }
 
         const user = users[0];
+
+        // Block login if email not verified
+        if (!user.email_verified) {
+            return {
+                statusCode: 403,
+                headers,
+                body: JSON.stringify({
+                    success: false,
+                    error: 'Email not verified',
+                    message: 'Your email is not verified. Please verify your email to log in.',
+                    email: user.email
+                })
+            };
+        }
 
         // Verify password
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
@@ -208,25 +312,24 @@ async function handleLogin(credentials) {
             return {
                 statusCode: 401,
                 headers,
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'Invalid credentials',
-                    message: 'Invalid email or password' 
+                    message: 'Invalid email or password'
                 })
             };
         }
 
-        // Update last login (RLS allows UPDATE on own record)
+        // Update last login
         const { error: updateError } = await supabase
             .from('triogel_users')
-            .update({ 
+            .update({
                 last_login: new Date().toISOString(),
-                session_active: true 
+                session_active: true
             })
             .eq('id', user.id);
 
         if (updateError) {
             console.error('Error updating last login:', updateError);
-            // Don't fail login if update fails
         }
 
         console.log('User logged in successfully:', user.email);
@@ -249,9 +352,9 @@ async function handleLogin(credentials) {
         return {
             statusCode: 500,
             headers,
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'Login failed',
-                message: error.message 
+                message: error.message
             })
         };
     }

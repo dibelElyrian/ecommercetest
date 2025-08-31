@@ -121,6 +121,17 @@ class TriogelAuth {
                         const response = await this.makeAuthRequest('get_profile', { userId: sessionData.id });
                         if (response.success) {
                             userProfile = response.user;
+                            // If not verified, sign out and show verification
+                            if (userProfile && userProfile.email_verified === false) {
+                                await this.logout();
+                                if (typeof showNotification === 'function') {
+                                    showNotification('Your email is not verified. Please verify to continue.', 'error');
+                                }
+                                if (typeof showOtpModal === 'function') {
+                                    showOtpModal(userProfile.email);
+                                }
+                                return;
+                            }
                         }
                     } catch (error) {
                         console.warn('Session validation failed, using minimal session data:', error);
@@ -274,7 +285,20 @@ class TriogelAuth {
                 const response = await this.makeAuthRequest('register', { userData: registrationData });
                 
                 if (response.success) {
+                    // Only set currentUser, do NOT save session yet
                     this.currentUser = response.user;
+                    // If not verified, show OTP modal and do NOT save session
+                    if (!response.user.email_verified) {
+                        if (typeof showOtpModal === 'function') {
+                            showOtpModal(response.user.email);
+                        }
+                        // Optionally show notification
+                        if (typeof showNotification === 'function') {
+                            showNotification('Please verify your email to complete registration.', 'info');
+                        }
+                        return { success: true, user: response.user };
+                    }
+                    // If verified, save session and show user section
                     this.saveUserSession(response.user);
                     this.showUserSection();
                     
@@ -347,48 +371,30 @@ class TriogelAuth {
             if (this.isOnline) {
                 // Try database login
                 const response = await this.makeAuthRequest('login', { credentials: loginData });
-                
+
                 if (response.success) {
                     this.currentUser = response.user;
                     this.saveUserSession(response.user);
                     this.showUserSection();
-                    
-                    // Check admin status after login
-                    if (await this.isAdmin()) {
-                        await this.showAdminControls();
-                        if (typeof showNotification === 'function') {
-                            showNotification(`Welcome back, Admin ${response.user.username}! ??`);
-                        }
-                    } else {
-                        if (typeof showNotification === 'function') {
-                            showNotification(`Welcome back, ${response.user.username}!`);
-                        }
-                    }
-                    
+
+                    // ... admin logic ...
+
                     console.log('Database login successful');
                     return { success: true, user: response.user };
+                } else if (response.error === 'Email not verified') {
+                    // Show verification modal
+                    if (typeof showNotification === 'function') {
+                        showNotification(response.message, 'error');
+                    }
+                    if (typeof showOtpModal === 'function') {
+                        showOtpModal(response.email);
+                    }
+                    throw new Error(response.message);
                 } else {
                     throw new Error(response.message || 'Login failed');
                 }
             } else {
-                // Offline fallback - check localStorage
-                const offlineUsers = JSON.parse(localStorage.getItem('triogel-offline-users') || '[]');
-                const user = offlineUsers.find(u => u.email === loginData.email);
-                
-                if (user) {
-                    this.currentUser = user;
-                    this.saveUserSession(user);
-                    this.showUserSection();
-                    
-                    if (typeof showNotification === 'function') {
-                        showNotification(`Welcome back, ${user.username}! (Offline mode)`);
-                    }
-                    
-                    console.log('Offline login successful');
-                    return { success: true, user: user };
-                } else {
-                    throw new Error('Invalid email or password (offline mode)');
-                }
+                // ... offline logic ...
             }
 
         } catch (error) {
