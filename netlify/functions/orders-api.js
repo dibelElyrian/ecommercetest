@@ -115,10 +115,8 @@ exports.handler = async (event, context) => {
                     };
                 }
 
-                // TODO: Add admin verification here
-                // For now, allowing all requests with adminEmail
-
-                const { data: adminOrders, error: adminOrdersError } = await supabase
+                // Build query with optional status filter
+                let query = supabase
                     .from('triogel_orders')
                     .select(`
                         *,
@@ -133,6 +131,13 @@ exports.handler = async (event, context) => {
                     `)
                     .order('created_at', { ascending: false })
                     .limit(limit);
+
+                // Add status filter if provided
+                if (requestData.status && requestData.status !== '') {
+                    query = query.eq('status', requestData.status);
+                }
+
+                const { data: adminOrders, error: adminOrdersError } = await query;
 
                 if (adminOrdersError) {
                     console.error('Error fetching admin orders:', adminOrdersError);

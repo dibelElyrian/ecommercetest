@@ -124,9 +124,6 @@ class TriogelAuth {
                             // If not verified, sign out and show verification
                             if (userProfile && userProfile.email_verified === false) {
                                 await this.logout();
-                                if (typeof showNotification === 'function') {
-                                    showNotification('Your email is not verified. Please verify to continue.', 'error');
-                                }
                                 if (typeof showOtpModal === 'function') {
                                     showOtpModal(userProfile.email, response.timeRemaining);
                                 }
@@ -320,29 +317,7 @@ class TriogelAuth {
                     throw new Error(response.message || 'Registration failed');
                 }
             } else {
-                // Offline fallback - save to localStorage
-                const offlineUser = {
-                    id: Date.now(), // Temporary ID for offline users
-                    username: registrationData.username,
-                    email: registrationData.email,
-                    favorite_game: registrationData.favorite_game,
-                    created_at: new Date().toISOString(),
-                    offline: true // Mark as offline registration
-                };
 
-                // Store in offline queue for later sync
-                this.storeOfflineRegistration(registrationData);
-                
-                this.currentUser = offlineUser;
-                this.saveUserSession(offlineUser);
-                this.showUserSection();
-                
-                if (typeof showNotification === 'function') {
-                    showNotification(`Welcome, ${offlineUser.username}! (Offline mode - will sync when online)`);
-                }
-                
-                console.log('Offline registration successful');
-                return { success: true, user: offlineUser };
             }
 
         } catch (error) {
@@ -376,22 +351,21 @@ class TriogelAuth {
                     this.saveUserSession(response.user);
                     this.showUserSection();
 
-                    // ... admin logic ...
+                    // --- Ensure admin controls are shown immediately after login ---
+                    if (await this.isAdmin()) {
+                        await this.showAdminControls();
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome, Admin ${response.user.username}!`);
+                        }
+                    } else {
+                        this.hideAdminControls();
+                        if (typeof showNotification === 'function') {
+                            showNotification(`Welcome to TRIOGEL, ${response.user.username}!`);
+                        }
+                    }
 
                     console.log('Database login successful');
                     return { success: true, user: response.user };
-                } else if (response.error === 'Email not verified') {
-                    // Show verification modal
-                    if (typeof showNotification === 'function') {
-                        showNotification(response.message, 'error');
-                    }
-                    if (typeof showOtpModal === 'function') {
-                        showOtpModal(response.email, response.timeRemaining);
-                    }
-                    
-                    const error = new Error(response.message);
-                    error.timeRemaining = response.timeRemaining;
-                    throw error;
                 } else {
                     throw new Error(response.message || 'Login failed');
                 }
@@ -401,6 +375,12 @@ class TriogelAuth {
 
         } catch (error) {
             console.error('Login error:', error);
+
+            // Show OTP modal if error is due to unverified email
+            if (error.error === 'Email not verified' && typeof showOtpModal === 'function') {
+                showOtpModal(error.email, error.timeRemaining);
+            }
+
             throw error;
         }
     }

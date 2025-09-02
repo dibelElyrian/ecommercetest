@@ -101,6 +101,7 @@ async function sendEmail(targetMails, code) {
     }
 }
 // OTP verification handler
+// OTP verification handler
 async function handleVerifyOtp(email, otp) {
     try {
         const { data: user, error } = await supabase
@@ -111,7 +112,6 @@ async function handleVerifyOtp(email, otp) {
             .eq('email_verified', false)
             .single();
 
-        // Place your logs here:
         console.log('Current UTC:', new Date().toISOString());
         if (user) {
             console.log('OTP expiry UTC:', user.verification_expires_at);
@@ -123,16 +123,41 @@ async function handleVerifyOtp(email, otp) {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Invalid or expired code' }) };
         }
 
+        // Mark email as verified
         await supabase
             .from('triogel_users')
             .update({
                 email_verified: true,
                 verification_code: null,
-                verification_expires_at: null
+                verification_expires_at: null,
+                last_login: new Date().toISOString(),
+                session_active: true
             })
             .eq('id', user.id);
 
-        return { statusCode: 200, headers, body: JSON.stringify({ success: true, message: 'Email verified' }) };
+        // Fetch updated user data
+        const { data: updatedUser, error: fetchError } = await supabase
+            .from('triogel_users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+
+        if (fetchError || !updatedUser) {
+            return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: 'Failed to fetch user after verification' }) };
+        }
+
+        // Remove sensitive fields
+        const { password_hash, verification_code, verification_expires_at, ...userResponse } = updatedUser;
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                success: true,
+                message: 'Email verified and user logged in',
+                user: userResponse
+            })
+        };
     } catch (error) {
         return { statusCode: 500, headers, body: JSON.stringify({ success: false, message: error.message }) };
     }
@@ -309,9 +334,22 @@ async function handleLogin(credentials) {
 
         const user = users[0];
 
+        const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+        if (!passwordMatch) {
+            return {
+                statusCode: 401,
+                headers,
+                body: JSON.stringify({
+                    error: 'Invalid credentials',
+                    message: 'Invalid email or password'
+                })
+            };
+        }
+
         // Block login if email not verified
         if (!user.email_verified) {
-            const nowUtc = Date.now(); // ms since epoch, UTC
+            const nowUtc = Date.now();
             const expiryUtc = user.verification_expires_at ? new Date(user.verification_expires_at).getTime() : 0;
             let secondsLeft = 0;
             if (expiryUtc > nowUtc) {
@@ -340,20 +378,6 @@ async function handleLogin(credentials) {
                     message: 'Your email is not verified. Please verify your email to log in.',
                     email: user.email,
                     timeRemaining: secondsLeft
-                })
-            };
-        }
-
-        // Verify password
-        const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
-        if (!passwordMatch) {
-            return {
-                statusCode: 401,
-                headers,
-                body: JSON.stringify({
-                    error: 'Invalid credentials',
-                    message: 'Invalid email or password'
                 })
             };
         }
@@ -398,7 +422,6 @@ async function handleLogin(credentials) {
         };
     }
 }
-
 // Handle session update
 async function handleSessionUpdate(userId, sessionData) {
     try {

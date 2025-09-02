@@ -66,6 +66,7 @@ body {
     z-index: 1;
     background: var(--dark-bg);
     transition: height 0.3s, padding 0.3s;
+    user-select: none;
 }
 
 .cart-button,
@@ -127,6 +128,11 @@ body {
     margin-bottom: 50px;
     position: relative;
     top: 80px;
+    user-select: none;
+}
+
+#adminModal, #profileModal, #orderHistoryModal, #cartModal, #checkoutModal {
+    user-select: none;
 }
 
 .header {
@@ -1684,6 +1690,7 @@ button.account-btn {
     margin-top: 80px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
+    user-select: none;
 }
 
 .footer-content {
@@ -2937,6 +2944,7 @@ body.admin-mode {
     box-shadow: 0 8px 32px rgba(102,126,234,0.08);
     text-align: center;
     position: relative;
+    user-select: none;
 }
 .how-title {
     font-size: 2.5rem;
@@ -3027,35 +3035,36 @@ body.admin-mode {
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     font-size: 1rem;
     gap: 18px;
+    user-select: none;
 }
 
-    .trust-bar .trust-badge {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        color: var(--success-green);
-    }
+.trust-bar .trust-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    color: var(--success-green);
+}
 
-        .trust-bar .trust-badge img {
-            height: 32px;
-            width: 32px;
-        }
+.trust-bar .trust-badge img {
+    height: 32px;
+    width: 32px;
+}
 
-    .trust-bar .trust-legal {
-        color: var(--accent-blue);
-        font-weight: 600;
-    }
+.trust-bar .trust-legal {
+    color: var(--accent-blue);
+    font-weight: 600;
+}
 
-    .trust-bar .trust-contact {
-        color: var(--text-secondary);
-        font-size: 0.98rem;
-    }
+.trust-bar .trust-contact {
+    color: var(--text-secondary);
+    font-size: 0.98rem;
+}
 
-    .trust-bar a {
-        color: var(--accent-blue);
-        text-decoration: underline;
-    }
+.trust-bar a {
+    color: var(--accent-blue);
+    text-decoration: underline;
+}
 
 /* Testimonials Section Styles */
 .testimonials {
@@ -3066,6 +3075,7 @@ body.admin-mode {
     padding: 32px 24px;
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     text-align: center;
+    user-select: none;
 }
 
 .testimonials-title {
@@ -3303,4 +3313,52 @@ body.admin-mode {
 .user-order-payment,
 .user-order-notes {
     text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+/* Ensure all admin modal content uses readable text colors */
+.admin-modal,
+.admin-content,
+.admin-content-area,
+.admin-tab-content,
+.admin-orders-list,
+.admin-order-item,
+.admin-order-header,
+.admin-order-details,
+.admin-order-id,
+.admin-order-status,
+.admin-order-total,
+.admin-items-list,
+.admin-item,
+.admin-item-info,
+.admin-item-name,
+.admin-item-game,
+.admin-item-price,
+.admin-item-rarity,
+.admin-customers-list,
+.admin-customer-item,
+.admin-customer-email,
+.admin-customer-username,
+.admin-customer-stats,
+.admin-customer-stat,
+.admin-customer-dates,
+.admin-analytics-grid,
+.admin-stat-card,
+.admin-status-breakdown,
+.admin-section-header h3,
+.admin-error,
+.admin-empty,
+.admin-table th,
+.admin-table td {
+    color: var(--text-primary);
+}
+
+/* Use secondary color for less important details */
+.admin-order-details,
+.admin-customer-username,
+.admin-customer-dates,
+.admin-stat-card .stat-label,
+.admin-customer-stat .stat-label,
+.status-bar span,
+.admin-empty {
+    color: var(--text-secondary);
 }

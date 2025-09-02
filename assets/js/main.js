@@ -66,6 +66,43 @@ essentialFunctions.forEach(funcName => {
     }
 });
 
+window.filterOrders = async function () {
+    const status = document.getElementById('orderStatusFilter').value;
+    const ordersList = document.getElementById('adminOrdersList');
+    if (ordersList) {
+        ordersList.innerHTML = '<div class="loading">Loading orders...</div>';
+    }
+
+    try {
+        const currentUser = window.TriogelAuth?.getCurrentUser();
+        if (!currentUser) {
+            if (ordersList) ordersList.innerHTML = '<div class="admin-error">Not logged in</div>';
+            return;
+        }
+
+        // Fetch filtered orders from Supabase via Netlify function
+        const response = await fetch('/.netlify/functions/orders-api', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'get_admin_orders',
+                adminEmail: currentUser.email,
+                status: status || undefined, // send undefined for "All Orders"
+                limit: 100
+            })
+        });
+
+        const data = await response.json();
+        if (data.success && Array.isArray(data.orders)) {
+            displayAdminOrders(data.orders);
+        } else {
+            if (ordersList) ordersList.innerHTML = '<div class="admin-error">Failed to load orders</div>';
+        }
+    } catch (error) {
+        if (ordersList) ordersList.innerHTML = '<div class="admin-error">Error loading orders</div>';
+    }
+};
+
 // Define modal functions immediately
 window.openCart = function() {
     try {
@@ -542,8 +579,73 @@ window.refreshExchangeRates = function() {
     fetchLiveExchangeRates();
 };
 
-// NEW: Helper functions for dynamic modal creation
 function createAdminModal() {
+    // Only add styles once
+    if (!document.getElementById('adminModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'adminModalStyles';
+        style.textContent = `
+        .admin-modal {
+            position: fixed; top:0; left:0; width:100vw; height:100vh;
+            background: rgba(24,28,38,0.85); z-index:9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .admin-content {
+            background: rgba(34,38,54,0.95);
+            border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            padding: 2.5rem 2rem; max-width: 900px; width: 98vw;
+            min-height: 540px; display: flex; flex-direction: column;
+            animation: adminFadeIn 0.3s;
+        }
+        @keyframes adminFadeIn { from { opacity:0; transform:scale(0.97);} to { opacity:1; transform:scale(1);} }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+        .admin-header h2 { font-size: 2rem; color: #f1c40f; margin: 0; }
+        .admin-controls { display: flex; align-items: center; gap: 1rem; }
+        .admin-level-badge { background: #23272f; color: #f1c40f; border-radius: 6px; padding: 0.3rem 1rem; font-weight: 600; font-size: 1rem; }
+        .admin-btn { background: #e67e22; color: #fff; border: none; border-radius: 6px; padding: 0.5rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .admin-btn:hover { background: #f1c40f; color: #23272f; }
+        .refresh-btn { background: #23272f; color: #e67e22; border: 1px solid #e67e22; }
+        .refresh-btn:hover { background: #e67e22; color: #fff; }
+        .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+        .admin-tab { background: #23272f; color: #fff; border: none; border-radius: 6px 6px 0 0; padding: 0.7rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s, color 0.2s; }
+        .admin-tab.active { background: #e67e22; color: #fff; }
+        .admin-tab:hover:not(.active) { background: #2c313c; color: #f1c40f; }
+        .admin-content-area { background: #23272f; border-radius: 0 0 12px 12px; padding: 1.2rem; flex: 1; overflow-y: auto; }
+        .admin-tab-content { display: none; }
+        .admin-tab-content.active { display: block; }
+        .admin-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .admin-section-header h3 { color: #f1c40f; margin: 0; font-size: 1.2rem; }
+        .admin-filters select { background: #23272f; color: #fff; border: 1px solid #e67e22; border-radius: 4px; padding: 0.3rem 0.7rem; }
+        .admin-orders-list, .admin-items-list, .admin-users-list, .admin-analytics { margin-top: 0.5rem; }
+        .admin-order-item, .admin-item, .admin-user-item { background: #2c313c; border-radius: 8px; margin-bottom: 0.7rem; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .order-header { display: flex; justify-content: space-between; align-items: center; }
+        .order-status { font-weight: 600; border-radius: 4px; padding: 0.2rem 0.7rem; }
+        .status-pending { background: #f1c40f22; color: #f1c40f; }
+        .status-processing { background: #3498db22; color: #3498db; }
+        .status-completed { background: #2ecc4022; color: #2ecc40; }
+        .status-cancelled { background: #e74c3c22; color: #e74c3c; }
+        .admin-order-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
+        .admin-btn.processing-btn { background: #3498db; }
+        .admin-btn.completed-btn { background: #2ecc40; }
+        .admin-btn.cancel-btn { background: #e74c3c; }
+        .admin-btn.add-btn { background: #27ae60; }
+        .admin-btn.add-btn:hover { background: #2ecc40; }
+        .loading { color: #aaa; text-align: center; padding: 1.2rem 0; }
+        .admin-empty, .admin-error { color: #e74c3c; text-align: center; padding: 1rem 0; }
+        @media (max-width: 700px) {
+            .admin-content { padding: 1rem 0.2rem; min-width: 0; max-width: 99vw; }
+            .admin-header h2 { font-size: 1.3rem; }
+            .admin-tabs { flex-wrap: wrap; }
+            .admin-content-area { padding: 0.5rem; }
+        }
+        .modal-content .close {
+            position: absolute; top: 18px; right: 22px; font-size: 1.5rem;
+            color: #f1c40f; cursor: pointer; background: none; border: none;
+        }
+        `;
+        document.head.appendChild(style);
+    }
+
     const modal = document.createElement('div');
     modal.id = 'adminModal';
     modal.className = 'modal admin-modal';
@@ -551,25 +653,23 @@ function createAdminModal() {
         <div class="modal-content admin-content">
             <span class="close" onclick="closeAdminPanel()">&times;</span>
             <div class="admin-header">
-                <h2>Admin Panel</h2>
+                <h2><span style="vertical-align:middle;">&#9881;</span> Admin Panel</h2>
                 <div class="admin-controls">
-                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">Refresh</button>
+                    <button onclick="refreshAdminData()" class="admin-btn refresh-btn">&#x21bb; Refresh</button>
                     <div class="admin-level-badge" id="adminLevelBadge">Admin</div>
                 </div>
             </div>
-            
             <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="orders">Orders</button>
-                <button class="admin-tab" data-tab="items">Items</button>
-                <button class="admin-tab" data-tab="users">Users</button>
-                <button class="admin-tab" data-tab="analytics">Analytics</button>
+                <button class="admin-tab active" data-tab="orders">&#128179; Orders</button>
+                <button class="admin-tab" data-tab="items">&#128722; Items</button>
+                <button class="admin-tab" data-tab="users">&#128100; Users</button>
+                <button class="admin-tab" data-tab="analytics">&#128202; Analytics</button>
             </div>
-            
             <div class="admin-content-area">
                 <!-- Orders Tab -->
                 <div class="admin-tab-content active" id="admin-orders">
                     <div class="admin-section-header">
-                        <h3>Order Management</h3>
+                        <h3>&#128179; Order Management</h3>
                         <div class="admin-filters">
                             <select id="orderStatusFilter" onchange="filterOrders()">
                                 <option value="">All Orders</option>
@@ -584,32 +684,29 @@ function createAdminModal() {
                         <div class="loading">Loading orders...</div>
                     </div>
                 </div>
-                
                 <!-- Items Tab -->
                 <div class="admin-tab-content" id="admin-items">
                     <div class="admin-section-header">
-                        <h3>Item Management</h3>
+                        <h3>&#128722; Item Management</h3>
                         <button onclick="openAddItemModal()" class="admin-btn add-btn">+ Add New Item</button>
                     </div>
                     <div id="adminItemsList" class="admin-items-list">
                         <div class="loading">Loading items...</div>
                     </div>
                 </div>
-                
-                <!-- Customers Tab -->
+                <!-- Users Tab -->
                 <div class="admin-tab-content" id="admin-users">
                     <div class="admin-section-header">
-                        <h3>Customer Management</h3>
+                        <h3>&#128100; Customer Management</h3>
                     </div>
                     <div id="adminUsersList" class="admin-users-list">
                         <div class="loading">Loading users...</div>
                     </div>
                 </div>
-                
                 <!-- Analytics Tab -->
                 <div class="admin-tab-content" id="admin-analytics">
                     <div class="admin-section-header">
-                        <h3>Analytics Dashboard</h3>
+                        <h3>&#128202; Analytics Dashboard</h3>
                     </div>
                     <div id="adminAnalytics" class="admin-analytics">
                         <div class="loading">Loading analytics...</div>
@@ -619,20 +716,15 @@ function createAdminModal() {
         </div>
     `;
     document.body.appendChild(modal);
-    
-    // Add tab switching functionality
+
+    // Tab switching functionality
     const tabs = modal.querySelectorAll('.admin-tab');
     const contents = modal.querySelectorAll('.admin-tab-content');
-    
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
             const targetTab = tab.dataset.tab;
-            
-            // Remove active class from all tabs and contents
             tabs.forEach(t => t.classList.remove('active'));
             contents.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding content
             tab.classList.add('active');
             document.getElementById(`admin-${targetTab}`).classList.add('active');
         });
@@ -790,12 +882,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 closeLoginModal();
             } catch (err) {
                 showNotification(err.message, 'error');
-                // If error is about email not verified, show OTP modal
-                if (err.message && err.message.toLowerCase().includes('not verified')) {
-                    if (typeof showOtpModal === 'function') {
-                        showOtpModal(email, err.timeRemaining);
-                    }
-                }
             } finally {
                 if (loginBtn) {
                     loginBtn.disabled = false;
@@ -1814,26 +1900,34 @@ function showOtpModal(email, initialSecondsLeft) {
         }
     }, 1000);
 
-    document.getElementById('otpSubmitBtn').onclick = async function () {
+    // --- UPDATED: Add loading indicator to Verify button ---
+    const otpSubmitBtn = document.getElementById('otpSubmitBtn');
+    otpSubmitBtn.onclick = async function () {
         const otp = document.getElementById('otpInput').value.trim();
         if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
             errorDisplay.textContent = 'Please enter a valid 6-digit code.';
             return;
         }
         errorDisplay.textContent = '';
-        // Call backend to verify OTP
+        otpSubmitBtn.disabled = true;
+        otpSubmitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...`;
         try {
             const result = await window.TriogelAuth.makeAuthRequest('verify_otp', { email, otp });
-            if (result.success) {
+            if (result.success && result.user) {
                 showNotification('Email verified!', 'success');
                 modal.remove();
+                window.TriogelAuth.currentUser = result.user;
                 window.TriogelAuth.saveUserSession(result.user);
                 window.TriogelAuth.showUserSection();
+                if (typeof closeLoginModal === 'function') closeLoginModal();
             } else {
                 errorDisplay.textContent = result.message || 'Invalid code. Please try again.';
             }
         } catch (err) {
             errorDisplay.textContent = err.message || 'Verification failed.';
+        } finally {
+            otpSubmitBtn.disabled = false;
+            otpSubmitBtn.innerHTML = 'Verify';
         }
     };
 
