@@ -235,16 +235,14 @@ exports.handler = async (event, context) => {
                         })
                     };
                 }
-
                 const { data: updatedOrder, error: updateError } = await supabase
                     .from('triogel_orders')
                     .update({ 
-                        order_status: newStatus,
+                        status: newStatus,
                         updated_at: new Date().toISOString()
                     })
                     .eq('order_id', updateOrderId)
-                    .select()
-                    .single();
+                    .select();
 
                 if (updateError) {
                     console.error('Error updating order status:', updateError);

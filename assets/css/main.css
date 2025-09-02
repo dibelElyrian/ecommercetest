@@ -66,7 +66,7 @@ body {
     z-index: 1;
     background: var(--dark-bg);
     transition: height 0.3s, padding 0.3s;
-    user-select: none;
+    caret-color: transparent;
 }
 
 .cart-button,
@@ -128,11 +128,11 @@ body {
     margin-bottom: 50px;
     position: relative;
     top: 80px;
-    user-select: none;
+    caret-color: transparent;
 }
 
-#adminModal, #profileModal, #orderHistoryModal, #cartModal, #checkoutModal {
-    user-select: none;
+#adminModal, #profileModal, #orderHistoryModal, #cartModal, #checkoutModal, #addItemModal, #modifyStockModal {
+    caret-color: transparent;
 }
 
 .header {
@@ -396,15 +396,22 @@ body {
 }
 
 .item-image {
-    width: 130px;
-    height: 130px;
-    border-radius: 22px;
-    margin: 0 auto 20px;
+    width: 100%;
+    height: 160px; /* or your preferred height */
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    background: #23272f;
+    border-radius: 10px;
     overflow: hidden;
+}
+
+.item-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 8px;
 }
 
 .item-icon {
@@ -1690,7 +1697,7 @@ button.account-btn {
     margin-top: 80px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
-    user-select: none;
+    caret-color: transparent;
 }
 
 .footer-content {
@@ -2944,7 +2951,7 @@ body.admin-mode {
     box-shadow: 0 8px 32px rgba(102,126,234,0.08);
     text-align: center;
     position: relative;
-    user-select: none;
+    caret-color: transparent;
 }
 .how-title {
     font-size: 2.5rem;
@@ -2995,6 +3002,17 @@ body.admin-mode {
     margin-bottom: 0;
 }
 @media (max-width: 900px) {
+
+    .analytics-row {
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+
+    .analytics-card, .analytics-card.wide {
+        min-width: 0;
+        flex: 1 1 100%;
+    }
+
     .how-steps {
         flex-direction: column;
         gap: 18px;
@@ -3035,7 +3053,7 @@ body.admin-mode {
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     font-size: 1rem;
     gap: 18px;
-    user-select: none;
+    caret-color: transparent;
 }
 
 .trust-bar .trust-badge {
@@ -3075,7 +3093,7 @@ body.admin-mode {
     padding: 32px 24px;
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     text-align: center;
-    user-select: none;
+    caret-color: transparent;
 }
 
 .testimonials-title {
@@ -3361,4 +3379,86 @@ body.admin-mode {
 .status-bar span,
 .admin-empty {
     color: var(--text-secondary);
+}
+
+/* Analytics Tab Improvements */
+.analytics-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.analytics-row {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+}
+
+.analytics-card {
+    background: #23272f;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    padding: 1.2rem 1.1rem;
+    min-width: 160px;
+    flex: 1 1 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.analytics-card.highlight {
+    background: #2c313c;
+    border: 2px solid #f1c40f;
+}
+
+.analytics-card.wide {
+    min-width: 260px;
+    flex: 2 1 320px;
+}
+
+.analytics-label {
+    font-size: 1.05rem;
+    color: #f1c40f;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.02em;
+}
+
+.analytics-value {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 0.2rem;
+}
+
+.analytics-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.2rem 0 0 0;
+}
+
+.analytics-list li {
+    font-size: 1.05rem;
+    color: #fff;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-pending {
+    color: #f1c40f;
+}
+
+.status-processing {
+    color: #3498db;
+}
+
+.status-completed {
+    color: #2ecc40;
+}
+
+.status-cancelled {
+    color: #e74c3c;
 }

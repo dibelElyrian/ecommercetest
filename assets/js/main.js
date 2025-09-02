@@ -709,9 +709,58 @@ function createAdminModal() {
                         <h3>&#128202; Analytics Dashboard</h3>
                     </div>
                     <div id="adminAnalytics" class="admin-analytics">
-                        <div class="loading">Loading analytics...</div>
+                        <div class="analytics-grid">
+                            <div class="analytics-row">
+                                <div class="analytics-card highlight">
+                                    <div class="analytics-label">Total Orders</div>
+                                    <div class="analytics-value" id="analytics-total-orders">0</div>
+                                </div>
+                                <div class="analytics-card highlight">
+                                    <div class="analytics-label">Total Sales</div>
+                                    <div class="analytics-value" id="analytics-total-sales">₱0.00</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <div class="analytics-label">Avg. Order Value</div>
+                                    <div class="analytics-value" id="analytics-average-order">₱0.00</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <div class="analytics-label">Recent Orders (7d)</div>
+                                    <div class="analytics-value" id="analytics-recent-orders">0</div>
+                                </div>
+                                <div class="analytics-card">
+                                    <div class="analytics-label">Conversion Rate</div>
+                                    <div class="analytics-value" id="analytics-conversion-rate">0%</div>
+                                </div>
+                            </div>
+                            <div class="analytics-row">
+                                <div class="analytics-card wide">
+                                    <div class="analytics-label">Order Status Breakdown</div>
+                                    <ul class="analytics-list">
+                                        <li><span class="status-pending">&#9679;</span> Pending: <span id="analytics-status-pending">0</span></li>
+                                        <li><span class="status-processing">&#9679;</span> Processing: <span id="analytics-status-processing">0</span></li>
+                                        <li><span class="status-completed">&#9679;</span> Completed: <span id="analytics-status-completed">0</span></li>
+                                        <li><span class="status-cancelled">&#9679;</span> Cancelled: <span id="analytics-status-cancelled">0</span></li>
+                                    </ul>
+                                </div>
+                                <div class="analytics-card wide">
+                                    <div class="analytics-label">Top Payment Methods</div>
+                                    <ul class="analytics-list" id="analytics-payment-methods"></ul>
+                                </div>
+                            </div>
+                            <div class="analytics-row">
+                                <div class="analytics-card wide">
+                                    <div class="analytics-label">Top Items Sold</div>
+                                    <ul class="analytics-list" id="analytics-top-items"></ul>
+                                </div>
+                                <div class="analytics-card wide">
+                                    <div class="analytics-label">Top Games Sold</div>
+                                    <ul class="analytics-list" id="analytics-top-games"></ul>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
+            <!-- End of Analytics Tab -->
             </div>
         </div>
     `;
@@ -1057,7 +1106,7 @@ async function loadAdminData() {
             console.error('User not logged in');
             return;
         }
-        
+
         // Server-side admin verification
         const isAdminUser = await window.TriogelAuth.isAdmin();
         if (!isAdminUser) {
@@ -1066,26 +1115,27 @@ async function loadAdminData() {
             closeAdminPanel();
             return;
         }
-        
+
         const adminLevel = await window.TriogelAuth.getAdminLevel();
         const permissions = await window.TriogelAuth.getAdminPermissions();
-        
+
         console.log(`Loading admin data for level ${adminLevel} user`);
-        
+
         // Update admin level badge
         const adminLevelBadge = document.getElementById('adminLevelBadge');
         if (adminLevelBadge) {
-            const levelText = adminLevel === 3 ? 'Super Admin' : 
-                             adminLevel === 2 ? 'Manager' : 'Basic Admin';
+            const levelText = adminLevel === 3 ? 'Super Admin' :
+                adminLevel === 2 ? 'Manager' : 'Basic Admin';
             adminLevelBadge.textContent = levelText;
             adminLevelBadge.className = `admin-level-badge level-${adminLevel}`;
         }
-        
+
         // Load data based on permissions
         if (permissions.canViewOrders) {
-            await loadAdminOrders();
+            // Always use the current filter value
+            await filterOrders();
         }
-        
+
         // Load items management if permitted
         if (permissions.canManageItems) {
             await loadAdminItems();
@@ -1094,7 +1144,7 @@ async function loadAdminData() {
             const itemsTab = document.querySelector('[data-tab="items"]');
             if (itemsTab) itemsTab.style.display = 'none';
         }
-        
+
         // Load customers if permitted
         if (permissions.canViewCustomers) {
             await loadAdminUsers();
@@ -1103,7 +1153,7 @@ async function loadAdminData() {
             const customersTab = document.querySelector('[data-tab="users"]');
             if (customersTab) customersTab.style.display = 'none';
         }
-        
+
         // Load analytics if permitted
         if (permissions.canAccessAnalytics) {
             await loadAdminAnalytics();
@@ -1112,9 +1162,9 @@ async function loadAdminData() {
             const analyticsTab = document.querySelector('[data-tab="analytics"]');
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
-        
+
         console.log('Admin data loaded successfully');
-        
+
     } catch (error) {
         console.error('Error loading admin data:', error);
         showNotification('Error loading admin data');
@@ -1124,50 +1174,8 @@ async function loadAdminData() {
 
 async function loadAdminOrders() {
     try {
-        const ordersList = document.getElementById('adminOrdersList');
-        if (!ordersList) return;
-        
-        ordersList.innerHTML = '<div class="loading">Loading orders...</div>';
-        
-        const currentUser = window.TriogelAuth?.getCurrentUser();
-        if (!currentUser) {
-            ordersList.innerHTML = '<div class="admin-error">Not logged in</div>';
-            return;
-        }
-        
-        const permissions = await window.TriogelAuth.getAdminPermissions();
-        
-        if (!permissions.canViewOrders) {
-            ordersList.innerHTML = '<div class="admin-error">Access denied - insufficient permissions</div>';
-            return;
-        }
-        
-        try {
-            // Try to fetch from Supabase database first
-            const response = await fetch('/.netlify/functions/orders-api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'get_admin_orders',
-                    adminEmail: currentUser.email,
-                    limit: 100
-                })
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.orders) {
-                    displayAdminOrders(data.orders);
-                    return;
-                } else {
-                    console.warn('Admin API returned error:', data.error);
-                }
-            }
-        } catch (serverError) {
-            console.log('Admin API not available, using local data:', serverError.message);
-        }    
+        // Always use the current filter value
+        await filterOrders();
     } catch (error) {
         console.error('Error loading admin orders:', error);
         const ordersList = document.getElementById('adminOrdersList');
@@ -1220,59 +1228,91 @@ function displayAdminOrders(orders) {
     try {
         const ordersList = document.getElementById('adminOrdersList');
         if (!ordersList) return;
-        
+
         if (!orders || orders.length === 0) {
             ordersList.innerHTML = '<div class="admin-empty">No orders found</div>';
             return;
         }
-        
+
         ordersList.innerHTML = orders.map(order => {
-            // Handle database format (triogel_orders)
-            const orderId = order.order_id || order.orderId;
-            const customerEmail = order.customer_email || order.email;
-            const gameUsername = order.customer_game_username || order.gameUsername;
-            const paymentMethod = order.payment_method || order.paymentMethod;
-            const orderTotal = order.order_total || order.total;
-            const orderStatus = order.order_status || order.status || 'pending';
-            const createdAt = order.created_at || order.timestamp;
+            const orderId = order.order_id;
+            const customerEmail = order.customer_email;
+            const gameUsername = order.customer_game_username;
+            const paymentMethod = order.payment_method;
+            const orderTotal = Number(order.total_amount ?? 0);
+            const orderStatus = order.status || 'pending';
+            const createdAt = order.created_at;
+            const region = order.customer_region || '';
+            const whatsapp = order.customer_whatsapp || '';
+            const notes = order.customer_notes || '';
+            const adminNotes = order.admin_notes || '';
             const orderItems = order.triogel_order_items || order.items || [];
-            
+
             return `
                 <div class="admin-order-item">
-                    <div class="order-header">
-                        <h4>Order ${orderId}</h4>
-                        <span class="order-status status-${orderStatus}">${orderStatus.toUpperCase()}</span>
+                    <div class="order-header" style="
+                        display: flex; 
+                        justify-content: space-between; 
+                        align-items: flex-start; 
+                        border-bottom: 1px solid #444; 
+                        padding-bottom: 6px; 
+                        margin-bottom: 8px;
+                    ">
+                        <div>
+                            <div style="font-size:1.1em; font-weight:700; color:#f1c40f;">
+                                #${orderId}
+                            </div>
+                            <div style="font-size:0.97em; color:#aaa;">
+                                ${customerEmail}
+                            </div>
+                            <div style="font-size:0.95em; color:#aaa;">
+                                ${gameUsername}${region ? ' &bull; ' + region : ''}
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="order-status status-${orderStatus}" style="
+                                display:inline-block; 
+                                margin-bottom:4px; 
+                                font-size:1em; 
+                                font-weight:600;
+                            ">
+                                ${orderStatus.toUpperCase()}
+                            </span>
+                            <div style="font-size:0.95em; color:#aaa;">
+                                ${new Date(createdAt).toLocaleString()}
+                            </div>
+                            <div style="font-size:0.95em; color:#aaa;">
+                                ${paymentMethod}
+                            </div>
+                        </div>
                     </div>
-                    <div class="order-details">
-                        <p><strong>Customer:</strong> ${customerEmail}</p>
-                        <p><strong>Game Username:</strong> ${gameUsername}</p>
-                        <p><strong>Total:</strong> ${formatPrice(orderTotal)}</p>
-                        <p><strong>Payment:</strong> ${paymentMethod}</p>
-                        <p><strong>Date:</strong> ${new Date(createdAt).toLocaleDateString()}</p>
+                    <div class="order-details" style="margin-bottom:8px;">
+                        <p style="margin:2px 0;"><strong>Total:</strong> ${formatPrice(orderTotal)}</p>
+                        ${whatsapp ? `<p style="margin:2px 0;"><strong>WhatsApp:</strong> ${whatsapp}</p>` : ''}
+                        ${notes ? `<p style="margin:2px 0;"><strong>Customer Notes:</strong> ${notes}</p>` : ''}
+                        ${adminNotes ? `<p style="margin:2px 0; color:#e67e22;"><strong>Admin Notes:</strong> ${adminNotes}</p>` : ''}
                     </div>
                     <div class="order-items">
-                        <h5>Items:</h5>
+                        <h5 style="margin-bottom:4px;">Items:</h5>
                         ${orderItems.map(item => {
-                            // Handle database item formats
-                            const itemName = item.item_name || item.name;
-                            const itemGame = item.item_game || item.game;
-                            const quantity = item.quantity;
-                            
-                            return `
-                                <div class="admin-order-item-detail">
-                                    ${itemName} (${itemGame.toUpperCase()}) x${quantity}
+                const itemName = item.item_name || item.name;
+                const itemGame = item.item_game || item.game;
+                const quantity = item.quantity;
+                return `
+                                <div class="admin-order-item-detail" style="font-size:0.97em; color:#fff;">
+                                    ${itemName} (${itemGame ? itemGame.toUpperCase() : ''}) x${quantity}
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
                     </div>
-                    <div class="admin-order-actions">
+                    <div class="admin-order-actions" style="margin-top:8px;">
                         <button onclick="updateOrderStatus('${orderId}', 'processing')" class="admin-btn processing-btn">Mark Processing</button>
                         <button onclick="updateOrderStatus('${orderId}', 'completed')" class="admin-btn completed-btn">Mark Completed</button>
+                        <button onclick="updateOrderStatus('${orderId}', 'cancelled')" class="admin-btn cancel-btn">Cancel Order</button>
                     </div>
                 </div>
             `;
         }).join('');
-        
     } catch (error) {
         console.error('displayAdminOrders error:', error);
         const ordersList = document.getElementById('adminOrdersList');
@@ -1281,8 +1321,6 @@ function displayAdminOrders(orders) {
         }
     }
 }
-
-// Debugging modifications - more detailed logging for item display issues
 function displayItems() {
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
@@ -1635,30 +1673,145 @@ function openAddItemModal() {
         modal = document.createElement('div');
         modal.id = 'addItemModal';
         modal.className = 'modal';
+        modal.style.zIndex = '10001';
         modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close" onclick="document.getElementById('addItemModal').style.display='none'">&times;</span>
-                <h2>Add New Item</h2>
-                <form id="addItemForm">
-                    <input type="text" id="newItemName" placeholder="Item Name" required>
-                    <input type="number" id="newItemPrice" placeholder="Price" required>
-                    <select id="newItemGame">
-                        <option value="ml">Mobile Legends</option>
-                        <option value="roblox">Roblox</option>
-                    </select>
-                    <button type="submit">Add Item</button>
+            <div class="modal-content" style="
+                background: linear-gradient(135deg, #23272f 0%, #2c313c 100%);
+                border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+                padding: 2.5rem 2rem;
+                max-width: 420px;
+                width: 98vw;
+                color: #fff;
+                position: relative;
+                animation: adminFadeIn 0.3s;
+            ">
+                <span class="close" style="
+                    position: absolute;
+                    top: 18px;
+                    right: 22px;
+                    font-size: 1.5rem;
+                    color: #f1c40f;
+                    cursor: pointer;
+                    background: none;
+                    border: none;
+                " onclick="document.getElementById('addItemModal').style.display='none'">&times;</span>
+                <h2 style="color:#f1c40f; margin-bottom:1.2rem; text-align:center;">
+                    <span style="vertical-align:middle;">&#128722;</span> Add New Item
+                </h2>
+                <form id="addItemForm" style="display:flex; flex-direction:column; gap:1rem;">
+                    <div class="form-group">
+                        <label style="color:#e67e22;">Item Name</label>
+                        <input type="text" id="newItemName" placeholder="Item Name" required style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                    </div>
+                    <div class="form-group">
+                        <label style="color:#e67e22;">Description</label>
+                        <textarea id="newItemDescription" placeholder="Description" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;"></textarea>
+                    </div>
+                    <div class="form-group" style="display:flex;gap:1rem;">
+                        <div style="flex:1;">
+                            <label style="color:#e67e22;">Price</label>
+                            <input type="number" id="newItemPrice" placeholder="Price" required style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                        </div>
+                        <div style="flex:1;">
+                            <label style="color:#e67e22;">Stock</label>
+                            <input type="number" id="newItemStock" placeholder="Stock" value="0" min="0" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="color:#e67e22;">Image URL</label>
+                        <input type="text" id="newItemImageUrl" placeholder="Image URL" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                    </div>
+                    <div class="form-group" style="display:flex;gap:1rem;">
+                        <div style="flex:1;">
+                            <label style="color:#e67e22;">Game</label>
+                            <select id="newItemGame" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                                <option value="ml">Mobile Legends</option>
+                                <option value="roblox">Roblox</option>
+                            </select>
+                        </div>
+                        <div style="flex:1;">
+                            <label style="color:#e67e22;">Rarity</label>
+                            <input type="text" id="newItemRarity" placeholder="Rarity" style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                        </div>
+                    </div>
+                    <button type="submit" style="
+                        background:#27ae60;
+                        color:#fff;
+                        border:none;
+                        border-radius:6px;
+                        padding:0.7rem 1.2rem;
+                        font-size:1.1rem;
+                        font-weight:600;
+                        cursor:pointer;
+                        transition:background 0.2s,color 0.2s;
+                    ">+ Add Item</button>
                 </form>
             </div>
         `;
         document.body.appendChild(modal);
-        document.getElementById('addItemForm').onsubmit = function (e) {
-            e.preventDefault();
-            // Add item logic here
+
+        // Clear fields when modal is closed
+        modal.querySelector('.close').onclick = function () {
             modal.style.display = 'none';
-            showNotification('Item added (demo only)', 'success');
+            document.getElementById('newItemName').value = '';
+            document.getElementById('newItemDescription').value = '';
+            document.getElementById('newItemPrice').value = '';
+            document.getElementById('newItemStock').value = '0';
+            document.getElementById('newItemImageUrl').value = '';
+            document.getElementById('newItemGame').selectedIndex = 0;
+            document.getElementById('newItemRarity').value = '';
+        };
+
+        document.getElementById('addItemForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const submitBtn = document.querySelector('#addItemForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Adding...`;
+            }
+            const itemData = {
+                name: document.getElementById('newItemName').value,
+                description: document.getElementById('newItemDescription').value,
+                price: parseFloat(document.getElementById('newItemPrice').value),
+                image_url: document.getElementById('newItemImageUrl').value,
+                game: document.getElementById('newItemGame').value,
+                rarity: document.getElementById('newItemRarity').value,
+                stock: parseInt(document.getElementById('newItemStock').value, 10),
+                active: true
+            };
+            try {
+                const response = await fetch('/.netlify/functions/admin-api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'add_item',
+                        adminEmail: window.TriogelAuth?.getCurrentUser()?.email,
+                        itemData
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Item added successfully!', 'success');
+                    modal.style.display = 'none';
+                    await fetchItems();
+                    loadAdminItems();
+                    displayItems(); // Refresh customer grid
+                } else {
+                    showNotification(result.message || 'Failed to add item', 'error');
+                }
+            } catch (err) {
+                showNotification('Error adding item', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '+ Add Item';
+                }
+            }
         };
     }
     modal.style.display = 'block';
+    modal.style.zIndex = '10001';
 }
 function loadAdminItems() {
     const itemsList = document.getElementById('adminItemsList');
@@ -1669,22 +1822,167 @@ function loadAdminItems() {
             <span>${formatPrice(item.price)}</span>
             <span>${gameNames[item.game]}</span>
             <span>${item.rarity}</span>
+            <span>Stock: ${item.stock ?? 0}</span>
+            <div class="item-footer">
+                <button onclick="openModifyStockModal(${item.id}, ${item.stock ?? 0})" class="admin-btn">Modify Quantity</button>
+            </div>
         </div>
     `).join('');
 }
-function loadAdminAnalytics() {
-    const analyticsElem = document.getElementById('adminAnalytics');
-    if (!analyticsElem) return;
-    // Example: show total sales and orders
-    let orders = [];
-    try {
-        orders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
-    } catch { }
-    const totalSales = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-    analyticsElem.innerHTML = `
-        <div><strong>Total Orders:</strong> ${orders.length}</div>
-        <div><strong>Total Sales:</strong> ${formatPrice(totalSales)}</div>
-    `;
+
+window.openModifyStockModal = function (itemId, currentStock) {
+    let modal = document.getElementById('modifyStockModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modifyStockModal';
+        modal.className = 'modal';
+        modal.style.zIndex = '10001';
+        modal.innerHTML = `
+            <div class="modal-content" style="
+                background: linear-gradient(135deg, #23272f 0%, #2c313c 100%);
+                border-radius: 16px;
+                box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+                padding: 2.5rem 2rem;
+                max-width: 350px;
+                width: 98vw;
+                color: #fff;
+                position: relative;
+                animation: adminFadeIn 0.3s;
+            ">
+                <span class="close" style="
+                    position: absolute;
+                    top: 18px;
+                    right: 22px;
+                    font-size: 1.5rem;
+                    color: #f1c40f;
+                    cursor: pointer;
+                    background: none;
+                    border: none;
+                " onclick="document.getElementById('modifyStockModal').style.display='none'">&times;</span>
+                <h2 style="color:#f1c40f; margin-bottom:1.2rem; text-align:center;">
+                    <span style="vertical-align:middle;">&#128202;</span> Modify Item Quantity
+                </h2>
+                <form id="modifyStockForm" style="display:flex; flex-direction:column; gap:1.2rem;">
+                    <div class="form-group">
+                        <label style="color:#e67e22;">New Stock Quantity</label>
+                        <input type="number" id="modifyItemStock" placeholder="New Stock" min="0" required
+                            style="width:100%;padding:0.5rem;border-radius:6px;border:1px solid #e67e22;background:#23272f;color:#fff;">
+                    </div>
+                    <button type="submit" style="
+                        background:#3498db;
+                        color:#fff;
+                        border:none;
+                        border-radius:6px;
+                        padding:0.7rem 1.2rem;
+                        font-size:1.1rem;
+                        font-weight:600;
+                        cursor:pointer;
+                        transition:background 0.2s,color 0.2s;
+                    ">Update Quantity</button>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('modifyStockForm').onsubmit = async function (e) {
+            e.preventDefault();
+            const newStock = parseInt(document.getElementById('modifyItemStock').value, 10);
+            if (isNaN(newStock) || newStock < 0) {
+                showNotification('Please enter a valid stock quantity.', 'error');
+                return;
+            }
+            // Show loading state
+            const submitBtn = document.querySelector('#modifyStockForm button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`;
+            }
+            try {
+                // Send update request to Netlify function
+                const response = await fetch('/.netlify/functions/admin-api', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'update_item',
+                        adminEmail: window.TriogelAuth?.getCurrentUser()?.email,
+                        itemId: itemId,
+                        itemData: { stock: newStock }
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Item quantity updated!', 'success');
+                    modal.style.display = 'none';
+                    await fetchItems();
+                    loadAdminItems();
+                    displayItems();
+                } else {
+                    showNotification(result.message || 'Failed to update quantity', 'error');
+                }
+            } catch (err) {
+                showNotification('Error updating item quantity', 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Update Quantity';
+                }
+            }
+        };
+    }
+    document.getElementById('modifyItemStock').value = currentStock;
+    modal.style.display = 'block';
+    modal.style.zIndex = '10001';
+}
+async function loadAdminAnalytics() {
+    const currentUser = window.TriogelAuth?.getCurrentUser();
+    const response = await fetch('/.netlify/functions/admin-api', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'get_analytics',
+            adminEmail: currentUser.email
+        })
+    });
+    const result = await response.json();
+    if (result.success && result.analytics) {
+        const a = result.analytics;
+        document.getElementById('analytics-total-orders').textContent = a.totalOrders;
+        document.getElementById('analytics-total-sales').textContent = '₱' + a.totalSales.toFixed(2);
+        document.getElementById('analytics-average-order').textContent = '₱' + a.averageOrderValue.toFixed(2);
+        document.getElementById('analytics-status-pending').textContent = a.statusCounts.pending;
+        document.getElementById('analytics-status-processing').textContent = a.statusCounts.processing;
+        document.getElementById('analytics-status-completed').textContent = a.statusCounts.completed;
+        document.getElementById('analytics-status-cancelled').textContent = a.statusCounts.cancelled;
+        document.getElementById('analytics-recent-orders').textContent = a.recentOrders;
+        document.getElementById('analytics-conversion-rate').textContent = a.conversionRate + '%';
+
+        // Payment methods
+        const pmList = document.getElementById('analytics-payment-methods');
+        pmList.innerHTML = '';
+        Object.entries(a.paymentMethods).forEach(([method, count]) => {
+            const li = document.createElement('li');
+            li.textContent = `${method}: ${count}`;
+            pmList.appendChild(li);
+        });
+
+        // Top items
+        const tiList = document.getElementById('analytics-top-items');
+        tiList.innerHTML = '';
+        a.topItems.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = `${item.name}: ${item.qty}`;
+            tiList.appendChild(li);
+        });
+
+        // Top games
+        const tgList = document.getElementById('analytics-top-games');
+        tgList.innerHTML = '';
+        a.topGames.forEach(game => {
+            const li = document.createElement('li');
+            li.textContent = `${game.game}: ${game.qty}`;
+            tgList.appendChild(li);
+        });
+    }
 }
 async function loadAdminUsers() {
     try {

@@ -214,106 +214,208 @@ exports.handler = async (event, context) => {
     }
   }
 
-  async function getAnalytics(params) {
+async function getAnalytics(params) {
     try {
-      // Get total orders and revenue
-      const { data: orderStats, error: orderError } = await supabase
-        .from('triogel_orders')
-        .select('total_amount, status, created_at');
+        // Fetch all orders
+        const { data: orders, error: ordersError } = await supabase
+            .from('triogel_orders')
+            .select('total_amount, status, payment_method, created_at');
 
-      if (orderError) throw orderError;
+        if (ordersError) throw ordersError;
 
-      // Calculate analytics
-      const totalOrders = orderStats?.length || 0;
-      const totalRevenue = orderStats?.reduce((sum, order) => sum + parseFloat(order.total_amount || 0), 0) || 0;
-      const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        // Fetch all order items
+        const { data: items, error: itemsError } = await supabase
+            .from('triogel_order_items')
+            .select('item_name, item_game, quantity');
 
-      // Status breakdown
-      const statusCounts = {
-        pending: orderStats?.filter(o => o.status === 'pending').length || 0,
-        processing: orderStats?.filter(o => o.status === 'processing').length || 0,
-        completed: orderStats?.filter(o => o.status === 'completed').length || 0,
-        cancelled: orderStats?.filter(o => o.status === 'cancelled').length || 0
-      };
+        if (itemsError) throw itemsError;
 
-      // Recent activity (last 7 days)
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
-      const recentOrders = orderStats?.filter(order => 
-        new Date(order.created_at) >= sevenDaysAgo
-      ).length || 0;
+        // Total Orders
+        const totalOrders = orders.length;
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          success: true,
-          analytics: {
-            totalOrders,
-            totalRevenue,
-            averageOrderValue,
-            statusCounts,
-            recentOrders,
-            conversionRate: totalOrders > 0 ? (statusCounts.completed / totalOrders * 100).toFixed(2) : 0
-          }
-        })
-      };
+        // Total Sales (sum of total_amount)
+        const totalSales = orders.reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+
+        // Average Order Value
+        const averageOrderValue = totalOrders ? totalSales / totalOrders : 0;
+
+        // Status Breakdown
+        const statusCounts = {
+            pending: orders.filter(o => o.status === 'pending').length,
+            processing: orders.filter(o => o.status === 'processing').length,
+            completed: orders.filter(o => o.status === 'completed').length,
+            cancelled: orders.filter(o => o.status === 'cancelled').length
+        };
+
+        // Recent Orders (last 7 days)
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const recentOrders = orders.filter(o => new Date(o.created_at) >= sevenDaysAgo).length;
+
+        // Conversion Rate (completed / total)
+        const conversionRate = totalOrders > 0 ? ((statusCounts.completed / totalOrders) * 100).toFixed(2) : "0.00";
+
+        // Payment Methods Breakdown
+        const paymentMethods = {};
+        orders.forEach(o => {
+            paymentMethods[o.payment_method] = (paymentMethods[o.payment_method] || 0) + 1;
+        });
+
+        // Top Items Sold
+        const itemCounts = {};
+        items.forEach(i => {
+            itemCounts[i.item_name] = (itemCounts[i.item_name] || 0) + (i.quantity || 0);
+        });
+        const topItems = Object.entries(itemCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, qty]) => ({ name, qty }));
+
+        // Top Games Sold
+        const gameCounts = {};
+        items.forEach(i => {
+            gameCounts[i.item_game] = (gameCounts[i.item_game] || 0) + (i.quantity || 0);
+        });
+        const topGames = Object.entries(gameCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([game, qty]) => ({ game, qty }));
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                success: true,
+                analytics: {
+                    totalOrders,
+                    totalSales,
+                    averageOrderValue,
+                    statusCounts,
+                    recentOrders,
+                    conversionRate,
+                    paymentMethods,
+                    topItems,
+                    topGames
+                }
+            })
+        };
 
     } catch (error) {
-      console.error('Error fetching analytics:', error);
-      throw error;
+        console.error('Error fetching analytics:', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                success: false,
+                error: error.message || 'Failed to fetch analytics'
+            })
+        };
     }
-  }
+}
 
-  async function addItem(params) {
+async function addItem(params) {
     try {
-      const { itemData } = params;
-      
-      // Note: In this implementation, items are stored in JavaScript array
-      // For production, you'd want to store items in the database
-      
-      console.log('Add item functionality would be implemented here');
-      console.log('Item data:', itemData);
+        const { itemData } = params;
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          success: true,
-          message: 'Item addition feature coming soon',
-          note: 'Items are currently managed in the JavaScript code'
-        })
-      };
+        // Validate required fields
+        if (!itemData || !itemData.name || !itemData.price || !itemData.game) {
+            throw new Error('Missing required item fields');
+        }
+
+        // Prepare insert data (match Supabase schema)
+        const insertData = {
+            name: itemData.name,
+            description: itemData.description || null,
+            price: itemData.price,
+            image_url: itemData.image_url || null,
+            game: itemData.game,
+            rarity: itemData.rarity || null,
+            stock: typeof itemData.stock === 'number' ? itemData.stock : 0,
+            active: typeof itemData.active === 'boolean' ? itemData.active : true,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        // Insert into Supabase items table
+        const { data, error } = await supabase
+            .from('items')
+            .insert([insertData])
+            .select();
+
+        if (error) throw error;
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                success: true,
+                item: data?.[0],
+                message: 'Item added successfully'
+            })
+        };
 
     } catch (error) {
-      console.error('Error adding item:', error);
-      throw error;
+        console.error('Error adding item:', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                success: false,
+                error: error.message || 'Failed to add item'
+            })
+        };
     }
-  }
+}
 
-  async function updateItem(params) {
+async function updateItem(params) {
     try {
-      const { itemId, itemData } = params;
-      
-      console.log('Update item functionality would be implemented here');
-      console.log('Item ID:', itemId, 'Data:', itemData);
+        const { itemId, itemData } = params;
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({
-          success: true,
-          message: 'Item update feature coming soon',
-          note: 'Items are currently managed in the JavaScript code'
-        })
-      };
+        // Validate input
+        if (!itemId || typeof itemId !== 'number' && typeof itemId !== 'string') {
+            throw new Error('Valid itemId is required');
+        }
+        if (!itemData || typeof itemData.stock !== 'number' || itemData.stock < 0) {
+            throw new Error('Valid stock value is required');
+        }
+
+        // Prepare update data
+        const updateData = {
+            stock: itemData.stock,
+            updated_at: new Date().toISOString()
+        };
+
+        // Update the item in Supabase
+        const { data, error } = await supabase
+            .from('items')
+            .update(updateData)
+            .eq('id', itemId)
+            .select();
+
+        if (error) throw error;
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({
+                success: true,
+                item: data?.[0],
+                message: 'Item stock updated successfully'
+            })
+        };
 
     } catch (error) {
-      console.error('Error updating item:', error);
-      throw error;
+        console.error('Error updating item:', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({
+                success: false,
+                error: error.message || 'Failed to update item'
+            })
+        };
     }
-  }
+}
 
   async function deleteItem(params) {
     try {
