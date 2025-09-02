@@ -1673,36 +1673,113 @@ function showOtpModal(email, initialSecondsLeft) {
     // Create modal
     const modal = document.createElement('div');
     modal.id = 'otpModal';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.width = '100vw';
-    modal.style.height = '100vh';
-    modal.style.background = 'rgba(0,0,0,0.7)';
-    modal.style.zIndex = '9999';
-    modal.style.display = 'flex';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-
+    modal.className = 'modal otp-modal';
     modal.innerHTML = `
-        <div style="background:#222;padding:2rem;border-radius:8px;text-align:center;max-width:350px;">
-            <h2>Email Verification</h2>
-            <p>Enter the 6-digit code sent to <b>${email}</b></p>
-            <input id="otpInput" type="text" maxlength="6" style="font-size:1.2rem;text-align:center;width:120px;" />
-            <br>
-            <div id="otpTimerDisplay" style="margin-top:1rem;color:#e67e22;font-weight:bold;"></div>
-            <button id="otpSubmitBtn" style="margin-top:1rem;">Verify</button>
-            <button id="otpResendBtn" style="margin-top:1rem;" disabled>Resend OTP</button>
-            <div id="otpError" style="color:#e74c3c;margin-top:1rem;"></div>
+        <div class="modal-content otp-content">
+            <span class="close" onclick="document.getElementById('otpModal').remove()">&times;</span>
+            <div class="otp-header">
+                <div class="otp-icon">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="22" stroke="#e67e22" stroke-width="4" fill="url(#otpGrad)" />
+                        <path d="M24 14v10l7 7" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="otpGrad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#e67e22"/>
+                                <stop offset="1" stop-color="#f1c40f"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h2>Email Verification</h2>
+            </div>
+            <p class="otp-desc">Enter the <b>6-digit code</b> sent to <span class="otp-email">${email}</span></p>
+            <div class="otp-input-group">
+                <input id="otpInput" type="text" maxlength="6" autocomplete="one-time-code" class="otp-input" placeholder="------" />
+            </div>
+            <div class="otp-timer-group">
+                <div id="otpTimerRing" class="otp-timer-ring"></div>
+                <div id="otpTimerDisplay" class="otp-timer-text"></div>
+            </div>
+            <div class="otp-actions">
+                <button id="otpSubmitBtn" class="otp-btn primary">Verify</button>
+                <button id="otpResendBtn" class="otp-btn secondary" disabled>Resend OTP</button>
+            </div>
+            <div id="otpError" class="otp-error"></div>
         </div>
     `;
     document.body.appendChild(modal);
 
+    // Add styles (only once)
+    if (!document.getElementById('otpModalStyles')) {
+        const style = document.createElement('style');
+        style.id = 'otpModalStyles';
+        style.textContent = `
+        .otp-modal {
+            position: fixed; top:0; left:0; width:100vw; height:100vh;
+            background: rgba(20,24,32,0.85); z-index:9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .otp-content {
+            background: linear-gradient(135deg, #23272f 0%, #2c313c 100%);
+            border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            padding: 2.5rem 2rem; max-width: 350px; width: 100%;
+            text-align: center; position: relative;
+            animation: otpFadeIn 0.3s;
+        }
+        @keyframes otpFadeIn { from { opacity:0; transform:scale(0.95);} to { opacity:1; transform:scale(1);} }
+        .otp-header { margin-bottom: 1rem; }
+        .otp-icon { margin-bottom: 0.5rem; }
+        .otp-desc { color: #f1c40f; font-size: 1.05rem; margin-bottom: 1.2rem; }
+        .otp-email { color: #fff; background: #e67e22; border-radius: 4px; padding: 2px 6px; font-weight: 500; }
+        .otp-input-group { margin-bottom: 1.2rem; }
+        .otp-input {
+            font-size: 1.6rem; text-align: center; letter-spacing: 0.35em;
+            width: 220px; max-width: 100%; min-width: 180px;
+            padding: 0.5rem 0.7rem; border-radius: 8px;
+            border: 2px solid #e67e22; background: #23272f; color: #fff;
+            outline: none; transition: border 0.2s;
+            box-sizing: border-box;
+        }
+        .otp-input:focus { border-color: #f1c40f; }
+        .otp-timer-group { display: flex; flex-direction: column; align-items: center; margin-bottom: 1.2rem; }
+        .otp-timer-ring {
+            width: 48px; height: 48px; margin-bottom: 0.2rem;
+            background: none; position: relative;
+        }
+        .otp-timer-text {
+            color: #e67e22; font-weight: bold; font-size: 1.05rem;
+        }
+        .otp-actions { display: flex; gap: 0.7rem; justify-content: center; margin-bottom: 0.8rem; }
+        .otp-btn {
+            padding: 0.5rem 1.2rem; border-radius: 6px; border: none;
+            font-size: 1rem; font-weight: 500; cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        }
+        .otp-btn.primary { background: #e67e22; color: #fff; }
+        .otp-btn.primary:hover { background: #f1c40f; color: #23272f; }
+        .otp-btn.secondary { background: #23272f; color: #e67e22; border: 1px solid #e67e22; }
+        .otp-btn.secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+        .otp-error { color: #e74c3c; min-height: 1.2em; font-size: 0.98em; }
+        .otp-content .close {
+            position: absolute; top: 16px; right: 18px; font-size: 1.5rem;
+            color: #f1c40f; cursor: pointer; background: none; border: none;
+        }
+        @media (max-width: 500px) {
+            .otp-content { padding: 1.2rem 0.5rem; max-width: 98vw; }
+            .otp-input { width: 140px; min-width: 120px; font-size: 1.2rem; letter-spacing: 0.25em; }
+        }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Timer logic with progress ring
     let secondsLeft = initialSecondsLeft;
     let timerInterval;
     const resendBtn = document.getElementById('otpResendBtn');
     const timerDisplay = document.getElementById('otpTimerDisplay');
+    const timerRing = document.getElementById('otpTimerRing');
     const errorDisplay = document.getElementById('otpError');
+    const maxSeconds = initialSecondsLeft || 60;
 
     function updateTimerDisplay() {
         if (timerDisplay) {
@@ -1712,6 +1789,19 @@ function showOtpModal(email, initialSecondsLeft) {
         }
         if (resendBtn) {
             resendBtn.disabled = secondsLeft > 0;
+        }
+        // Progress ring SVG
+        if (timerRing) {
+            const percent = Math.max(0, Math.min(1, secondsLeft / maxSeconds));
+            const radius = 22, stroke = 4, circ = 2 * Math.PI * radius;
+            timerRing.innerHTML = `
+                <svg width="48" height="48">
+                    <circle cx="24" cy="24" r="${radius}" stroke="#444" stroke-width="${stroke}" fill="none"/>
+                    <circle cx="24" cy="24" r="${radius}" stroke="#e67e22" stroke-width="${stroke}" fill="none"
+                        stroke-dasharray="${circ}" stroke-dashoffset="${circ * (1 - percent)}"
+                        style="transition: stroke-dashoffset 0.5s;" />
+                </svg>
+            `;
         }
     }
 
@@ -1726,68 +1816,55 @@ function showOtpModal(email, initialSecondsLeft) {
 
     document.getElementById('otpSubmitBtn').onclick = async function () {
         const otp = document.getElementById('otpInput').value.trim();
-        if (!otp || otp.length !== 6) {
+        if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
             errorDisplay.textContent = 'Please enter a valid 6-digit code.';
             return;
         }
-        // Call backend to verify
+        errorDisplay.textContent = '';
+        // Call backend to verify OTP
         try {
-            const res = await fetch('/.netlify/functions/user-auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'verify_otp', email, otp })
-            });
-            const result = await res.json();
+            const result = await window.TriogelAuth.makeAuthRequest('verify_otp', { email, otp });
             if (result.success) {
+                showNotification('Email verified!', 'success');
                 modal.remove();
-                showNotification('Email verified! Registration complete.', 'success');
-                // Fetch user profile and save session
-                const response = await window.TriogelAuth.makeAuthRequest('get_profile', { userId: window.TriogelAuth.currentUser.id });
-                if (response.success) {
-                    window.TriogelAuth.currentUser = response.user;
-                    window.TriogelAuth.saveUserSession(response.user);
-                    window.TriogelAuth.showUserSection();
-                }
+                window.TriogelAuth.saveUserSession(result.user);
+                window.TriogelAuth.showUserSection();
             } else {
-                errorDisplay.textContent = result.message || 'Verification failed.';
+                errorDisplay.textContent = result.message || 'Invalid code. Please try again.';
             }
         } catch (err) {
-            errorDisplay.textContent = 'Network error. Try again.';
+            errorDisplay.textContent = err.message || 'Verification failed.';
         }
     };
 
     resendBtn.onclick = async function () {
         resendBtn.disabled = true;
+        resendBtn.textContent = 'Resending...';
         errorDisplay.textContent = '';
         try {
-            const res = await fetch('/.netlify/functions/user-auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'resend_otp', email })
-            });
-            const result = await res.json();
+            const result = await window.TriogelAuth.makeAuthRequest('resend_otp', { email });
             if (result.success) {
-                // New OTP generated, reset to 180 seconds
-                secondsLeft = 180;
-                errorDisplay.textContent = 'A new code has been sent to your email.';
-            } else if (typeof result.timeRemaining === 'number') {
-                // Previous OTP still valid, use remaining time
-                secondsLeft = result.timeRemaining;
-                errorDisplay.textContent = result.message;
+                showNotification('OTP resent!', 'success');
+                secondsLeft = result.timeRemaining || maxSeconds;
+                updateTimerDisplay();
+                timerInterval = setInterval(() => {
+                    secondsLeft--;
+                    updateTimerDisplay();
+                    if (secondsLeft <= 0) {
+                        clearInterval(timerInterval);
+                    }
+                }, 1000);
             } else {
                 errorDisplay.textContent = result.message || 'Failed to resend OTP.';
             }
-            updateTimerDisplay();
-            clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                secondsLeft--;
-                updateTimerDisplay();
-                if (secondsLeft <= 0) {
-                    clearInterval(timerInterval);
-                }
-            }, 1000);
         } catch (err) {
-            errorDisplay.textContent = 'Network error. Try again.';
+            errorDisplay.textContent = err.message || 'Failed to resend OTP.';
         }
+        resendBtn.textContent = 'Resend OTP';
     };
+
+    // Focus input on open
+    setTimeout(() => {
+        document.getElementById('otpInput').focus();
+    }, 200);
 }
