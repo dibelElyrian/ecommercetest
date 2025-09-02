@@ -81,7 +81,7 @@ async function sendEmail(targetMails, code) {
         from: 'onboarding@resend.dev',
         to: ['delivered@resend.dev'],//change to targetMails when in production(need domain setup)
         subject: `Your Triogel Verification Code ${code}`,
-        html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 10 minutes.</p>`
+        html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 3 minutes.</p>`
     });
 
     if (result.error || result.statusCode >= 400) {
@@ -154,9 +154,27 @@ async function handleResendOtp(email) {
             return { statusCode: 400, headers, body: JSON.stringify({ success: false, message: 'Email already verified' }) };
         }
 
+        const nowUtc = Date.now();
+        const expiryUtc = user.verification_expires_at ? new Date(user.verification_expires_at).getTime() : 0;
+        let secondsLeft = 0;
+        if (expiryUtc > nowUtc) {
+            // OTP still valid, do NOT send new OTP
+            secondsLeft = Math.ceil((expiryUtc - nowUtc) / 1000);
+
+            return {
+                statusCode: 429,
+                headers,
+                body: JSON.stringify({
+                    success: false,
+                    message: `Please wait ${secondsLeft} seconds before requesting a new OTP.`,
+                    timeRemaining: secondsLeft
+                })
+            };
+        }
+
         // Generate new OTP
         const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString();
 
         // Update user record
         const { error: updateError } = await supabase
@@ -184,7 +202,7 @@ async function handleRegistration(userData) {
     try {
         const { username, email, password, favorite_game } = userData;
         const code = Math.floor(100000 + Math.random() * 900000).toString();
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 min expiry
+        const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 min expiry
 
         // Create Supabase Auth user
         const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -293,6 +311,26 @@ async function handleLogin(credentials) {
 
         // Block login if email not verified
         if (!user.email_verified) {
+            const nowUtc = Date.now(); // ms since epoch, UTC
+            const expiryUtc = user.verification_expires_at ? new Date(user.verification_expires_at).getTime() : 0;
+            let secondsLeft = 0;
+            if (expiryUtc > nowUtc) {
+                // OTP still valid, do NOT send new OTP
+                secondsLeft = Math.ceil((expiryUtc - nowUtc) / 1000);
+            } else {
+                // OTP expired, generate/send new OTP
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = new Date(nowUtc + 3 * 60 * 1000).toISOString();
+                await supabase
+                    .from('triogel_users')
+                    .update({
+                        verification_code: code,
+                        verification_expires_at: expiresAt
+                    })
+                    .eq('id', user.id);
+                await sendEmail(user.email, code);
+                secondsLeft = 180;
+            }
             return {
                 statusCode: 403,
                 headers,
@@ -300,7 +338,8 @@ async function handleLogin(credentials) {
                     success: false,
                     error: 'Email not verified',
                     message: 'Your email is not verified. Please verify your email to log in.',
-                    email: user.email
+                    email: user.email,
+                    timeRemaining: secondsLeft
                 })
             };
         }

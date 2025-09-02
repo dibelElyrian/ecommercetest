@@ -742,6 +742,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (registerForm) {
         registerForm.onsubmit = async function (e) {
             e.preventDefault();
+            const registerBtn = document.getElementById('registerBtn');
+            if (registerBtn) {
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating Account...`;
+            }
+
             const username = document.getElementById('registerUsername').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
@@ -751,13 +757,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 const response = await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
                 if (response && response.success && !response.user.offline) {
                     showNotification('Registration successful! Please check your email for the verification code.', 'success');
-                    showOtpModal(email);
+                    showOtpModal(email, response.timeRemaining);
                 }
                 else {
                     showNotification(response?.message || 'Registration failed', 'error');
                 }
             } catch (err) {
                 showNotification(err.message, 'error');
+            } finally {
+                if (registerBtn) {
+                    registerBtn.disabled = false;
+                    registerBtn.innerHTML = `Create Account`;
+                }
             }
         };
     }
@@ -782,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 // If error is about email not verified, show OTP modal
                 if (err.message && err.message.toLowerCase().includes('not verified')) {
                     if (typeof showOtpModal === 'function') {
-                        showOtpModal(email);
+                        showOtpModal(email, err.timeRemaining);
                     }
                 }
             } finally {
@@ -1654,7 +1665,7 @@ function generateOrderId() {
     window.crypto.getRandomValues(arr);
     return 'TRIO-' + Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
-function showOtpModal(email) {
+function showOtpModal(email, initialSecondsLeft) {
     // Remove any existing modal
     const existing = document.getElementById('otpModal');
     if (existing) existing.remove();
@@ -1679,17 +1690,44 @@ function showOtpModal(email) {
             <p>Enter the 6-digit code sent to <b>${email}</b></p>
             <input id="otpInput" type="text" maxlength="6" style="font-size:1.2rem;text-align:center;width:120px;" />
             <br>
+            <div id="otpTimerDisplay" style="margin-top:1rem;color:#e67e22;font-weight:bold;"></div>
             <button id="otpSubmitBtn" style="margin-top:1rem;">Verify</button>
-            <button id="otpResendBtn" style="margin-top:1rem;">Resend OTP</button>
+            <button id="otpResendBtn" style="margin-top:1rem;" disabled>Resend OTP</button>
             <div id="otpError" style="color:#e74c3c;margin-top:1rem;"></div>
         </div>
     `;
     document.body.appendChild(modal);
 
+    let secondsLeft = initialSecondsLeft;
+    let timerInterval;
+    const resendBtn = document.getElementById('otpResendBtn');
+    const timerDisplay = document.getElementById('otpTimerDisplay');
+    const errorDisplay = document.getElementById('otpError');
+
+    function updateTimerDisplay() {
+        if (timerDisplay) {
+            timerDisplay.textContent = secondsLeft > 0
+                ? `Resend available in ${secondsLeft}s`
+                : 'You can now resend OTP.';
+        }
+        if (resendBtn) {
+            resendBtn.disabled = secondsLeft > 0;
+        }
+    }
+
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimerDisplay();
+        if (secondsLeft <= 0) {
+            clearInterval(timerInterval);
+        }
+    }, 1000);
+
     document.getElementById('otpSubmitBtn').onclick = async function () {
         const otp = document.getElementById('otpInput').value.trim();
         if (!otp || otp.length !== 6) {
-            document.getElementById('otpError').textContent = 'Please enter a valid 6-digit code.';
+            errorDisplay.textContent = 'Please enter a valid 6-digit code.';
             return;
         }
         // Call backend to verify
@@ -1711,14 +1749,16 @@ function showOtpModal(email) {
                     window.TriogelAuth.showUserSection();
                 }
             } else {
-                document.getElementById('otpError').textContent = result.message || 'Verification failed.';
+                errorDisplay.textContent = result.message || 'Verification failed.';
             }
         } catch (err) {
-            document.getElementById('otpError').textContent = 'Network error. Try again.';
+            errorDisplay.textContent = 'Network error. Try again.';
         }
     };
 
-    document.getElementById('otpResendBtn').onclick = async function () {
+    resendBtn.onclick = async function () {
+        resendBtn.disabled = true;
+        errorDisplay.textContent = '';
         try {
             const res = await fetch('/.netlify/functions/user-auth', {
                 method: 'POST',
@@ -1727,12 +1767,27 @@ function showOtpModal(email) {
             });
             const result = await res.json();
             if (result.success) {
-                document.getElementById('otpError').textContent = 'A new code has been sent to your email.';
+                // New OTP generated, reset to 180 seconds
+                secondsLeft = 180;
+                errorDisplay.textContent = 'A new code has been sent to your email.';
+            } else if (typeof result.timeRemaining === 'number') {
+                // Previous OTP still valid, use remaining time
+                secondsLeft = result.timeRemaining;
+                errorDisplay.textContent = result.message;
             } else {
-                document.getElementById('otpError').textContent = result.message || 'Failed to resend OTP.';
+                errorDisplay.textContent = result.message || 'Failed to resend OTP.';
             }
+            updateTimerDisplay();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                secondsLeft--;
+                updateTimerDisplay();
+                if (secondsLeft <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
         } catch (err) {
-            document.getElementById('otpError').textContent = 'Network error. Try again.';
+            errorDisplay.textContent = 'Network error. Try again.';
         }
     };
 }

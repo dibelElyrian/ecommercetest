@@ -128,7 +128,7 @@ class TriogelAuth {
                                     showNotification('Your email is not verified. Please verify to continue.', 'error');
                                 }
                                 if (typeof showOtpModal === 'function') {
-                                    showOtpModal(userProfile.email);
+                                    showOtpModal(userProfile.email, response.timeRemaining);
                                 }
                                 return;
                             }
@@ -290,7 +290,7 @@ class TriogelAuth {
                     // If not verified, show OTP modal and do NOT save session
                     if (!response.user.email_verified) {
                         if (typeof showOtpModal === 'function') {
-                            showOtpModal(response.user.email);
+                            showOtpModal(response.user.email, response.timeRemaining);
                         }
                         // Optionally show notification
                         if (typeof showNotification === 'function') {
@@ -371,7 +371,6 @@ class TriogelAuth {
             if (this.isOnline) {
                 // Try database login
                 const response = await this.makeAuthRequest('login', { credentials: loginData });
-
                 if (response.success) {
                     this.currentUser = response.user;
                     this.saveUserSession(response.user);
@@ -387,9 +386,12 @@ class TriogelAuth {
                         showNotification(response.message, 'error');
                     }
                     if (typeof showOtpModal === 'function') {
-                        showOtpModal(response.email);
+                        showOtpModal(response.email, response.timeRemaining);
                     }
-                    throw new Error(response.message);
+                    
+                    const error = new Error(response.message);
+                    error.timeRemaining = response.timeRemaining;
+                    throw error;
                 } else {
                     throw new Error(response.message || 'Login failed');
                 }
@@ -504,7 +506,12 @@ class TriogelAuth {
                 } catch (e) {
                     errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
                 }
-                throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                const error = new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+                // Attach all other properties from errorData to the error object
+                Object.keys(errorData).forEach(key => {
+                    if (key !== 'message') error[key] = errorData[key];
+                });
+                throw error;
             }
 
             let result;
