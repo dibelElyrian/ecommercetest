@@ -40,7 +40,7 @@ exports.handler = async (event, context) => {
     }
 
     try {
-        const { action, userData, credentials, userId, sessionData, email, otp } = JSON.parse(event.body);
+        const { action, userData, credentials, userId, sessionData, email, otp, profileData } = JSON.parse(event.body);
         console.log('User auth action:', action);
 
         switch (action) {
@@ -56,6 +56,10 @@ exports.handler = async (event, context) => {
                 return await handleVerifyOtp(email, otp);
             case 'resend_otp':
                 return await handleResendOtp(email);
+            case 'send_password_reset':
+                return await handlePasswordReset(email);
+            case 'update_profile':
+                return await handleUpdateProfile(userId, profileData);
             default:
                 return {
                     statusCode: 400,
@@ -80,7 +84,7 @@ async function sendEmail(targetMails, code) {
     const result = await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: ['delivered@resend.dev'],//change to targetMails when in production(need domain setup)
-        subject: `Your LilyBlock Online Shop Verification Code ${code}`,
+        subject: `Your LilyBlock Online Shop Verification Code`,
         html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 3 minutes.</p>`
     });
 
@@ -100,7 +104,6 @@ async function sendEmail(targetMails, code) {
         throw new Error(errorMessage);
     }
 }
-// OTP verification handler
 // OTP verification handler
 async function handleVerifyOtp(email, otp) {
     try {
@@ -491,6 +494,156 @@ async function handleGetProfile(userId) {
                 error: 'Failed to get profile',
                 message: error.message 
             })
+        };
+    }
+}
+// Helper to send password reset email using Resend
+async function sendResetPasswordEmail(targetEmail, tempPassword) {
+    const result = await resend.emails.send({
+        from: 'onboarding@resend.dev',
+        to: ['delivered@resend.dev'], // Use targetEmail in production
+        subject: `LilyBlock Online Shop Temporary Password`,
+        html: `<p>Your temporary password is: <b>${tempPassword}</b></p>
+               <p>Use this password to log in. Please change your password immediately after logging in for security.</p>`
+    });
+
+    if (result.error || result.statusCode >= 400) {
+        let errorMessage = 'Unknown error';
+        if (result.error) {
+            if (typeof result.error === 'string') {
+                errorMessage = result.error;
+            } else if (result.error.error) {
+                errorMessage = result.error.error;
+            } else {
+                errorMessage = JSON.stringify(result.error);
+            }
+        }
+        throw new Error(errorMessage);
+    }
+}
+
+// Secure random password generator
+function generateTempPassword(length = 10) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+}
+
+// Password reset handler
+async function handlePasswordReset(email) {
+    if (!email) {
+        return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, message: 'Email required' })
+        };
+    }
+
+    // Find user by email
+    const { data: user, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+    if (fetchError || !user) {
+        return {
+            statusCode: 404,
+            headers,
+            body: JSON.stringify({ success: false, message: 'User not found' })
+        };
+    }
+
+    // Generate and hash temporary password
+    const tempPassword = generateTempPassword(10);
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
+
+    // Update user password in database
+    const { error: updateError } = await supabase
+        .from('users')
+        .update({
+            password_hash: hashedPassword
+        })
+        .eq('id', user.id);
+
+    if (updateError) {
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, message: 'Failed to update password' })
+        };
+    }
+
+    // Send email with temporary password
+    try {
+        await sendResetPasswordEmail(email, tempPassword);
+    } catch (emailError) {
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, message: 'Failed to send email: ' + emailError.message })
+        };
+    }
+
+    return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({ success: true, message: 'Temporary password sent to your email' })
+    };
+}
+// Update user profile handler
+async function handleUpdateProfile(userId, profileData) {
+    try {
+        if (!userId || !profileData) {
+            return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ success: false, message: 'Missing userId or profileData' })
+            };
+        }
+
+        // Prepare update object
+        const updateObj = {};
+        if (profileData.username) updateObj.username = profileData.username;
+        if (profileData.email) updateObj.email = profileData.email;
+        if (profileData.favorite_game) updateObj.favorite_game = profileData.favorite_game;
+
+        // Handle password change securely
+        if (profileData.newPassword && profileData.newPassword.length >= 6) {
+            const saltRounds = 10;
+            updateObj.password_hash = await bcrypt.hash(profileData.newPassword, saltRounds);
+        }
+
+        // Update user record
+        const { error } = await supabase
+            .from('users')
+            .update(updateObj)
+            .eq('id', userId);
+
+        if (error) {
+            console.error('Error updating profile:', error);
+            return {
+                statusCode: 500,
+                headers,
+                body: JSON.stringify({ success: false, message: 'Failed to update profile' })
+            };
+        }
+
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ success: true, message: 'Profile updated successfully' })
+        };
+    } catch (error) {
+        console.error('Profile update error:', error);
+        return {
+            statusCode: 500,
+            headers,
+            body: JSON.stringify({ success: false, message: error.message })
         };
     }
 }

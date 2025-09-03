@@ -202,38 +202,20 @@ window.refreshAdminData = function() {
     } catch (e) { console.error('refreshAdminData error:', e); }
 };
 
-// NEW: User Profile Modal Functions
-window.openProfileModal = function() {
-    try {
-        
-        // Check if user is logged in
-        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
-        if (!currentUser) {
-            showNotification('Please log in to view your profile');
-            openLoginModal();
-            return;
-        }
-        
-        // Check if modal exists, if not create it dynamically
-        let profileModal = document.getElementById('profileModal');
-        if (!profileModal) {
-            createProfileModal();
-            profileModal = document.getElementById('profileModal');
-        }
-        
-        // Populate profile form with current user data
-        populateProfileForm(currentUser);
-        
-        profileModal.style.display = 'block';
-        closeUserDropdown();
-    } catch (e) { console.error('openProfileModal error:', e); }
+window.openProfileModal = function () {
+    const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
+    if (!currentUser) {
+        showNotification('Please log in to view your profile');
+        openLoginModal();
+        return;
+    }
+    populateProfileForm(currentUser);
+    document.getElementById('profileModal').style.display = 'block';
+    closeUserDropdown();
 };
 
-window.closeProfileModal = function() {
-    try {
-        const profileModal = document.getElementById('profileModal');
-        if (profileModal) profileModal.style.display = 'none';
-    } catch (e) { console.error('closeProfileModal error:', e); }
+window.closeProfileModal = function () {
+    document.getElementById('profileModal').style.display = 'none';
 };
 
 // NEW: Order History Modal Functions
@@ -329,7 +311,21 @@ window.proceedToCheckout = function() {
 window.closeCheckout = function() {
     try {
         document.getElementById('checkoutModal').style.display = 'none';
-    } catch (e) { console.error('closeCheckout error:', e); }
+
+        // Reset all checkout form fields
+        const checkoutForm = document.getElementById('checkoutForm');
+        if (checkoutForm) {
+            checkoutForm.reset();
+        }
+
+        // Manually clear readonly and custom fields
+        const selectedCurrencyDisplay = document.getElementById('selectedCurrencyDisplay');
+        if (selectedCurrencyDisplay) {
+            selectedCurrencyDisplay.value = '';
+        }
+    } catch (e) {
+        console.error('closeCheckout error:', e);
+    }
 };
 
 window.addToCart = function(itemId) {
@@ -780,54 +776,6 @@ function createAdminModal() {
         });
     });
 }
-
-function createProfileModal() {
-    const modal = document.createElement('div');
-    modal.id = 'profileModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeProfileModal()">&times;</span>
-            <h2>Profile Settings</h2>
-            <form id="profileForm" class="auth-form">
-                <div class="form-group">
-                    <label>Display Name:</label>
-                    <input type="text" id="profileUsername" placeholder="Your display name" required>
-                </div>
-                <div class="form-group">
-                    <label>Email Address:</label>
-                    <input type="email" id="profileEmail" placeholder="your.email@example.com" readonly>
-                    <small style="color: var(--text-secondary);">Email cannot be changed</small>
-                </div>
-                <div class="form-group">
-                    <label>Favorite Game:</label>
-                    <select id="profileFavoriteGame">
-                        <option value="ml">Mobile Legends: Bang Bang</option>
-                        <option value="roblox">Roblox</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>New Password (leave empty to keep current):</label>
-                    <input type="password" id="profileNewPassword" placeholder="New password">
-                </div>
-                <div class="form-group">
-                    <label>Confirm New Password:</label>
-                    <input type="password" id="profileConfirmPassword" placeholder="Confirm new password">
-                </div>
-                <button type="submit" class="auth-btn">Update Profile</button>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Add form handler
-    const form = document.getElementById('profileForm');
-    if (form) {
-        form.addEventListener('submit', handleProfileUpdate);
-    }
-}
-
 function createOrderHistoryModal() {
     const modal = document.createElement('div');
     modal.id = 'orderHistoryModal';
@@ -842,35 +790,6 @@ function createOrderHistoryModal() {
         </div>
     `;
     document.body.appendChild(modal);
-}
-
-function createForgotPasswordModal() {
-    const modal = document.createElement('div');
-    modal.id = 'forgotPasswordModal';
-    modal.className = 'modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close" onclick="closeForgotPassword()">&times;</span>
-            <h2>Reset Password</h2>
-            <form id="forgotPasswordForm" class="auth-form">
-                <div class="form-group">
-                    <label>Email Address:</label>
-                    <input type="email" id="forgotPasswordEmail" placeholder="Enter your email" required>
-                </div>
-                <button type="submit" class="auth-btn">Send Reset Link</button>
-                <div class="auth-links">
-                    <button type="button" class="link-btn" onclick="switchToLogin()">Back to Login</button>
-                </div>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    // Add form handler
-    const form = document.getElementById('forgotPasswordForm');
-    if (form) {
-        form.addEventListener('submit', handleForgotPassword);
-    }
 }
 
 // Initialize everything when DOM is ready
@@ -1014,6 +933,93 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         };
+    }
+
+    // Forgot Password form handler
+    const forgotPasswordForm = document.getElementById('forgotPasswordForm');
+    if (forgotPasswordForm) {
+        forgotPasswordForm.onsubmit = async function (e) {
+            e.preventDefault();
+            const emailInput = document.getElementById('forgotPasswordEmail');
+            const submitBtn = forgotPasswordForm.querySelector('.auth-btn');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<span class="spinner"></span> Sending...`;
+            }
+            try {
+                await window.LilyBlockOnlineShopAuth.sendPasswordReset(emailInput.value);
+                showNotification('Temporary password sent to your email.', 'success');
+                closeForgotPassword();
+            } catch (err) {
+                showNotification(err.message, 'error');
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `Send Temporary Password`;
+                }
+            }
+        };
+    }
+
+    const profileForm = document.getElementById('profileForm');
+    if (profileForm) {
+        profileForm.addEventListener('submit', handleProfileUpdate);
+    }
+
+    // --- Order Tracking Form Handler ---
+    const trackingForm = document.getElementById('trackingForm');
+    if (trackingForm) {
+        trackingForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const orderId = document.getElementById('orderId').value.trim();
+            orderResult.style.display = 'none';
+            orderStatus.textContent = '';
+            orderItemsList.innerHTML = '';
+            customerSummary.innerHTML = '';
+
+            if (!orderId) {
+                orderStatus.textContent = 'Please enter a valid Order ID.';
+                orderResult.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/.netlify/functions/track-order?orderId=${encodeURIComponent(orderId)}`);
+
+                if (response.status === 404 || (data && data.success === false)) {
+                    orderStatus.textContent = 'Order not found. Please check your Order ID and try again.';
+                    orderResult.style.display = 'block';
+                    return;
+                }
+
+                if (!response.ok) {
+                    orderStatus.textContent = 'An error occurred. Please try again later.';
+                    orderResult.style.display = 'block';
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Show order details
+                if (data.orders && data.orders.length > 0) {
+                    const order = data.orders[0];
+                    orderStatus.textContent = `Status: ${order.status}`;
+                    orderItemsList.innerHTML = order.items.map(item =>
+                        `<div>${item.quantity} × ${item.name} (${item.game}) - ₱${item.subtotal.toFixed(2)}</div>`
+                    ).join('');
+                    customerSummary.innerHTML = `
+                        <div>Order ID: ${order.orderId}</div>
+                        <div>Game Username: ${order.gameUsername}</div>
+                        <div>Order Date: ${new Date(order.orderDate).toLocaleString()}</div>
+                        <div>Total Amount: ₱${order.totalAmount.toFixed(2)}</div>
+                    `;
+                    orderResult.style.display = 'block';
+                }
+            } catch (err) {
+                orderStatus.textContent = 'Unable to connect to server. Please try again later.';
+                orderResult.style.display = 'block';
+            }
+        });
     }
 
     //Mobile Design
@@ -1586,24 +1592,53 @@ function populateProfileForm(user) {
     if (!user) return;
     document.getElementById('profileUsername').value = user.username || '';
     document.getElementById('profileEmail').value = user.email || '';
-    document.getElementById('profileFavoriteGame').value = user.favoriteGame || 'ml';
+    document.getElementById('profileFavoriteGame').value = user.favorite_game || 'ml';
+    document.getElementById('profileNewPassword').value = '';
+    document.getElementById('profileConfirmPassword').value = '';
 }
-function handleProfileUpdate(event) {
+// Handle profile update form submission
+async function handleProfileUpdate(event) {
     event.preventDefault();
-    // Collect form data
-    const username = document.getElementById('profileUsername').value;
+
+    const username = document.getElementById('profileUsername').value.trim();
+    const email = document.getElementById('profileEmail').value.trim();
+    const favorite_game = document.getElementById('profileFavoriteGame').value;
     const newPassword = document.getElementById('profileNewPassword').value;
     const confirmPassword = document.getElementById('profileConfirmPassword').value;
-    const favoriteGame = document.getElementById('profileFavoriteGame').value;
-    // Basic validation
-    if (newPassword && newPassword !== confirmPassword) {
-        showNotification('Passwords do not match', 'error');
-        return;
+
+    // Prepare profileData for auth.js
+    const profileData = {
+        username,
+        email,
+        favorite_game,
+        newPassword,
+        confirmPassword
+    };
+
+    // Show loading state
+    const submitBtn = document.querySelector('#profileForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Updating...';
     }
-    // Update user profile (assume LilyBlockOnlineShopAuth has updateProfile)
-    window.LilyBlockOnlineShopAuth.updateProfile({ username, newPassword, favoriteGame })
-        .then(() => showNotification('Profile updated!', 'success'))
-        .catch(() => showNotification('Failed to update profile', 'error'));
+
+    try {
+        const response = await window.LilyBlockOnlineShopAuth.updateProfile(profileData);
+
+        if (response.success) {
+            showNotification('Profile updated!', 'success');
+            setTimeout(() => closeProfileModal(), 1200);
+        } else {
+            showNotification(response.message || 'Failed to update profile', 'error');
+        }
+    } catch (err) {
+        showNotification(err.message || 'Failed to update profile', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Update Profile';
+        }
+    }
 }
 async function loadOrderHistory(user) {
     const historyContent = document.getElementById('orderHistoryContent');
@@ -1656,18 +1691,6 @@ async function loadOrderHistory(user) {
     } catch (err) {
         historyContent.innerHTML = '<div class="no-user-orders">Failed to load orders.</div>';
     }
-}
-function handleForgotPassword(event) {
-    event.preventDefault();
-    const email = document.getElementById('forgotPasswordEmail').value;
-    if (!email) {
-        showNotification('Please enter your email', 'error');
-        return;
-    }
-    // Assume LilyBlockOnlineShopAuth has sendPasswordReset
-    window.LilyBlockOnlineShopAuth.sendPasswordReset(email)
-        .then(() => showNotification('Reset link sent!', 'success'))
-        .catch(() => showNotification('Failed to send reset link', 'error'));
 }
 function openAddItemModal() {
     let modal = document.getElementById('addItemModal');
@@ -2220,6 +2243,7 @@ function showOtpModal(email, initialSecondsLeft) {
                 window.LilyBlockOnlineShopAuth.saveUserSession(result.user);
                 window.LilyBlockOnlineShopAuth.showUserSection();
                 if (typeof closeLoginModal === 'function') closeLoginModal();
+                if (typeof closeRegisterModal === 'function') closeRegisterModal();
             } else {
                 errorDisplay.textContent = result.message || 'Invalid code. Please try again.';
             }

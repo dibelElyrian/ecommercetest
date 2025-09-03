@@ -636,6 +636,67 @@ class LilyBlockOnlineShopAuth {
             overlay.remove();
         };
     }
+    /**
+    * Send password reset email (sends a temporary password)
+    */
+    async sendPasswordReset(email) {
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            throw new Error('Please enter a valid email address');
+        }
+        // Call backend API
+        const response = await this.makeAuthRequest('send_password_reset', { email: email.toLowerCase() });
+        if (!response.success) {
+            throw new Error(response.message || 'Failed to send reset password');
+        }
+        return true;
+    }
+    /**
+    * Update user profile
+    */
+    async updateProfile(profileData) {
+        // Validate required fields
+        if (!this.currentUser || !this.currentUser.id) {
+            throw new Error('User not logged in');
+        }
+        if (!profileData.username || !profileData.email || !profileData.favorite_game) {
+            throw new Error('All fields except password are required');
+        }
+        if (profileData.newPassword && profileData.newPassword.length < 6) {
+            throw new Error('Password must be at least 6 characters');
+        }
+        if (profileData.newPassword && profileData.confirmPassword && profileData.newPassword !== profileData.confirmPassword) {
+            throw new Error('Passwords do not match');
+        }
+
+        // Prepare payload for API
+        const payload = {
+            userId: this.currentUser.id,
+            profileData: {
+                username: profileData.username,
+                email: profileData.email,
+                favorite_game: profileData.favorite_game
+            }
+        };
+        if (profileData.newPassword) {
+            payload.profileData.newPassword = profileData.newPassword;
+        }
+
+        // Call API
+        const response = await this.makeAuthRequest('update_profile', payload);
+
+        if (response.success) {
+            // Update local user data
+            this.currentUser.username = profileData.username;
+            this.currentUser.email = profileData.email;
+            this.currentUser.favorite_game = profileData.favorite_game;
+            this.saveUserSession(this.currentUser);
+            this.showUserSection();
+        }
+
+        return response;
+    }
 }
 
 // Create global authentication instance

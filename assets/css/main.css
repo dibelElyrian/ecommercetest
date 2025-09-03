@@ -66,7 +66,6 @@ body {
     z-index: 1;
     background: var(--dark-bg);
     transition: height 0.3s, padding 0.3s;
-    caret-color: transparent;
 }
 
 .cart-button,
@@ -128,11 +127,6 @@ body {
     margin-bottom: 50px;
     position: relative;
     top: 80px;
-    caret-color: transparent;
-}
-
-#adminModal, #profileModal, #orderHistoryModal, #cartModal, #checkoutModal, #addItemModal, #modifyStockModal {
-    caret-color: transparent;
 }
 
 .header {
@@ -570,15 +564,33 @@ body {
     position: absolute;
     top: 25px;
     right: 30px;
-    font-size: 35px;
-    cursor: pointer;
+    font-size: 2.2rem;
+    font-weight: 700;
     color: var(--text-secondary);
-    transition: all 0.3s ease;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
+    box-shadow: none;
+    outline: none;
 }
 
-.close:hover {
+.close:hover,
+.close:focus {
     color: var(--roblox-red);
-    transform: scale(1.1);
+    background: rgba(255, 51, 51, 0.08);
+    transform: scale(1.12);
+}
+
+.close:active {
+    background: rgba(255, 51, 51, 0.18);
+    transform: scale(0.98);
 }
 
 .modal h2 {
@@ -1697,7 +1709,6 @@ button.account-btn {
     margin-top: 80px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     position: relative;
-    caret-color: transparent;
 }
 
 .footer-content {
@@ -2767,7 +2778,7 @@ body.admin-mode {
     to { transform: translateX(0); opacity: 1; }
 }
 
-/* Enhanced Cart Modal Styles */
+/* --- Enhanced Cart Modal Styles --- */
 .cart-modal-content {
     background: #13132a;
     border-radius: 28px;
@@ -2778,6 +2789,7 @@ body.admin-mode {
     box-shadow: 0 12px 40px rgba(102,126,234,0.08);
     color: #fff;
 }
+
 .cart-modal-title {
     font-size: 2.5rem;
     font-weight: 900;
@@ -2788,9 +2800,11 @@ body.admin-mode {
     margin-bottom: 32px;
     letter-spacing: 1px;
 }
+
 .cart-items-list {
     margin-bottom: 32px;
 }
+
 .cart-item {
     display: flex;
     align-items: center;
@@ -2799,9 +2813,11 @@ body.admin-mode {
     border-bottom: 1px solid rgba(255,255,255,0.08);
     transition: background 0.2s;
 }
+
 .cart-item:last-child {
     border-bottom: none;
 }
+
 .cart-item-name {
     font-weight: 700;
     font-size: 1.08rem;
@@ -2811,12 +2827,14 @@ body.admin-mode {
     align-items: center;
     gap: 10px;
 }
+
 .cart-item-qty {
     font-size: 1rem;
     color: #a3a3a3;
     flex: 0.5;
     text-align: center;
 }
+
 .cart-item-price {
     font-weight: 700;
     font-size: 1.08rem;
@@ -2824,6 +2842,7 @@ body.admin-mode {
     flex: 1;
     text-align: right;
 }
+
 .remove-cart-btn {
     background: linear-gradient(135deg, #ff3333 0%, #ff6b6b 100%);
     color: #fff;
@@ -2840,10 +2859,12 @@ body.admin-mode {
     align-items: center;
     justify-content: center;
 }
+
 .remove-cart-btn:hover {
     background: linear-gradient(135deg, #ff6b6b 0%, #ff3333 100%);
     transform: scale(1.12);
 }
+
 .cart-total {
     font-size: 2.2rem;
     font-weight: 900;
@@ -2856,6 +2877,7 @@ body.admin-mode {
     line-height: 1.2;
     font-family: Arial, "Segoe UI", sans-serif;
 }
+
 .proceed-to-checkout-btn {
     background: linear-gradient(90deg, #667eea 0%, #f093fb 100%);
     color: #fff;
@@ -2872,10 +2894,12 @@ body.admin-mode {
     box-shadow: 0 8px 32px rgba(102,126,234,0.18);
     transition: background 0.2s, transform 0.2s;
 }
+
 .proceed-to-checkout-btn:hover {
     background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
     transform: translateY(-2px) scale(1.03);
 }
+
 @media (max-width: 600px) {
     .cart-modal-content {
         padding: 25px 10px 20px 10px;
@@ -2951,7 +2975,6 @@ body.admin-mode {
     box-shadow: 0 8px 32px rgba(102,126,234,0.08);
     text-align: center;
     position: relative;
-    caret-color: transparent;
 }
 .how-title {
     font-size: 2.5rem;
@@ -3053,7 +3076,6 @@ body.admin-mode {
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     font-size: 1rem;
     gap: 18px;
-    caret-color: transparent;
 }
 
 .trust-bar .trust-badge {
@@ -3093,7 +3115,6 @@ body.admin-mode {
     padding: 32px 24px;
     box-shadow: 0 4px 18px rgba(102,126,234,0.08);
     text-align: center;
-    caret-color: transparent;
 }
 
 .testimonials-title {
@@ -3461,4 +3482,130 @@ body.admin-mode {
 
 .status-cancelled {
     color: #e74c3c;
+}
+
+/* --- Order Tracking Modal Styles --- */
+.order-tracking-modal-content {
+    background: var(--card-bg);
+    border-radius: 28px;
+    padding: 40px 32px 32px 32px;
+    max-width: 420px;
+    margin: 60px auto;
+    position: relative;
+    box-shadow: 0 8px 32px rgba(102,126,234,0.18);
+    backdrop-filter: blur(20px);
+    color: var(--text-primary);
+}
+
+.order-tracking-header {
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.order-tracking-header .modal-logo {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.12);
+    margin-bottom: 8px;
+}
+
+.order-tracking-header h2 {
+    font-size: 2.1rem;
+    font-weight: 900;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+}
+
+.order-tracking-desc {
+    color: var(--text-secondary);
+    font-size: 1rem;
+    margin-bottom: 0;
+}
+
+.tracking-form {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.tracking-input {
+    width: 100%;
+    padding: 14px;
+    background: var(--card-bg);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    transition: border 0.2s;
+}
+
+.tracking-input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.track-btn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 14px 0;
+    border-radius: 16px;
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 1.1rem;
+    width: 100%;
+    transition: box-shadow 0.2s, transform 0.2s;
+    margin-top: 4px;
+}
+
+.track-btn:hover {
+    box-shadow: 0 8px 24px rgba(102,126,234,0.18);
+    transform: translateY(-2px);
+}
+
+.order-result {
+    background: rgba(255,255,255,0.04);
+    border-radius: 16px;
+    padding: 18px;
+    margin-top: 12px;
+    box-shadow: 0 2px 8px rgba(102,126,234,0.08);
+}
+
+.order-status {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-radius: 8px;
+    text-align: center;
+    background: linear-gradient(90deg, #a259ff 0%, #6a36fc 100%);
+    color: #fff;
+}
+
+.order-items-list {
+    margin-bottom: 10px;
+}
+
+.order-items-list div {
+    background: rgba(0,212,255,0.08);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    font-size: 0.98rem;
+    color: var(--text-primary);
+}
+
+.customer-summary {
+    font-size: 0.98rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+.customer-summary div {
+    margin-bottom: 4px;
 }

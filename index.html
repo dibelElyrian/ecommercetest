@@ -41,10 +41,9 @@
                     <span class="currency-arrow">▼</span>
                 </button>
                 <div class="currency-dropdown" id="languageDropdown">-->
-                    <!--Language options will be populated by JavaScript-->
-                <!--</div>
+            <!--Language options will be populated by JavaScript-->
+            <!--</div>
             </div>-->
-
             <!-- User Account Section -->
             <div id="loginSection" class="user-account-section">
                 <button class="account-btn login-btn" onclick="openLoginModal()">
@@ -188,13 +187,14 @@
     </div>
 
     <!-- Modals -->
-    <div id="cartModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeCart()">&times;</span>
-            <h2>Your Cart</h2>
-            <div id="cartItems"></div>
+    <!-- Cart Modal - Improved Design -->
+    <div id="cartModal" class="modal" aria-modal="true" role="dialog">
+        <div class="cart-modal-content">
+            <button class="close" type="button" aria-label="Close cart" onclick="closeCart()">&times;</button>
+            <h2 class="cart-modal-title">Your Cart</h2>
+            <div class="cart-items-list" id="cartItems"></div>
             <div class="cart-total" id="cartTotal">Total: $0.00</div>
-            <button class="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
+            <button class="proceed-to-checkout-btn" type="button" onclick="proceedToCheckout()">Proceed to Checkout</button>
         </div>
     </div>
 
@@ -242,18 +242,26 @@
                         <label>Special Instructions (Optional):</label>
                         <input type="text" id="customerNotes" placeholder="Any specific delivery instructions or questions?">
                     </div>
-                    <button type="submit" class="checkout-btn">Complete Purchase</button>
+                    <button type="submit" class="checkout-btn complete-purchase-btn">Complete Purchase</button>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Order Tracking Modal - Improved Design -->
     <div id="orderTrackingModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content order-tracking-modal-content">
             <span class="close" onclick="closeOrderTracking()">&times;</span>
-            <h2>Track Your Order</h2>
-            <form id="trackingForm" class="tracking-form">
-                <input type="text" id="orderId" class="tracking-input" placeholder="Enter your Order ID" required>
+            <div class="order-tracking-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="modal-logo">
+                <h2>Track Your Order</h2>
+                <p class="order-tracking-desc">Enter your Order ID to view your order status and details.</p>
+            </div>
+            <form id="trackingForm" class="tracking-form" autocomplete="on">
+                <div class="form-group">
+                    <label for="orderId">Order ID:</label>
+                    <input type="text" id="orderId" class="tracking-input" placeholder="e.g. TRIO-123456" required>
+                </div>
                 <button type="submit" class="track-btn">Track Order</button>
             </form>
             <div id="orderResult" class="order-result" style="display: none;">
@@ -264,21 +272,24 @@
         </div>
     </div>
 
+    <!-- Login Modal - Improved Design -->
     <div id="loginModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="background: var(--card-bg); box-shadow: 0 8px 32px rgba(102,126,234,0.18); border-radius: 32px; padding: 48px 40px 40px 40px; max-width: 420px; margin: 60px auto;">
             <span class="close" onclick="closeLoginModal()">&times;</span>
-            <h2 id="LoginToLilyBlockOnlineShopLabel">Login to LilyBlock Online Shop</h2>
-            <form id="loginForm" class="auth-form">
+            <h2 id="LoginToLilyBlockOnlineShopLabel" style="display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 32px;">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" style="width: 38px; height: 38px; margin-right: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(102,126,234,0.12);">Login to LilyBlock
+            </h2>
+            <form id="loginForm" class="auth-form" autocomplete="on" style="margin-top: 0;">
                 <div class="form-group">
-                    <label>Email Address:</label>
-                    <input type="email" id="loginEmail" placeholder="your.email@example.com" required>
+                    <label for="loginEmail">Email Address:</label>
+                    <input type="email" id="loginEmail" placeholder="your.email@example.com" required autocomplete="username" style="background: rgba(255,255,255,0.10);">
                 </div>
                 <div class="form-group">
-                    <label>Password:</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <label for="loginPassword">Password:</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password" style="background: rgba(255,255,255,0.10);">
                 </div>
-                <button type="submit" class="auth-btn">Login</button>
-                <div class="auth-links">
+                <button type="submit" class="auth-btn" style="margin-top: 10px;">Login</button>
+                <div class="auth-links" style="margin-top: 18px;">
                     <button type="button" class="link-btn" onclick="switchToRegister()">Don't have an account? Register</button>
                     <button type="button" class="link-btn" onclick="openForgotPassword()">Forgot Password?</button>
                 </div>
@@ -286,40 +297,101 @@
         </div>
     </div>
 
+    <!-- Register Modal - Improved Design -->
     <div id="registerModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="background: var(--card-bg); box-shadow: 0 8px 32px rgba(102,126,234,0.18); border-radius: 32px; padding: 48px 40px 40px 40px; max-width: 420px; margin: 60px auto;">
             <span class="close" onclick="closeRegisterModal()">&times;</span>
-            <h2 id="JoinLilyBlockOnlineShopLabel">Join LilyBlock Online Shop</h2>
-            <form id="registerForm" class="auth-form">
+            <h2 id="JoinLilyBlockOnlineShopLabel" style="display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 32px;">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" style="width: 38px; height: 38px; margin-right: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(102,126,234,0.12);">Join LilyBlock
+            </h2>
+            <form id="registerForm" class="auth-form" autocomplete="on" style="margin-top: 0;">
                 <div class="form-group">
-                    <label>Display Name:</label>
-                    <input type="text" id="registerUsername" placeholder="Your gamer name" required>
+                    <label for="registerUsername">Display Name:</label>
+                    <input type="text" id="registerUsername" placeholder="Your gamer name" required style="background: rgba(255,255,255,0.10);">
                 </div>
                 <div class="form-group">
-                    <label>Email Address:</label>
-                    <input type="email" id="registerEmail" placeholder="your.email@example.com" required>
+                    <label for="registerEmail">Email Address:</label>
+                    <input type="email" id="registerEmail" placeholder="your.email@example.com" required style="background: rgba(255,255,255,0.10);">
                 </div>
                 <div class="form-group">
-                    <label>Password:</label>
-                    <input type="password" id="registerPassword" placeholder="Create a strong password" required>
+                    <label for="registerPassword">Password:</label>
+                    <input type="password" id="registerPassword" placeholder="Create a strong password" required style="background: rgba(255,255,255,0.10);">
                 </div>
                 <div class="form-group">
-                    <label>Confirm Password:</label>
-                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                    <label for="confirmPassword">Confirm Password:</label>
+                    <input type="password" id="confirmPassword" placeholder="Confirm your password" required style="background: rgba(255,255,255,0.10);">
                 </div>
                 <div class="form-group">
-                    <label>Favorite Game:</label>
-                    <select id="favoriteGame" required>
+                    <label for="favoriteGame">Favorite Game:</label>
+                    <select id="favoriteGame" required style="background: rgba(255,255,255,0.10);">
                         <option value="">Select your main game</option>
                         <option value="ml">Mobile Legends</option>
                         <option value="roblox">Roblox</option>
                         <option value="other">Other</option>
                     </select>
                 </div>
-                <button type="submit" class="auth-btn" id="registerBtn">Create Account</button>
-                <div class="auth-links">
+                <button type="submit" class="auth-btn" id="registerBtn" style="margin-top: 10px;">Create Account</button>
+                <div class="auth-links" style="margin-top: 18px;">
                     <button type="button" class="link-btn" onclick="switchToLogin()">Already have an account? Login</button>
                 </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal - Improved Design -->
+    <div id="forgotPasswordModal" class="modal" style="display: none;">
+        <div class="modal-content" style="background: var(--card-bg); box-shadow: 0 8px 32px rgba(102,126,234,0.18); border-radius: 32px; padding: 48px 40px 40px 40px; max-width: 420px; margin: 60px auto;">
+            <span class="close" onclick="closeForgotPassword()">&times;</span>
+            <h2 id="ForgotPasswordLabel" style="display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 32px;">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" style="width: 38px; height: 38px; margin-right: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(102,126,234,0.12);">Forgot Password
+            </h2>
+            <form id="forgotPasswordForm" class="auth-form" autocomplete="on" style="margin-top: 0;">
+                <div class="form-group">
+                    <label for="forgotPasswordEmail">Email Address:</label>
+                    <input type="email" id="forgotPasswordEmail" placeholder="your.email@example.com" required autocomplete="username" style="background: rgba(255,255,255,0.10);">
+                </div>
+                <button type="submit" class="auth-btn" style="margin-top: 10px;">Send Temporary Password</button>
+                <div class="auth-links" style="margin-top: 18px;">
+                    <button type="button" class="link-btn" onclick="switchToLogin()">Back to Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal" style="display:none;">
+        <div class="modal-content" style="background: var(--card-bg); box-shadow: 0 8px 32px rgba(102,126,234,0.18); border-radius: 32px; padding: 48px 40px 40px 40px; max-width: 420px; margin: 60px auto; position: relative;">
+            <span class="close" onclick="closeProfileModal()" style="position: absolute; top: 18px; right: 24px; font-size: 1.8rem; color: #b8b8b8; cursor: pointer; font-weight: 700;">&times;</span>
+            <h2 id="ProfileSettingsLabel" style="display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 900; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 32px;">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" style="width: 38px; height: 38px; margin-right: 12px; border-radius: 12px; box-shadow: 0 2px 8px rgba(102,126,234,0.12);">Profile Settings
+            </h2>
+            <form id="profileForm" class="auth-form" autocomplete="on" style="margin-top: 0;">
+                <div class="form-group">
+                    <label for="profileUsername">Display Name:</label>
+                    <input type="text" id="profileUsername" placeholder="Your display name" required style="background: rgba(255,255,255,0.10);">
+                </div>
+                <div class="form-group">
+                    <label for="profileEmail">Email Address:</label>
+                    <input type="email" id="profileEmail" placeholder="your.email@example.com" readonly style="background: rgba(255,255,255,0.10); cursor: not-allowed;">
+                    <small style="color: var(--text-secondary);">Email cannot be changed</small>
+                </div>
+                <div class="form-group">
+                    <label for="profileFavoriteGame">Favorite Game:</label>
+                    <select id="profileFavoriteGame" style="background: rgba(255,255,255,0.10);">
+                        <option value="ml">Mobile Legends: Bang Bang</option>
+                        <option value="roblox">Roblox</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profileNewPassword">New Password (leave empty to keep current):</label>
+                    <input type="password" id="profileNewPassword" placeholder="New password" style="background: rgba(255,255,255,0.10);">
+                </div>
+                <div class="form-group">
+                    <label for="profileConfirmPassword">Confirm New Password:</label>
+                    <input type="password" id="profileConfirmPassword" placeholder="Confirm new password" style="background: rgba(255,255,255,0.10);">
+                </div>
+                <button type="submit" class="auth-btn" style="margin-top: 10px;">Update Profile</button>
             </form>
         </div>
     </div>
