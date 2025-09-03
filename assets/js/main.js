@@ -74,7 +74,7 @@ window.filterOrders = async function () {
     }
 
     try {
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         if (!currentUser) {
             if (ordersList) ordersList.innerHTML = '<div class="admin-error">Not logged in</div>';
             return;
@@ -168,7 +168,7 @@ window.openAdminPanel = function() {
     try {
         
         // Check if user is admin
-        if (!window.TriogelAuth?.isAdmin()) {
+        if (!window.LilyBlockOnlineShopAuth?.isAdmin()) {
             showNotification('Access denied. Admin privileges required.');
             return;
         }
@@ -208,7 +208,7 @@ window.openProfileModal = function() {
     try {
         
         // Check if user is logged in
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         if (!currentUser) {
             showNotification('Please log in to view your profile');
             openLoginModal();
@@ -242,7 +242,7 @@ window.openOrderHistoryModal = function() {
     try {
         
         // Check if user is logged in
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         if (!currentUser) {
             showNotification('Please log in to view your order history');
             openLoginModal();
@@ -315,7 +315,7 @@ window.proceedToCheckout = function() {
         }
         
         // Pre-fill form with user data if logged in
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         if (currentUser) {
             const emailInput = document.getElementById('email');
             if (emailInput && !emailInput.value) {
@@ -438,7 +438,7 @@ window.logoutUser = function() {
         console.log('Logging out user...');
         
         // Use the new authentication system
-        window.TriogelAuth.logout();
+        window.LilyBlockOnlineShopAuth.logout();
         
     } catch (e) { console.error('logoutUser error:', e); }
 };
@@ -895,7 +895,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const confirmPassword = document.getElementById('confirmPassword').value;
             const favoriteGame = document.getElementById('registerFavoriteGame')?.value || 'ml';
             try {
-                const response = await window.TriogelAuth.register({ username, email, password, confirmPassword, favoriteGame });
+                const response = await window.LilyBlockOnlineShopAuth.register({ username, email, password, confirmPassword, favoriteGame });
                 if (response && response.success && !response.user.offline) {
                     showNotification('Registration successful! Please check your email for the verification code.', 'success');
                     showOtpModal(email, response.timeRemaining);
@@ -927,7 +927,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 loginBtn.innerHTML = `<span class="spinner"></span> Logging in...`;
             }
             try {
-                await window.TriogelAuth.login({ email, password });
+                await window.LilyBlockOnlineShopAuth.login({ email, password });
                 closeLoginModal();
             } catch (err) {
                 showNotification(err.message, 'error');
@@ -1084,7 +1084,7 @@ function init() {
     
     // Add authentication status to debug
     setTimeout(() => {
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
         
         // Show connection status
@@ -1101,14 +1101,14 @@ function init() {
 // NEW: Secure Admin Data Loading Functions (Server-Verified)
 async function loadAdminData() {
     try {
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         if (!currentUser) {
             console.error('User not logged in');
             return;
         }
 
         // Server-side admin verification
-        const isAdminUser = await window.TriogelAuth.isAdmin();
+        const isAdminUser = await window.LilyBlockOnlineShopAuth.isAdmin();
         if (!isAdminUser) {
             console.error('Access denied - admin privileges required');
             showNotification('Access denied. Admin privileges required.');
@@ -1116,8 +1116,8 @@ async function loadAdminData() {
             return;
         }
 
-        const adminLevel = await window.TriogelAuth.getAdminLevel();
-        const permissions = await window.TriogelAuth.getAdminPermissions();
+        const adminLevel = await window.LilyBlockOnlineShopAuth.getAdminLevel();
+        const permissions = await window.LilyBlockOnlineShopAuth.getAdminPermissions();
 
         console.log(`Loading admin data for level ${adminLevel} user`);
 
@@ -1599,8 +1599,8 @@ function handleProfileUpdate(event) {
         showNotification('Passwords do not match', 'error');
         return;
     }
-    // Update user profile (assume TriogelAuth has updateProfile)
-    window.TriogelAuth.updateProfile({ username, newPassword, favoriteGame })
+    // Update user profile (assume LilyBlockOnlineShopAuth has updateProfile)
+    window.LilyBlockOnlineShopAuth.updateProfile({ username, newPassword, favoriteGame })
         .then(() => showNotification('Profile updated!', 'success'))
         .catch(() => showNotification('Failed to update profile', 'error'));
 }
@@ -1663,8 +1663,8 @@ function handleForgotPassword(event) {
         showNotification('Please enter your email', 'error');
         return;
     }
-    // Assume TriogelAuth has sendPasswordReset
-    window.TriogelAuth.sendPasswordReset(email)
+    // Assume LilyBlockOnlineShopAuth has sendPasswordReset
+    window.LilyBlockOnlineShopAuth.sendPasswordReset(email)
         .then(() => showNotification('Reset link sent!', 'success'))
         .catch(() => showNotification('Failed to send reset link', 'error'));
 }
@@ -1787,7 +1787,7 @@ function openAddItemModal() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'add_item',
-                        adminEmail: window.TriogelAuth?.getCurrentUser()?.email,
+                        adminEmail: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.email,
                         itemData
                     })
                 });
@@ -1905,7 +1905,7 @@ window.openModifyStockModal = function (itemId, currentStock) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         action: 'update_item',
-                        adminEmail: window.TriogelAuth?.getCurrentUser()?.email,
+                        adminEmail: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.email,
                         itemId: itemId,
                         itemData: { stock: newStock }
                     })
@@ -1935,7 +1935,7 @@ window.openModifyStockModal = function (itemId, currentStock) {
     modal.style.zIndex = '10001';
 }
 async function loadAdminAnalytics() {
-    const currentUser = window.TriogelAuth?.getCurrentUser();
+    const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
     const response = await fetch('/.netlify/functions/admin-api', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1996,7 +1996,7 @@ async function loadAdminUsers() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'get_users',
-                adminEmail: window.TriogelAuth?.getCurrentUser()?.email
+                adminEmail: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.email
             })
         });
 
@@ -2211,13 +2211,13 @@ function showOtpModal(email, initialSecondsLeft) {
         otpSubmitBtn.disabled = true;
         otpSubmitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Verifying...`;
         try {
-            const result = await window.TriogelAuth.makeAuthRequest('verify_otp', { email, otp });
+            const result = await window.LilyBlockOnlineShopAuth.makeAuthRequest('verify_otp', { email, otp });
             if (result.success && result.user) {
                 showNotification('Email verified!', 'success');
                 modal.remove();
-                window.TriogelAuth.currentUser = result.user;
-                window.TriogelAuth.saveUserSession(result.user);
-                window.TriogelAuth.showUserSection();
+                window.LilyBlockOnlineShopAuth.currentUser = result.user;
+                window.LilyBlockOnlineShopAuth.saveUserSession(result.user);
+                window.LilyBlockOnlineShopAuth.showUserSection();
                 if (typeof closeLoginModal === 'function') closeLoginModal();
             } else {
                 errorDisplay.textContent = result.message || 'Invalid code. Please try again.';
@@ -2235,7 +2235,7 @@ function showOtpModal(email, initialSecondsLeft) {
         resendBtn.textContent = 'Resending...';
         errorDisplay.textContent = '';
         try {
-            const result = await window.TriogelAuth.makeAuthRequest('resend_otp', { email });
+            const result = await window.LilyBlockOnlineShopAuth.makeAuthRequest('resend_otp', { email });
             if (result.success) {
                 showNotification('OTP resent!', 'success');
                 secondsLeft = result.timeRemaining || maxSeconds;

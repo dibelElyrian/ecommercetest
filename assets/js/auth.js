@@ -1,7 +1,7 @@
 // LilyBlock Online Shop Authentication System - Production Version
 const SESSION_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-class TriogelAuth {
+class LilyBlockOnlineShopAuth {
     constructor() {
         this.apiBase = '/.netlify/functions/user-auth';
         this.adminAuthBase = '/.netlify/functions/admin-auth';
@@ -686,4 +686,4 @@ class TriogelAuth {
 }
 
 // Create global authentication instance
-window.TriogelAuth = new TriogelAuth();
+window.LilyBlockOnlineShopAuth = new LilyBlockOnlineShopAuth();

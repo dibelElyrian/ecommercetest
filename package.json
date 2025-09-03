@@ -1,9 +1,9 @@
 {
-  "name": "triogel-marketplace",
+  "name": "lilyblockonlineshop-marketplace",
   "version": "1.0.0",
-  "description": "TRIOGEL Gaming Marketplace with Netlify Functions",
+  "description": "LilyBlock Online Shop Gaming Marketplace with Netlify Functions",
   "scripts": {
-    "build": "echo 'TRIOGEL: Building functions and processing site...'"
+    "build": "echo 'LilyBlock Online Shop: Building functions and processing site...'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",

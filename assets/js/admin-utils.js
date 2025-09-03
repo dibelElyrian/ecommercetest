@@ -5,7 +5,7 @@ window.updateOrderStatus = async function(orderId, newStatus) {
     try {
         console.log('Updating order status:', orderId, newStatus);
         
-        const currentUser = window.TriogelAuth?.getCurrentUser();
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
         
         // Try admin API first
         try {
@@ -17,7 +17,7 @@ window.updateOrderStatus = async function(orderId, newStatus) {
                 body: JSON.stringify({
                     action: 'update_order_status',
                     adminEmail: currentUser.email,
-                    adminLevel: window.TriogelAuth.getAdminLevel(),
+                    adminLevel: window.LilyBlockOnlineShopAuth.getAdminLevel(),
                     orderId: orderId,
                     newStatus: newStatus,
                     adminNotes: `Updated by ${currentUser.username} on ${new Date().toLocaleString()}`
@@ -67,8 +67,8 @@ window.contactCustomer = function(orderId, customerEmail) {
             'LilyBlock Online Shop Customer Service';
             
         const emailBody = orderId ? 
-            `Hello,\n\nRegarding your LilyBlock Online Shop order ${orderId}.\n\nWe will process your order and contact you for in-game delivery coordination.\n\nPlease provide your in-game username and preferred time for delivery if you haven't already.\n\nBest regards,\nTRIOGEL Team` :
-            `Hello,\n\nThank you for being a valued LilyBlock Online Shop customer.\n\nIf you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTRIOGEL Team`;
+            `Hello,\n\nRegarding your LilyBlock Online Shop order ${orderId}.\n\nWe will process your order and contact you for in-game delivery coordination.\n\nPlease provide your in-game username and preferred time for delivery if you haven't already.\n\nBest regards,\nLilyBlock Online Shop Team` :
+            `Hello,\n\nThank you for being a valued LilyBlock Online Shop customer.\n\nIf you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nLilyBlock Online Shop Team`;
         
         // Create mailto link
         const mailtoLink = `mailto:${customerEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
@@ -196,8 +196,8 @@ window.backupData = function () {
             version: '1.0',
             totalOrders: JSON.parse(localStorage.getItem('triogel-orders') || '[]').length,
             adminInfo: {
-                exportedBy: window.TriogelAuth?.getCurrentUser()?.username || 'Unknown',
-                adminLevel: typeof window.TriogelAuth?.getAdminLevel === 'function' ? window.TriogelAuth.getAdminLevel() : 0
+                exportedBy: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.username || 'Unknown',
+                adminLevel: typeof window.LilyBlockOnlineShopAuth?.getAdminLevel === 'function' ? window.LilyBlockOnlineShopAuth.getAdminLevel() : 0
             }
         };
 
@@ -231,7 +231,7 @@ window.generateReport = function() {
         // Generate comprehensive report
         const report = {
             reportDate: new Date().toISOString(),
-            generatedBy: window.TriogelAuth?.getCurrentUser()?.username || 'Unknown Admin',
+            generatedBy: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.username || 'Unknown Admin',
             
             summary: {
                 totalOrders: localOrders.length,
