@@ -1,10 +1,10 @@
-﻿// TRIOGEL Main JavaScript - Production Version
+﻿// LilyBlock Online Shop Main JavaScript - Production Version
 
 // ========================================
 // CRITICAL: Define items array and other data IMMEDIATELY
 // ========================================
 
-// TRIOGEL Items Database - MUST BE DEFINED EARLY
+// LilyBlock Online Shop Items Database - MUST BE DEFINED EARLY
 let items = [];
 let cart = [];
 let currentFilter = 'all';
@@ -874,7 +874,7 @@ function createForgotPasswordModal() {
 
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM Content Loaded - Starting TRIOGEL initialization...');
+    console.log('DOM Content Loaded - Starting LilyBlock Online Shop initialization...');
     fetchItems().then(() => {
         init();
     });
@@ -1037,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Also initialize on window load as fallback
 window.addEventListener('load', function () {
-    console.log('Window Load event - TRIOGEL fallback initialization...');
+    console.log('Window Load event - LilyBlock Online Shop fallback initialization...');
     const itemsGrid = document.getElementById('itemsGrid');
     if (itemsGrid && !itemsGrid.innerHTML.trim()) {
         console.log('Items grid is empty, forcing initialization...');
@@ -1047,7 +1047,7 @@ window.addEventListener('load', function () {
 
 // Additional fallback - initialize after a short delay if nothing happened
 setTimeout(() => {
-    console.log('Timeout fallback - checking if TRIOGEL needs initialization...');
+    console.log('Timeout fallback - checking if LilyBlock Online Shop needs initialization...');
     const itemsGrid = document.getElementById('itemsGrid');
     if (itemsGrid && !itemsGrid.innerHTML.trim()) {
         console.log('Items grid is empty, forcing initialization...');
@@ -1057,7 +1057,7 @@ setTimeout(() => {
 
 // Initialize everything
 function init() {
-    console.log('TRIOGEL Initializing...');
+    console.log('LilyBlock Online Shop Initializing...');
     if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
         showNotification('No items available. Cannot connect to database (local mode)', 'error');
         return;
@@ -1095,7 +1095,7 @@ function init() {
         }
     }, 1000);
     
-    console.log('TRIOGEL Initialized successfully!');
+    console.log('LilyBlock Online Shop Initialized successfully!');
 }
 
 // NEW: Secure Admin Data Loading Functions (Server-Verified)

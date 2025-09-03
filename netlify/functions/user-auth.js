@@ -80,7 +80,7 @@ async function sendEmail(targetMails, code) {
     const result = await resend.emails.send({
         from: 'onboarding@resend.dev',
         to: ['delivered@resend.dev'],//change to targetMails when in production(need domain setup)
-        subject: `Your Triogel Verification Code ${code}`,
+        subject: `Your LilyBlock Online Shop Verification Code ${code}`,
         html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 3 minutes.</p>`
     });
 

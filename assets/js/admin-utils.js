@@ -1,4 +1,4 @@
-// TRIOGEL Admin Utilities - Production Version
+// LilyBlock Online Shop Admin Utilities - Production Version
 
 // Enhanced Admin Action Functions
 window.updateOrderStatus = async function(orderId, newStatus) {
@@ -37,7 +37,7 @@ window.updateOrderStatus = async function(orderId, newStatus) {
         }
         
         // Fallback: Update in localStorage
-        const localOrders = JSON.parse(localStorage.getItem('triogel-orders') || '[]');
+        const localOrders = JSON.parse(localStorage.getItem('LilyBlock Online Shop-orders') || '[]');
         const orderIndex = localOrders.findIndex(order => (order.orderId || order.order_id) === orderId);
         
         if (orderIndex >= 0) {
@@ -63,12 +63,12 @@ window.contactCustomer = function(orderId, customerEmail) {
         console.log('Contacting customer:', customerEmail, 'for order:', orderId);
         
         const emailSubject = orderId ? 
-            `TRIOGEL Order Update - ${orderId}` : 
-            'TRIOGEL Customer Service';
+            `LilyBlock Online Shop Order Update - ${orderId}` : 
+            'LilyBlock Online Shop Customer Service';
             
         const emailBody = orderId ? 
-            `Hello,\n\nRegarding your TRIOGEL order ${orderId}.\n\nWe will process your order and contact you for in-game delivery coordination.\n\nPlease provide your in-game username and preferred time for delivery if you haven't already.\n\nBest regards,\nTRIOGEL Team` :
-            `Hello,\n\nThank you for being a valued TRIOGEL customer.\n\nIf you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTRIOGEL Team`;
+            `Hello,\n\nRegarding your LilyBlock Online Shop order ${orderId}.\n\nWe will process your order and contact you for in-game delivery coordination.\n\nPlease provide your in-game username and preferred time for delivery if you haven't already.\n\nBest regards,\nTRIOGEL Team` :
+            `Hello,\n\nThank you for being a valued LilyBlock Online Shop customer.\n\nIf you have any questions or need assistance, please don't hesitate to reach out.\n\nBest regards,\nTRIOGEL Team`;
         
         // Create mailto link
         const mailtoLink = `mailto:${customerEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;

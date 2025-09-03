@@ -29,7 +29,7 @@ exports.handler = async (event, context) => {
 
   try {
     const orderData = JSON.parse(event.body);
-    console.log('📦 Processing TRIOGEL order:', orderData.orderId);
+    console.log('📦 Processing LilyBlock Online Shop order:', orderData.orderId);
 
     // Environment variables for integrations
     const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
@@ -194,10 +194,10 @@ exports.handler = async (event, context) => {
 
     // Create rich Discord embed message
     const discordMessage = {
-      content: `**:bell: NEW TRIOGEL ORDER RECEIVED!**`,
+      content: `**:bell: NEW LilyBlock Online Shop ORDER RECEIVED!**`,
       embeds: [{
         title: ':shopping_cart: New Gaming Item Order',
-        description: `A new order has been placed on TRIOGEL virtual items marketplace!`,
+        description: `A new order has been placed on LilyBlock Online Shop virtual items marketplace!`,
         color: 0x667eea,
         fields: [
           {
@@ -222,7 +222,7 @@ exports.handler = async (event, context) => {
           }
         ],
         footer: {
-          text: 'TRIOGEL Gaming Marketplace • Database: ' + (databaseSaved ? 'Saved ✅' : 'Failed ❌')
+          text: 'LilyBlock Online Shop Gaming Marketplace • Database: ' + (databaseSaved ? 'Saved ✅' : 'Failed ❌')
         },
           timestamp: new Date().toISOString()
       }]
@@ -339,7 +339,7 @@ exports.handler = async (event, context) => {
     };
 
   } catch (error) {
-    console.error('💥 Error processing TRIOGEL order:', error);
+    console.error('💥 Error processing LilyBlock Online Shop order:', error);
 
     return {
       statusCode: 500,

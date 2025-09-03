@@ -1,4 +1,4 @@
-// TRIOGEL Authentication System - Production Version
+// LilyBlock Online Shop Authentication System - Production Version
 const SESSION_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 class TriogelAuth {
@@ -94,7 +94,7 @@ class TriogelAuth {
      * Initialize authentication state on page load
      */
     async initializeAuth() {
-        console.log('Initializing TRIOGEL authentication...');
+        console.log('Initializing LilyBlock Online Shop authentication...');
 
         // Check for existing session
         const savedSession = localStorage.getItem('triogel-session');
@@ -307,7 +307,7 @@ class TriogelAuth {
                         }
                     } else {
                         if (typeof showNotification === 'function') {
-                            showNotification(`Welcome to TRIOGEL, ${response.user.username}!`);
+                            showNotification(`Welcome to LilyBlock Online Shop, ${response.user.username}!`);
                         }
                     }
                     
@@ -360,7 +360,7 @@ class TriogelAuth {
                     } else {
                         this.hideAdminControls();
                         if (typeof showNotification === 'function') {
-                            showNotification(`Welcome to TRIOGEL, ${response.user.username}!`);
+                            showNotification(`Welcome to LilyBlock Online Shop, ${response.user.username}!`);
                         }
                     }
 

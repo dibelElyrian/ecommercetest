@@ -1,4 +1,4 @@
-// TRIOGEL Admin - Update Order Status Function
+// LilyBlock Online Shop Admin - Update Order Status Function
 // Updates order status and sends notifications
 
 exports.handler = async (event, context) => {
@@ -100,7 +100,7 @@ exports.handler = async (event, context) => {
 
         const discordMessage = {
           embeds: [{
-            title: ':arrows_counterclockwise: TRIOGEL Order Status Update',
+            title: ':arrows_counterclockwise: LilyBlock Online Shop Order Status Update',
             description: `Order **${orderId}** status has been updated`,
             color: statusColors[status] || 0x667eea,
             fields: [
@@ -121,7 +121,7 @@ exports.handler = async (event, context) => {
               }
             ],
             footer: {
-              text: 'TRIOGEL Order Management'
+              text: 'LilyBlock Online Shop Order Management'
             },
             timestamp: new Date().toISOString()
           }]

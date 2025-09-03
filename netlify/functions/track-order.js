@@ -1,4 +1,4 @@
-// TRIOGEL Customer Order Tracking Function
+// LilyBlock Online Shop Customer Order Tracking Function
 // Allows customers to look up their orders by email or order ID
 
 exports.handler = async (event, context) => {

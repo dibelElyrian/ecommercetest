@@ -1,4 +1,4 @@
-// TRIOGEL Admin - Get Orders Function
+// LilyBlock Online Shop Admin - Get Orders Function
 // Retrieves orders from Supabase database for management
 
 exports.handler = async (event, context) => {
@@ -37,7 +37,7 @@ exports.handler = async (event, context) => {
     const offset = parseInt(queryParams.offset) || 0;
     const email = queryParams.email || null;
 
-    console.log('?? Fetching TRIOGEL orders:', { status, limit, offset });
+    console.log('Fetching LilyBlock Online Shop orders:', { status, limit, offset });
 
     // Build query URL
     let url = `${SUPABASE_URL}/rest/v1/triogel_orders?order=created_at.desc&limit=${limit}&offset=${offset}`;
