@@ -51,7 +51,7 @@ exports.handler = async (event, context) => {
 
     // Update order in database
     const response = await fetch(
-      `${SUPABASE_URL}/rest/v1/triogel_orders?order_id=eq.${orderId}`,
+      `${SUPABASE_URL}/rest/v1/orders?order_id=eq.${orderId}`,
       {
         method: 'PATCH',
         headers: {

@@ -118,7 +118,7 @@ exports.handler = async (event, context) => {
         console.log('💾 Saving order to Supabase database...');
         // Insert main order record
         const { data: orderResult, error: orderError } = await supabase
-          .from('triogel_orders')
+          .from('orders')
           .insert({
             order_id: orderData.orderId,
             customer_email: orderData.email,
@@ -157,14 +157,14 @@ exports.handler = async (event, context) => {
         }));
 
         const { error: itemsError } = await supabase
-          .from('triogel_order_items')
+          .from('order_items')
           .insert(orderItems);
 
         if (itemsError) {
           console.error('❌ Error creating order items:', itemsError);
           // Try to rollback the order if items insertion failed
           await supabase
-            .from('triogel_orders')
+            .from('orders')
             .delete()
             .eq('id', orderDbId);
           throw itemsError;

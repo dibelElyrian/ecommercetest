@@ -65,10 +65,10 @@ exports.handler = async (event, context) => {
                 }
 
                 const { data: userOrders, error: userOrdersError } = await supabase
-                    .from('triogel_orders')
+                    .from('orders')
                     .select(`
                         *,
-                        triogel_order_items (
+                        order_items (
                             item_id,
                             item_name,
                             item_game,
@@ -117,10 +117,10 @@ exports.handler = async (event, context) => {
 
                 // Build query with optional status filter
                 let query = supabase
-                    .from('triogel_orders')
+                    .from('orders')
                     .select(`
                         *,
-                        triogel_order_items (
+                        order_items (
                             item_id,
                             item_name,
                             item_game,
@@ -174,10 +174,10 @@ exports.handler = async (event, context) => {
                 }
 
                 const { data: orderData, error: orderError } = await supabase
-                    .from('triogel_orders')
+                    .from('orders')
                     .select(`
                         *,
-                        triogel_order_items (
+                        order_items (
                             item_id,
                             item_name,
                             item_game,
@@ -236,7 +236,7 @@ exports.handler = async (event, context) => {
                     };
                 }
                 const { data: updatedOrder, error: updateError } = await supabase
-                    .from('triogel_orders')
+                    .from('orders')
                     .update({ 
                         status: newStatus,
                         updated_at: new Date().toISOString()

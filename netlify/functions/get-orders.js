@@ -40,7 +40,7 @@ exports.handler = async (event, context) => {
     console.log('Fetching LilyBlock Online Shop orders:', { status, limit, offset });
 
     // Build query URL
-    let url = `${SUPABASE_URL}/rest/v1/triogel_orders?order=created_at.desc&limit=${limit}&offset=${offset}`;
+    let url = `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=${limit}&offset=${offset}`;
     if (status && status !== 'all') {
       url += `&status=eq.${status}`;
     }
@@ -69,7 +69,7 @@ exports.handler = async (event, context) => {
     let orderItemsMap = {};
     if (orders.length > 0) {
       const orderIds = orders.map(o => o.order_id);
-      const itemsUrl = `${SUPABASE_URL}/rest/v1/triogel_order_items?order_id=in.(${orderIds.join(",")})`;
+      const itemsUrl = `${SUPABASE_URL}/rest/v1/order_items?order_id=in.(${orderIds.join(",")})`;
       const itemsResponse = await fetch(itemsUrl, {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -93,7 +93,7 @@ exports.handler = async (event, context) => {
 
     // Get order statistics
     const statsResponse = await fetch(
-      `${SUPABASE_URL}/rest/v1/triogel_orders?select=status,total_amount`,
+      `${SUPABASE_URL}/rest/v1/orders?select=status,total_amount`,
       {
         headers: {
           'apikey': SUPABASE_KEY,

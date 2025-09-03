@@ -103,10 +103,10 @@ exports.handler = async (event, context) => {
       const { status, limit = 50, offset = 0 } = params;
       
       let query = supabase
-        .from('triogel_orders')
+        .from('orders')
         .select(`
           *,
-          triogel_order_items (
+          order_items (
             item_id,
             item_name,
             item_game,
@@ -160,7 +160,7 @@ exports.handler = async (event, context) => {
       }
 
       const { data, error } = await supabase
-        .from('triogel_orders')
+        .from('orders')
         .update(updateData)
         .eq('order_id', orderId)
         .select();
@@ -189,9 +189,9 @@ exports.handler = async (event, context) => {
     try {
       const { limit = 100 } = params;
 
-      // Get user summary from triogel_users
+      // Get user summary from users
       const { data: users, error } = await supabase
-        .from('triogel_users')
+        .from('users')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(limit);
@@ -218,14 +218,14 @@ async function getAnalytics(params) {
     try {
         // Fetch all orders
         const { data: orders, error: ordersError } = await supabase
-            .from('triogel_orders')
+            .from('orders')
             .select('total_amount, status, payment_method, created_at');
 
         if (ordersError) throw ordersError;
 
         // Fetch all order items
         const { data: items, error: itemsError } = await supabase
-            .from('triogel_order_items')
+            .from('order_items')
             .select('item_name, item_game, quantity');
 
         if (itemsError) throw itemsError;

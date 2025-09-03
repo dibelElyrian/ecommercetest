@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
     console.log('?? Looking up orders for:', { orderId, email });
 
     // Build query based on provided parameters
-    let queryUrl = `${SUPABASE_URL}/rest/v1/triogel_orders?order=created_at.desc`;
+    let queryUrl = `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc`;
     
     if (orderId) {
       queryUrl += `&order_id=eq.${orderId}`;
@@ -97,7 +97,7 @@ exports.handler = async (event, context) => {
       orders.map(async (order) => {
         try {
           const itemsResponse = await fetch(
-            `${SUPABASE_URL}/rest/v1/triogel_order_items?order_id=eq.${order.order_id}`,
+            `${SUPABASE_URL}/rest/v1/order_items?order_id=eq.${order.order_id}`,
             {
               headers: {
                 'apikey': SUPABASE_KEY,

@@ -105,7 +105,7 @@ async function sendEmail(targetMails, code) {
 async function handleVerifyOtp(email, otp) {
     try {
         const { data: user, error } = await supabase
-            .from('triogel_users')
+            .from('users')
             .select('*')
             .eq('email', email)
             .eq('verification_code', otp)
@@ -125,7 +125,7 @@ async function handleVerifyOtp(email, otp) {
 
         // Mark email as verified
         await supabase
-            .from('triogel_users')
+            .from('users')
             .update({
                 email_verified: true,
                 verification_code: null,
@@ -137,7 +137,7 @@ async function handleVerifyOtp(email, otp) {
 
         // Fetch updated user data
         const { data: updatedUser, error: fetchError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .select('*')
             .eq('id', user.id)
             .single();
@@ -167,7 +167,7 @@ async function handleResendOtp(email) {
     try {
         // Check if user exists and is not verified
         const { data: user, error: fetchError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .select('*')
             .eq('email', email)
             .single();
@@ -203,7 +203,7 @@ async function handleResendOtp(email) {
 
         // Update user record
         const { error: updateError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .update({
                 verification_code: code,
                 verification_expires_at: expiresAt
@@ -255,7 +255,7 @@ async function handleRegistration(userData) {
         }
 
         // Check if user exists
-        const { data: existingUsers } = await supabase.from('triogel_users').select('email').eq('email', email);
+        const { data: existingUsers } = await supabase.from('users').select('email').eq('email', email);
         if (existingUsers && existingUsers.length > 0) {
             await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
             return { statusCode: 400, headers, body: JSON.stringify({ error: 'User already exists', message: 'An account with this email already exists' }) };
@@ -267,7 +267,7 @@ async function handleRegistration(userData) {
 
         // Insert user with OTP fields
         const { data: newUser, error: insertError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .insert([{
                 username,
                 email,
@@ -312,7 +312,7 @@ async function handleLogin(credentials) {
 
         // Get user from database
         const { data: users, error: fetchError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .select('*')
             .eq('email', email);
 
@@ -360,7 +360,7 @@ async function handleLogin(credentials) {
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
                 const expiresAt = new Date(nowUtc + 3 * 60 * 1000).toISOString();
                 await supabase
-                    .from('triogel_users')
+                    .from('users')
                     .update({
                         verification_code: code,
                         verification_expires_at: expiresAt
@@ -384,7 +384,7 @@ async function handleLogin(credentials) {
 
         // Update last login
         const { error: updateError } = await supabase
-            .from('triogel_users')
+            .from('users')
             .update({
                 last_login: new Date().toISOString(),
                 session_active: true
@@ -427,7 +427,7 @@ async function handleSessionUpdate(userId, sessionData) {
     try {
         // Update session (works with RLS - user can update own record)
         const { error } = await supabase
-            .from('triogel_users')
+            .from('users')
             .update(sessionData)
             .eq('id', userId);
 
@@ -463,7 +463,7 @@ async function handleGetProfile(userId) {
     try {
         // Get user profile (RLS allows SELECT on own record)
         const { data: user, error } = await supabase
-            .from('triogel_users')
+            .from('users')
             .select('id, username, email, favorite_game, created_at, last_login')
             .eq('id', userId)
             .single();

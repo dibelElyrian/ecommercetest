@@ -1246,7 +1246,7 @@ function displayAdminOrders(orders) {
             const whatsapp = order.customer_whatsapp || '';
             const notes = order.customer_notes || '';
             const adminNotes = order.admin_notes || '';
-            const orderItems = order.triogel_order_items || order.items || [];
+            const orderItems = order.order_items || order.items || [];
 
             return `
                 <div class="admin-order-item">
