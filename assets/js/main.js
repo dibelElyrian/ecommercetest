@@ -58,10 +58,9 @@ const essentialFunctions = [
     'openAdminPanel', 'closeAdminPanel', 'refreshAdminData'
 ];
 
-// Ensure all functions exist globally (even as placeholders initially)
 essentialFunctions.forEach(funcName => {
     if (typeof window[funcName] !== 'function') {
-        window[funcName] = function(...args) {
+        window[funcName] = function (...args) {
         };
     }
 });
@@ -489,7 +488,8 @@ async function fetchLiveExchangeRates() {
             currencies['PHP'].lastUpdate = new Date().toISOString();
             currencies['PHP'].source = 'base';
             lastCurrencyUpdate = new Date();
-            localStorage.setItem('triogel-currency-cache', JSON.stringify({
+            // Only retain currency-cache in localStorage
+            localStorage.setItem('currency-cache', JSON.stringify({
                 rates: currencies,
                 lastUpdate: lastCurrencyUpdate.toISOString()
             }));
@@ -537,7 +537,8 @@ async function fetchLiveExchangeRates() {
 
 function loadCachedExchangeRates() {
     try {
-        const cached = localStorage.getItem('triogel-currency-cache');
+        // Only load currency-cache from localStorage
+        const cached = localStorage.getItem('currency-cache');
         if (cached) {
             const cacheData = JSON.parse(cached);
             const cacheAge = new Date() - new Date(cacheData.lastUpdate);

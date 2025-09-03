@@ -8,17 +8,17 @@ class LilyBlockOnlineShopAuth {
         this.currentUser = null;
         this.adminStatus = null;
         this.isOnline = navigator.onLine;
-        
+
         // Listen for online/offline status
         window.addEventListener('online', () => {
             this.isOnline = true;
-            this.syncOfflineData();
+            // Removed syncOfflineData() since it used localStorage for offline registrations
         });
-        
+
         window.addEventListener('offline', () => {
             this.isOnline = false;
         });
-        
+
         // Initialize authentication state
         this.initializeAuth();
     }
@@ -96,8 +96,8 @@ class LilyBlockOnlineShopAuth {
     async initializeAuth() {
         console.log('Initializing LilyBlock Online Shop authentication...');
 
-        // Check for existing session
-        const savedSession = localStorage.getItem('triogel-session');
+        // Only retain session in localStorage
+        const savedSession = localStorage.getItem('session');
 
         if (savedSession) {
             try {
@@ -106,7 +106,7 @@ class LilyBlockOnlineShopAuth {
                 // --- SESSION EXPIRATION CHECK ---
                 if (!sessionData.sessionTimestamp || Date.now() - sessionData.sessionTimestamp > SESSION_EXPIRATION_MS) {
                     console.log('Session expired, logging out...');
-                    localStorage.removeItem('triogel-session');
+                    localStorage.removeItem('session');
                     this.currentUser = null;
                     this.showLoginSection();
                     this.showSessionTimeoutPopup('Your session has expired. Please log in again.');
@@ -153,7 +153,7 @@ class LilyBlockOnlineShopAuth {
                 }
             } catch (error) {
                 console.error('Error parsing saved session data:', error);
-                localStorage.removeItem('triogel-session');
+                localStorage.removeItem('session');
                 this.showLoginSection();
             }
         } else {
@@ -409,7 +409,7 @@ class LilyBlockOnlineShopAuth {
             // Clear local session
             this.currentUser = null;
             this.adminStatus = null;
-            localStorage.removeItem('triogel-session');
+            localStorage.removeItem('session');
             this.showLoginSection();
 
             if (typeof showNotification === 'function') {
@@ -424,7 +424,7 @@ class LilyBlockOnlineShopAuth {
             this.hideAdminControls();
             this.currentUser = null;
             this.adminStatus = null;
-            localStorage.removeItem('triogel-session');
+            localStorage.removeItem('session');
             this.showLoginSection();
         }
     }
@@ -532,56 +532,9 @@ class LilyBlockOnlineShopAuth {
                 sessionToken: user.sessionToken,
                 sessionTimestamp: Date.now()
             };
-            localStorage.setItem('triogel-session', JSON.stringify(sessionData));
+            localStorage.setItem('session', JSON.stringify(sessionData));
         } catch (error) {
             console.error('Error saving session:', error);
-        }
-    }
-
-    /**
-     * Store offline registration for later sync
-     */
-    storeOfflineRegistration(userData) {
-        try {
-            const offlineRegistrations = JSON.parse(localStorage.getItem('triogel-offline-registrations') || '[]');
-            offlineRegistrations.push({
-                ...userData,
-                timestamp: new Date().toISOString()
-            });
-            localStorage.setItem('triogel-offline-registrations', JSON.stringify(offlineRegistrations));
-        } catch (error) {
-            console.error('Error storing offline registration:', error);
-        }
-    }
-
-    /**
-     * Sync offline data when coming back online
-     */
-    async syncOfflineData() {
-        console.log('Syncing offline data...');
-
-        try {
-            // Sync offline registrations
-            const offlineRegistrations = JSON.parse(localStorage.getItem('triogel-offline-registrations') || '[]');
-            
-            for (const registration of offlineRegistrations) {
-                try {
-                    await this.makeAuthRequest('register', { userData: registration });
-                    console.log('Synced offline registration:', registration.email);
-                } catch (error) {
-                    console.warn('Failed to sync registration:', registration.email, error);
-                }
-            }
-
-            if (offlineRegistrations.length > 0) {
-                localStorage.removeItem('triogel-offline-registrations');
-                if (typeof showNotification === 'function') {
-                    showNotification('Offline data synced successfully!');
-                }
-            }
-
-        } catch (error) {
-            console.error('Error syncing offline data:', error);
         }
     }
 
