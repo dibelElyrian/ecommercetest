@@ -348,6 +348,7 @@ class LilyBlockOnlineShopAuth {
                 const response = await this.makeAuthRequest('login', { credentials: loginData });
                 if (response.success) {
                     this.currentUser = response.user;
+                    this.jwt = response.jwt;
                     this.saveUserSession(response.user);
                     this.showUserSection();
 
@@ -683,19 +684,28 @@ class LilyBlockOnlineShopAuth {
             payload.profileData.newPassword = profileData.newPassword;
         }
 
-        // Call API
-        const response = await this.makeAuthRequest('update_profile', payload);
+        const response = await fetch('/.netlify/functions/user-auth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.jwt}`
+            },
+            body: JSON.stringify({
+                action: 'update_profile',
+                ...payload
+            })
+        });
 
-        if (response.success) {
-            // Update local user data
-            this.currentUser.username = profileData.username;
-            this.currentUser.email = profileData.email;
-            this.currentUser.favorite_game = profileData.favorite_game;
-            this.saveUserSession(this.currentUser);
-            this.showUserSection();
-        }
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message || 'Profile update failed');
 
-        return response;
+        this.currentUser.username = profileData.username;
+        this.currentUser.email = profileData.email;
+        this.currentUser.favorite_game = profileData.favorite_game;
+        this.saveUserSession(this.currentUser);
+        this.showUserSection();
+
+        return result;
     }
 }
 

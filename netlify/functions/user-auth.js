@@ -1,6 +1,8 @@
 const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcrypt');
 const { Resend } = require('resend');
+const jwt = require('jsonwebtoken');
+const cookie = require('cookie');
 
 // Initialize Supabase client with anon key (RLS-compliant)
 const supabase = createClient(
@@ -39,6 +41,12 @@ exports.handler = async (event, context) => {
         };
     }
 
+    let jwtToken = null;
+    if (event.headers.cookie) {
+        const cookies = cookie.parse(event.headers.cookie);
+        jwtToken = cookies.jwt;
+    }
+
     try {
         const { action, userData, credentials, userId, sessionData, email, otp, profileData } = JSON.parse(event.body);
         console.log('User auth action:', action);
@@ -59,7 +67,7 @@ exports.handler = async (event, context) => {
             case 'send_password_reset':
                 return await handlePasswordReset(email);
             case 'update_profile':
-                return await handleUpdateProfile(userId, profileData);
+                return await handleUpdateProfile(userId, profileData, jwtToken);
             default:
                 return {
                     statusCode: 400,
@@ -403,9 +411,27 @@ async function handleLogin(credentials) {
         // Return user data without password
         const { password_hash, ...userResponse } = user;
 
+        const userJwt = jwt.sign(
+            {
+                sub: user.supabase_user_id,
+                email: user.email,
+                role: 'authenticated'
+            },
+            process.env.SUPABASE_JWT_SECRET,
+            { expiresIn: '24h', issuer: 'supabase', audience: 'authenticated' }
+        );
         return {
             statusCode: 200,
-            headers,
+            headers: {
+                ...headers,
+                'Set-Cookie': cookie.serialize('jwt', userJwt, {
+                    httpOnly: true,
+                    secure: true,
+                    sameSite: 'Strict',
+                    path: '/',
+                    maxAge: 60 * 60 * 24
+                })
+            },
             body: JSON.stringify({
                 success: true,
                 message: 'Login successful',
@@ -596,7 +622,7 @@ async function handlePasswordReset(email) {
     };
 }
 // Update user profile handler
-async function handleUpdateProfile(userId, profileData) {
+async function handleUpdateProfile(userId, profileData, jwtToken) {
     try {
         if (!userId || !profileData) {
             return {
@@ -606,30 +632,38 @@ async function handleUpdateProfile(userId, profileData) {
             };
         }
 
+        // Use JWT for RLS
+        const supabaseUser = jwtToken
+            ? createClient(
+                process.env.SUPABASE_URL,
+                process.env.SUPABASE_ANON_KEY,
+                { global: { headers: { Authorization: `Bearer ${jwtToken}` } } }
+            )
+            : supabase;
+
         // Prepare update object
         const updateObj = {};
         if (profileData.username) updateObj.username = profileData.username;
         if (profileData.email) updateObj.email = profileData.email;
         if (profileData.favorite_game) updateObj.favorite_game = profileData.favorite_game;
-
-        // Handle password change securely
         if (profileData.newPassword && profileData.newPassword.length >= 6) {
             const saltRounds = 10;
             updateObj.password_hash = await bcrypt.hash(profileData.newPassword, saltRounds);
         }
 
-        // Update user record
-        const { error } = await supabase
+        // Update user record (RLS will enforce auth.uid()/auth.email())
+        const { error } = await supabaseUser
             .from('users')
             .update(updateObj)
             .eq('id', userId);
 
         if (error) {
-            console.error('Error updating profile:', error);
+            // Log the error for debugging
+            console.error('Supabase update error:', error);
             return {
                 statusCode: 500,
                 headers,
-                body: JSON.stringify({ success: false, message: 'Failed to update profile' })
+                body: JSON.stringify({ success: false, message: error.message || 'Failed to update profile' })
             };
         }
 

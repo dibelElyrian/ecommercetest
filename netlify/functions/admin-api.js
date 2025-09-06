@@ -25,13 +25,12 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('?? Admin API called:', event.httpMethod, event.path);
+    console.log('Admin API called:', event.httpMethod, event.path);
 
     // Parse request
     const body = event.body ? JSON.parse(event.body) : {};
     const { action, adminEmail, adminLevel } = body;
 
-    // Admin emails configuration - CHANGE THESE FOR PRODUCTION
     const adminEmails = (process.env.SUPER_ADMIN_EMAILS || '')
       .split(',')
       .map(e => e.trim().toLowerCase())
@@ -167,7 +166,7 @@ exports.handler = async (event, context) => {
 
       if (error) throw error;
 
-      console.log(`? Order ${orderId} status updated to ${newStatus}`);
+      console.log(`Order ${orderId} status updated to ${newStatus}`);
 
       return {
         statusCode: 200,

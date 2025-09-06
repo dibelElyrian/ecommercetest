@@ -1,49 +1,5 @@
 // LilyBlock Online Shop Admin Utilities - Production Version
 
-// Enhanced Admin Action Functions
-window.updateOrderStatus = async function (orderId, newStatus) {
-    try {
-        console.log('Updating order status:', orderId, newStatus);
-
-        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
-
-        // Try admin API first
-        try {
-            const response = await fetch('/.netlify/functions/admin-api', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'update_order_status',
-                    adminEmail: currentUser.email,
-                    adminLevel: window.LilyBlockOnlineShopAuth.getAdminLevel(),
-                    orderId: orderId,
-                    newStatus: newStatus,
-                    adminNotes: `Updated by ${currentUser.username} on ${new Date().toLocaleString()}`
-                })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    showNotification(`? Order ${orderId} updated to ${newStatus}`);
-                    if (typeof loadAdminOrders === 'function') loadAdminOrders(); // Refresh the display
-                    return;
-                }
-            }
-        } catch (serverError) {
-            console.log('API not available, updating locally');
-        }
-
-        // Fallback: No localStorage update, just notify
-        showNotification('? Order not updated (local storage disabled)');
-    } catch (error) {
-        console.error('Error updating order status:', error);
-        showNotification('? Error updating order status');
-    }
-};
-
 window.contactCustomer = function (orderId, customerEmail) {
     try {
         console.log('Contacting customer:', customerEmail, 'for order:', orderId);

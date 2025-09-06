@@ -80,11 +80,11 @@ window.filterOrders = async function () {
         }
 
         // Fetch filtered orders from Supabase via Netlify function
-        const response = await fetch('/.netlify/functions/orders-api', {
+        const response = await fetch('/.netlify/functions/admin-api', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                action: 'get_admin_orders',
+                action: 'get_orders',
                 adminEmail: currentUser.email,
                 status: status || undefined, // send undefined for "All Orders"
                 limit: 100
@@ -438,22 +438,30 @@ window.logoutUser = function() {
     } catch (e) { console.error('logoutUser error:', e); }
 };
 
-async function fetchItems() {
+async function fetchItems(options = {}) {
     try {
-        const response = await fetch('/.netlify/functions/get-items');
+        let response;
+        if (options.showAll) {
+            // Admin panel: fetch all items, including 0 stock
+            response = await fetch('/.netlify/functions/get-items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ showAll: true })
+            });
+        } else {
+            // Public site: only fetch items with stock > 0
+            response = await fetch('/.netlify/functions/get-items');
+        }
         const result = await response.json();
         if (result.success && Array.isArray(result.items)) {
             items = result.items;
         } else {
-            // Friendly error for local/dev
             showNotification('Cannot connect to database (local mode)', 'error');
             items = [];
         }
     } catch (error) {
-        // Friendly error for local/dev
         showNotification('Cannot connect to database (local mode)', 'error');
         items = [];
-        // Optionally log error only in production
         if (window.location.hostname !== 'localhost') {
             console.error('Fetch items error:', error);
         }
@@ -921,6 +929,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateCartCount();
                     displayCartItems();
                     document.getElementById('checkoutModal').style.display = 'none';
+                    await fetchItems();
                 } else {
                     showNotification(result.message || 'Order failed', 'error');
                 }
@@ -1196,16 +1205,24 @@ async function loadAdminOrders() {
 window.updateOrderStatus = async function(orderId, newStatus) {
     try {
         console.log('Updating order status:', orderId, newStatus);
+
+        // Get the current user from the authentication system
+        const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
+        if (!currentUser || !currentUser.email) {
+            showNotification('Not logged in. Please log in as admin to update order status.', 'error');
+            return;
+        }
         
         try {
             // Try to update in Supabase database first
-            const response = await fetch('/.netlify/functions/orders-api', {
+            const response = await fetch('/.netlify/functions/admin-api', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     action: 'update_order_status',
+                    adminEmail: currentUser.email,
                     orderId: orderId,
                     newStatus: newStatus
                 })
@@ -1838,9 +1855,14 @@ function openAddItemModal() {
     modal.style.display = 'block';
     modal.style.zIndex = '10001';
 }
-function loadAdminItems() {
+
+async function loadAdminItems() {
     const itemsList = document.getElementById('adminItemsList');
     if (!itemsList) return;
+    itemsList.innerHTML = '<div class="loading">Loading items...</div>';
+
+    await fetchItems({ showAll: true });
+
     itemsList.innerHTML = items.map(item => `
         <div class="admin-item">
             <span>${item.name}</span>

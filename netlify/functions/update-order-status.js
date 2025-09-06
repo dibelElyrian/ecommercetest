@@ -79,7 +79,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    console.log(`? Order ${orderId} status updated to ${status}`);
+    console.log(`Order ${orderId} status updated to ${status}`);
 
     // Send Discord notification for status updates if configured
     if (DISCORD_WEBHOOK_URL && (status === 'completed' || status === 'processing')) {

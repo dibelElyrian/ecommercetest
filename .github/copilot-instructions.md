@@ -19,13 +19,16 @@ The project budget is ₱30k–₱50k, so everything must stay simple and practi
 - Keep explanations outside the code **short and clear** — focus on delivering the full corrected code first.  
 
 ## Code style & structure rules
-- Do **not** use inline styles inside HTML.  
-- Always put styles in the **CSS file** and keep HTML semantic.  
-- Any interaction logic (like modals, dropdowns, validation) goes into the **JavaScript file**, not inline.  
-- When updating or redesigning components, always provide:  
-  1. Full HTML structure (clean, no inline styles).  
-  2. Corresponding CSS (in the stylesheet).  
-  3. Any needed JavaScript (separate, with short section comments).  
+- **Strict rule: Do NOT use inline styles in HTML.**  
+- **Always separate structure and styling:**  
+  - HTML = structure only (no inline styles, no embedded `<style>` tags).  
+  - CSS = all styling rules (colors, spacing, layout, typography, responsiveness).  
+  - JS = interactions only (dropdowns, modals, validation, dynamic updates).  
+- When I ask for a new component (e.g., a product card, button, modal, header, footer, etc.), you must provide:  
+  1. Full **HTML structure** (clean, semantic, no inline styles).  
+  2. The **CSS rules** that go in my stylesheet.  
+  3. Any required **JavaScript**, in a separate file with section comments.  
+- Always format the output so I can clearly see which part belongs in HTML, CSS, and JS.  
 
 ## What to focus on
 - Core ecommerce features only: product listing, cart, checkout, payment integration, order confirmation.  
@@ -34,12 +37,11 @@ The project budget is ₱30k–₱50k, so everything must stay simple and practi
 - Maintainability: group code logically, remove unused lines, and keep formatting consistent.  
 
 ## What NOT to do
-- Do not give vague instructions or only describe fixes.  
-- Do not remove meaningful section comments.  
+- Do not mix HTML + CSS in the same block unless I explicitly ask for it.  
 - Do not output only snippets unless I explicitly ask; always output the **complete code block** I need.  
 - Do not suggest enterprise-level tools, frameworks, or overengineering.  
 - Do not push SEO, analytics, or fancy UI libraries unless I ask.  
-- Do not inline styles, scripts, or clutter HTML with unnecessary attributes.  
+- Do not clutter HTML with unnecessary attributes or classes.  
 
 ## Special instructions
 - If a file is too large (over 1000 lines), guide me to split it into smaller chunks and **return fully rewritten cleaned-up chunks** of code.  

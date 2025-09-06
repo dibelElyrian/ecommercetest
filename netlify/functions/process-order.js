@@ -1,4 +1,5 @@
 ﻿const { createClient } = require('@supabase/supabase-js');
+const cookie = require('cookie');
 
 exports.handler = async (event, context) => {
   // Set CORS headers
@@ -42,6 +43,12 @@ exports.handler = async (event, context) => {
     let supabase = null;
     if (SUPABASE_URL && SUPABASE_KEY) {
       supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+
+    let jwtToken = null;
+    if (event.headers.cookie) {
+        const cookies = cookie.parse(event.headers.cookie);
+        jwtToken = cookies.jwt;
     }
 
     if (!DISCORD_WEBHOOK_URL) {
@@ -117,7 +124,16 @@ exports.handler = async (event, context) => {
       try {
         console.log('💾 Saving order to Supabase database...');
         // Insert main order record
-        const { data: orderResult, error: orderError } = await supabase
+
+        const supabaseUser = jwtToken
+            ? createClient(
+                process.env.SUPABASE_URL,
+                process.env.SUPABASE_ANON_KEY,
+                { global: { headers: { Authorization: `Bearer ${jwtToken}` } } }
+            )
+              : supabase;
+
+        const { data: orderResult, error: orderError } = await supabaseUser
           .from('orders')
           .insert({
             order_id: orderData.orderId,
@@ -156,14 +172,14 @@ exports.handler = async (event, context) => {
           subtotal: item.price * item.quantity
         }));
 
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await supabaseUser
           .from('order_items')
           .insert(orderItems);
 
         if (itemsError) {
           console.error('❌ Error creating order items:', itemsError);
           // Try to rollback the order if items insertion failed
-          await supabase
+          await supabaseUser
             .from('orders')
             .delete()
             .eq('id', orderDbId);
@@ -172,7 +188,7 @@ exports.handler = async (event, context) => {
 
         // Atomic decrement of item stock after order items are inserted
         for (const item of orderData.items) {
-          const { error: stockError } = await supabase
+          const { error: stockError } = await supabaseUser
             .rpc('decrement_stock', { item_id: item.id, qty: item.quantity });
 
           if (stockError) {

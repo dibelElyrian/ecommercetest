@@ -3,7 +3,7 @@ const { createClient } = require('@supabase/supabase-js');
 // Initialize Supabase client - fallback to anon key if service key not available
 const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_ANON_KEY
 );
 
 exports.handler = async (event, context) => {
@@ -102,64 +102,6 @@ exports.handler = async (event, context) => {
                     })
                 };
 
-            case 'get_admin_orders':
-                // Get all orders for admin (requires admin verification)
-                if (!adminEmail) {
-                    return {
-                        statusCode: 403,
-                        headers,
-                        body: JSON.stringify({ 
-                            success: false, 
-                            error: 'Admin email is required' 
-                        })
-                    };
-                }
-
-                // Build query with optional status filter
-                let query = supabase
-                    .from('orders')
-                    .select(`
-                        *,
-                        order_items (
-                            item_id,
-                            item_name,
-                            item_game,
-                            item_price,
-                            quantity,
-                            subtotal
-                        )
-                    `)
-                    .order('created_at', { ascending: false })
-                    .limit(limit);
-
-                // Add status filter if provided
-                if (requestData.status && requestData.status !== '') {
-                    query = query.eq('status', requestData.status);
-                }
-
-                const { data: adminOrders, error: adminOrdersError } = await query;
-
-                if (adminOrdersError) {
-                    console.error('Error fetching admin orders:', adminOrdersError);
-                    return {
-                        statusCode: 500,
-                        headers,
-                        body: JSON.stringify({ 
-                            success: false, 
-                            error: 'Failed to fetch admin orders: ' + adminOrdersError.message 
-                        })
-                    };
-                }
-
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify({
-                        success: true,
-                        orders: adminOrders || []
-                    })
-                };
-
             case 'get_order_by_id':
                 // Get specific order by order_id
                 if (!orderId) {
@@ -218,51 +160,6 @@ exports.handler = async (event, context) => {
                     body: JSON.stringify({
                         success: true,
                         order: orderData
-                    })
-                };
-
-            case 'update_order_status':
-                // Update order status (admin only)
-                const { orderId: updateOrderId, newStatus } = requestData;
-                
-                if (!updateOrderId || !newStatus) {
-                    return {
-                        statusCode: 400,
-                        headers,
-                        body: JSON.stringify({ 
-                            success: false, 
-                            error: 'Order ID and new status are required' 
-                        })
-                    };
-                }
-                const { data: updatedOrder, error: updateError } = await supabase
-                    .from('orders')
-                    .update({ 
-                        status: newStatus,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('order_id', updateOrderId)
-                    .select();
-
-                if (updateError) {
-                    console.error('Error updating order status:', updateError);
-                    return {
-                        statusCode: 500,
-                        headers,
-                        body: JSON.stringify({ 
-                            success: false, 
-                            error: 'Failed to update order status: ' + updateError.message 
-                        })
-                    };
-                }
-
-                return {
-                    statusCode: 200,
-                    headers,
-                    body: JSON.stringify({
-                        success: true,
-                        message: 'Order status updated successfully',
-                        order: updatedOrder
                     })
                 };
 
