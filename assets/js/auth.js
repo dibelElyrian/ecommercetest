@@ -102,7 +102,7 @@ class LilyBlockOnlineShopAuth {
         if (savedSession) {
             try {
                 const sessionData = JSON.parse(savedSession);
-
+                console.log(`${Date.now()} - ${sessionData.sessionTimestamp} > ${SESSION_EXPIRATION_MS} = ${Date.now() - sessionData.sessionTimestamp > SESSION_EXPIRATION_MS}` );
                 // --- SESSION EXPIRATION CHECK ---
                 if (!sessionData.sessionTimestamp || Date.now() - sessionData.sessionTimestamp > SESSION_EXPIRATION_MS) {
                     console.log('Session expired, logging out...');

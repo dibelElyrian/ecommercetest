@@ -826,7 +826,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const response = await window.LilyBlockOnlineShopAuth.register({ username, email, password, confirmPassword, favoriteGame });
                 if (response && response.success && !response.user.offline) {
                     showNotification('Registration successful! Please check your email for the verification code.', 'success');
-                    showOtpModal(email, response.timeRemaining);
                 }
                 else {
                     showNotification(response?.message || 'Registration failed', 'error');
@@ -930,6 +929,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     displayCartItems();
                     document.getElementById('checkoutModal').style.display = 'none';
                     await fetchItems();
+                    displayItems();
                 } else {
                     showNotification(result.message || 'Order failed', 'error');
                 }
@@ -1284,7 +1284,7 @@ function displayAdminOrders(orders) {
                     ">
                         <div>
                             <div style="font-size:1.1em; font-weight:700; color:#f1c40f;">
-                                #${orderId}
+                                ${orderId}
                             </div>
                             <div style="font-size:0.97em; color:#aaa;">
                                 ${customerEmail}
@@ -1303,7 +1303,7 @@ function displayAdminOrders(orders) {
                                 ${orderStatus.toUpperCase()}
                             </span>
                             <div style="font-size:0.95em; color:#aaa;">
-                                ${new Date(createdAt).toLocaleString()}
+                                ${new Date(parseDbUtcStringToLocal(createdAt)).toLocaleString()}
                             </div>
                             <div style="font-size:0.95em; color:#aaa;">
                                 ${paymentMethod}
@@ -1689,7 +1689,7 @@ async function loadOrderHistory(user) {
                                 </div>
                                 <div class="user-order-header-right">
                                     <div class="user-order-status status-${order.status || 'pending'}">${(order.status || 'pending').toUpperCase()}</div>
-                                    <div class="user-order-date">${new Date(order.created_at).toLocaleString()}</div>
+                                    <div class="user-order-date">${parseDbUtcStringToLocal(order.created_at).toLocaleString()}</div>
                                 </div>
                             </div>
                         </div>
@@ -1930,56 +1930,60 @@ window.openModifyStockModal = function (itemId, currentStock) {
             </div>
         `;
         document.body.appendChild(modal);
-
-        document.getElementById('modifyStockForm').onsubmit = async function (e) {
-            e.preventDefault();
-            const newStock = parseInt(document.getElementById('modifyItemStock').value, 10);
-            if (isNaN(newStock) || newStock < 0) {
-                showNotification('Please enter a valid stock quantity.', 'error');
-                return;
-            }
-            // Show loading state
-            const submitBtn = document.querySelector('#modifyStockForm button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`;
-            }
-            try {
-                // Send update request to Netlify function
-                const response = await fetch('/.netlify/functions/admin-api', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        action: 'update_item',
-                        adminEmail: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.email,
-                        itemId: itemId,
-                        itemData: { stock: newStock }
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    showNotification('Item quantity updated!', 'success');
-                    modal.style.display = 'none';
-                    await fetchItems();
-                    loadAdminItems();
-                    displayItems();
-                } else {
-                    showNotification(result.message || 'Failed to update quantity', 'error');
-                }
-            } catch (err) {
-                showNotification('Error updating item quantity', 'error');
-            } finally {
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Update Quantity';
-                }
-            }
-        };
     }
+    // Always set the current stock value
     document.getElementById('modifyItemStock').value = currentStock;
     modal.style.display = 'block';
     modal.style.zIndex = '10001';
+
+    // Always reset the form handler to use the correct itemId
+    const form = document.getElementById('modifyStockForm');
+    form.onsubmit = null;
+    form.onsubmit = async function (e) {
+        e.preventDefault();
+        const newStock = parseInt(document.getElementById('modifyItemStock').value, 10);
+        if (isNaN(newStock) || newStock < 0) {
+            showNotification('Please enter a valid stock quantity.', 'error');
+            return;
+        }
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...`;
+        }
+        try {
+            // Send update request to Netlify function
+            const response = await fetch('/.netlify/functions/admin-api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'update_item',
+                    adminEmail: window.LilyBlockOnlineShopAuth?.getCurrentUser()?.email,
+                    itemId: itemId,
+                    itemData: { stock: newStock }
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showNotification('Item quantity updated!', 'success');
+                modal.style.display = 'none';
+                await loadAdminItems();
+                displayItems();
+            } else {
+                showNotification(result.message || 'Failed to update quantity', 'error');
+            }
+        } catch (err) {
+            showNotification('Error updating item quantity', 'error');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Update Quantity';
+            }
+        }
+    };
 }
+
 async function loadAdminAnalytics() {
     const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
     const response = await fetch('/.netlify/functions/admin-api', {
@@ -2204,7 +2208,7 @@ function showOtpModal(email, initialSecondsLeft) {
     }
 
     // Timer logic with progress ring
-    let secondsLeft = initialSecondsLeft;
+    let secondsLeft = initialSecondsLeft
     let timerInterval;
     const resendBtn = document.getElementById('otpResendBtn');
     const timerDisplay = document.getElementById('otpTimerDisplay');
@@ -2307,4 +2311,7 @@ function showOtpModal(email, initialSecondsLeft) {
     setTimeout(() => {
         document.getElementById('otpInput').focus();
     }, 200);
+}
+function parseDbUtcStringToLocal(dateStr) {
+    return new Date(dateStr.replace(' ', 'T') + 'Z');
 }

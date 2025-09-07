@@ -33,7 +33,8 @@ exports.handler = async (event, context) => {
         let query = supabase
             .from('items')
             .select('*')
-            .eq('active', true);
+            .eq('active', true)
+            .order('id', { ascending: true });
 
         if (!showAll) {
             query = query.gt('stock', 0);

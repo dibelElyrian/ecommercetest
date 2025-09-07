@@ -115,7 +115,7 @@ async function sendEmail(targetMails, code) {
 // OTP verification handler
 async function handleVerifyOtp(email, otp) {
     try {
-        const { data: user, error } = await supabase
+        const { data: user, error } = await supabaseAdmin
             .from('users')
             .select('*')
             .eq('email', email)
@@ -135,7 +135,8 @@ async function handleVerifyOtp(email, otp) {
         }
 
         // Mark email as verified
-        await supabase
+
+        await supabaseAdmin
             .from('users')
             .update({
                 email_verified: true,
@@ -147,7 +148,7 @@ async function handleVerifyOtp(email, otp) {
             .eq('id', user.id);
 
         // Fetch updated user data
-        const { data: updatedUser, error: fetchError } = await supabase
+        const { data: updatedUser, error: fetchError } = await supabaseAdmin
             .from('users')
             .select('*')
             .eq('id', user.id)
@@ -308,7 +309,8 @@ async function handleRegistration(userData) {
             body: JSON.stringify({
                 success: true,
                 message: 'User registered. Verification code sent to email.',
-                user: userResponse
+                user: userResponse,
+                timeRemaining: 180
             })
         };
     } catch (error) {
@@ -589,7 +591,7 @@ async function handlePasswordReset(email) {
     const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
 
     // Update user password in database
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({
             password_hash: hashedPassword
