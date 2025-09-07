@@ -1031,6 +1031,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // Help Center FAQ Accordion
+    document.querySelectorAll('.faq-question').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const li = btn.closest('li');
+            const isOpen = li.classList.contains('open');
+            // Close all
+            document.querySelectorAll('.faq-list li.open').forEach(function (openLi) {
+                openLi.classList.remove('open');
+                openLi.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+            });
+            // Open this one if not already open
+            if (!isOpen) {
+                li.classList.add('open');
+                btn.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+
     //Mobile Design
     const menuBtn = document.querySelector('.mobile-menu-btn');
     const drawer = document.getElementById('mobileNavDrawer');
@@ -2315,3 +2333,78 @@ function showOtpModal(email, initialSecondsLeft) {
 function parseDbUtcStringToLocal(dateStr) {
     return new Date(dateStr.replace(' ', 'T') + 'Z');
 }
+
+// About Modal Functions
+window.openAboutModal = function () {
+    document.getElementById('aboutModal').style.display = 'flex';
+};
+window.closeAboutModal = function () {
+    document.getElementById('aboutModal').style.display = 'none';
+};
+// Optional: Close modal on outside click
+window.onclick = function (event) {
+    const modal = document.getElementById('aboutModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+};
+
+// Privacy Policy Modal Functions
+window.openPrivacyModal = function () {
+    document.getElementById('privacyModal').style.display = 'flex';
+};
+window.closePrivacyModal = function () {
+    document.getElementById('privacyModal').style.display = 'none';
+};
+// Optional: Close modal on outside click
+window.addEventListener('click', function (event) {
+    const modal = document.getElementById('privacyModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+// Terms of Service Modal Functions
+window.openTermsModal = function () {
+    document.getElementById('termsModal').style.display = 'flex';
+};
+window.closeTermsModal = function () {
+    document.getElementById('termsModal').style.display = 'none';
+};
+// Optional: Close modal on outside click
+window.addEventListener('click', function (event) {
+    const modal = document.getElementById('termsModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+// Delivery Terms Modal Functions
+window.openDeliveryModal = function () {
+    document.getElementById('deliveryModal').style.display = 'flex';
+};
+window.closeDeliveryModal = function () {
+    document.getElementById('deliveryModal').style.display = 'none';
+};
+// Optional: Close modal on outside click
+window.addEventListener('click', function (event) {
+    const modal = document.getElementById('deliveryModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});
+
+// Refund Policy Modal Functions
+window.openRefundModal = function () {
+    document.getElementById('refundModal').style.display = 'flex';
+};
+window.closeRefundModal = function () {
+    document.getElementById('refundModal').style.display = 'none';
+};
+// Optional: Close modal on outside click
+window.addEventListener('click', function (event) {
+    const modal = document.getElementById('refundModal');
+    if (event.target === modal) {
+        modal.style.display = 'none';
+    }
+});

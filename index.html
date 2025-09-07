@@ -123,6 +123,72 @@
         <!-- End Trust Indicators Bar -->
     </div>
 
+    <!-- Help Center Section -->
+    <section id="help" class="help-center">
+        <h2 class="help-center-title">Help Center</h2>
+        <div class="help-center-content">
+            <div class="help-faq">
+                <h3>Frequently Asked Questions</h3>
+                <ul class="faq-list">
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>How do I buy items?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Browse the catalog, add items to your cart, and complete checkout. Our staff will contact you for in-game delivery.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>What payment methods do you accept?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>We accept PayPal, GCash, PayMaya, Crypto, Bank Transfer, and Western Union. Choose your preferred method at checkout.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>How fast is delivery?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Most orders are delivered within 5–30 minutes during business hours. Delays may occur during peak times.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>Is it safe to buy here?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Yes! We are DTI-registered and all trades are handled by real staff. Your data is protected and never shared.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>How do I track my order?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Use the <a href="javascript:void(0);" onclick="openOrderTracking()">Order Tracking</a> feature in the navigation bar.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <button class="faq-question" type="button" aria-expanded="false">
+                            <span>Need more help?</span>
+                            <span class="faq-toggle">+</span>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Email us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a> or WhatsApp <a href="https://wa.me/639123456789" target="_blank">+63 912 345 6789</a>.</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
     <!-- Modals -->
     <!-- Cart Modal - Improved Design -->
     <div id="cartModal" class="modal" aria-modal="true" role="dialog">
@@ -337,18 +403,152 @@
         </div>
     </div>
 
+    <!-- About Us Modal -->
+    <div id="aboutModal" class="modal">
+        <div class="about-modal-content">
+            <button class="close about-close" type="button" aria-label="Close" onclick="closeAboutModal()">&times;</button>
+            <div class="about-modal-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="about-modal-logo">
+                <h2 class="about-modal-title">About LilyBlock Online Shop</h2>
+            </div>
+            <div class="about-modal-body">
+                <p>
+                    <strong>LilyBlock Online Shop</strong> is a trusted virtual marketplace for in-game items and digital goods. Founded by passionate gamers, our mission is to make game trading safe, simple, and accessible for everyone.
+                </p>
+                <p>
+                    We offer a curated selection of items for popular games like Mobile Legends and Roblox, with secure payment options and fast, friendly support. All trades are handled by real staff to ensure a smooth and reliable experience.
+                </p>
+                <ul class="about-list">
+                    <li>DTI-registered and compliant with data privacy laws</li>
+                    <li>Not affiliated with any game publishers; all trademarks belong to their respective owners</li>
+                    <li>Safe, secure, and community-driven</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="modal">
+        <div class="privacy-modal-content">
+            <button class="close privacy-close" type="button" aria-label="Close" onclick="closePrivacyModal()">&times;</button>
+            <div class="privacy-modal-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="privacy-modal-logo">
+                <h2 class="privacy-modal-title">Privacy Policy</h2>
+            </div>
+            <div class="privacy-modal-body">
+                <p>
+                    <strong>LilyBlock Online Shop</strong> is committed to protecting your privacy. We collect only the information necessary to process your orders, provide customer support, and improve our services.
+                </p>
+                <ul class="privacy-list">
+                    <li><strong>What We Collect:</strong> Name, email, game username/ID, and contact details for order fulfillment.</li>
+                    <li><strong>How We Use It:</strong> To process orders, provide support, and communicate important updates.</li>
+                    <li><strong>Data Security:</strong> Your information is stored securely and never sold or shared with third parties, except as required by law or to complete your order.</li>
+                    <li><strong>Cookies:</strong> We use cookies only for essential site functionality (e.g., keeping you logged in, saving your cart).</li>
+                    <li><strong>Your Rights:</strong> You may request to view, update, or delete your personal data at any time by contacting us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a>.</li>
+                </ul>
+                <p>
+                    By using LilyBlock Online Shop, you agree to this privacy policy. We comply with the Data Privacy Act of 2012 (Philippines) and GDPR (EU) standards.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div id="termsModal" class="modal">
+        <div class="terms-modal-content">
+            <button class="close terms-close" type="button" aria-label="Close" onclick="closeTermsModal()">&times;</button>
+            <div class="terms-modal-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="terms-modal-logo">
+                <h2 class="terms-modal-title">Terms of Service</h2>
+            </div>
+            <div class="terms-modal-body">
+                <p>
+                    By using <strong>LilyBlock Online Shop</strong>, you agree to the following terms:
+                </p>
+                <ul class="terms-list">
+                    <li><strong>Eligibility:</strong> You must be at least 18 years old or have parental consent to use this site.</li>
+                    <li><strong>Orders:</strong> All sales are final once in-game delivery is completed. Please double-check your game username and order details before checkout.</li>
+                    <li><strong>Payments:</strong> Payments must be made in full before item delivery. We do not store your payment information.</li>
+                    <li><strong>Delivery:</strong> Our staff will coordinate with you for in-game delivery. Delivery times may vary based on staff availability and game server status.</li>
+                    <li><strong>Refunds:</strong> Refunds are only issued if we cannot deliver your order. See our <a href="#refund">Refund Policy</a> for details.</li>
+                    <li><strong>Prohibited Use:</strong> Do not use our service for fraudulent, illegal, or abusive activities. Accounts found violating these terms may be banned without notice.</li>
+                    <li><strong>Liability:</strong> LilyBlock is not responsible for any loss of in-game items due to actions outside our control (e.g., game bans, account issues).</li>
+                    <li><strong>Changes:</strong> We may update these terms at any time. Continued use of the site means you accept the latest version.</li>
+                </ul>
+                <p>
+                    For questions, contact us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Terms Modal -->
+    <div id="deliveryModal" class="modal">
+        <div class="delivery-modal-content">
+            <button class="close delivery-close" type="button" aria-label="Close" onclick="closeDeliveryModal()">&times;</button>
+            <div class="delivery-modal-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="delivery-modal-logo">
+                <h2 class="delivery-modal-title">Delivery Terms</h2>
+            </div>
+            <div class="delivery-modal-body">
+                <p>
+                    <strong>LilyBlock Online Shop</strong> is committed to fast and secure delivery of your in-game items. Please review our delivery terms below:
+                </p>
+                <ul class="delivery-list">
+                    <li><strong>Delivery Method:</strong> All items are delivered in-game by our staff. We will contact you via email or WhatsApp to coordinate the trade.</li>
+                    <li><strong>Delivery Time:</strong> Most orders are delivered within 5–30 minutes during business hours. Orders placed outside business hours may be delivered the next day.</li>
+                    <li><strong>Order Confirmation:</strong> Please ensure your game username/ID and contact details are correct before checkout. Incorrect information may delay delivery.</li>
+                    <li><strong>Coordination:</strong> Our staff will never ask for your password. Only meet in-game with verified LilyBlock staff for item delivery.</li>
+                    <li><strong>Unclaimed Orders:</strong> If we are unable to reach you within 7 days of purchase, your order may be cancelled and refunded.</li>
+                    <li><strong>Delays:</strong> Delivery may be delayed due to game server issues, maintenance, or high order volume. We will notify you of any delays.</li>
+                    <li><strong>Proof of Delivery:</strong> We may request a screenshot or confirmation in-game to verify successful delivery.</li>
+                </ul>
+                <p>
+                    For urgent delivery concerns, contact us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a> or WhatsApp <a href="https://wa.me/639123456789" target="_blank">+63 912 345 6789</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Refund Policy Modal -->
+    <div id="refundModal" class="modal">
+        <div class="refund-modal-content">
+            <button class="close refund-close" type="button" aria-label="Close" onclick="closeRefundModal()">&times;</button>
+            <div class="refund-modal-header">
+                <img src="assets/img/favicon.png" alt="LilyBlock Logo" class="refund-modal-logo">
+                <h2 class="refund-modal-title">Refund Policy</h2>
+            </div>
+            <div class="refund-modal-body">
+                <p>
+                    <strong>LilyBlock Online Shop</strong> aims for 100% customer satisfaction. Please review our refund policy below:
+                </p>
+                <ul class="refund-list">
+                    <li><strong>Eligibility:</strong> Refunds are only issued if we are unable to deliver your purchased items due to stock issues, technical problems, or staff unavailability.</li>
+                    <li><strong>Non-Refundable:</strong> Orders are non-refundable once in-game delivery is completed and confirmed by the customer.</li>
+                    <li><strong>Incorrect Information:</strong> If you provide incorrect game username/ID or contact details, refunds may not be possible after delivery is attempted.</li>
+                    <li><strong>Process:</strong> To request a refund, contact us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a> within 7 days of purchase. Include your Order ID and reason for the request.</li>
+                    <li><strong>Review:</strong> All refund requests are reviewed by our staff. Approved refunds will be processed within 3–7 business days to your original payment method.</li>
+                    <li><strong>Chargebacks:</strong> Unauthorized chargebacks or payment disputes may result in account suspension and denial of future service.</li>
+                </ul>
+                <p>
+                    For any questions about refunds, please contact us at <a href="mailto:support@lilyblockonlineshop.com">support@lilyblockonlineshop.com</a>.
+                </p>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <div class="footer-content">
             <div class="footer-sections">
                 <nav class="footer-section">
                     <h3>Help & Info</h3>
                     <ul class="footer-links">
-                        <li><a href="#about">About LilyBlock Online Shop</a></li>
-                        <li><a href="#privacy">Privacy Policy</a></li>
+                        <li><a href="javascript:void(0);" onclick="openAboutModal()">About LilyBlock Online Shop</a></li>
+                        <li><a href="javascript:void(0);" onclick="openPrivacyModal()">Privacy Policy</a></li>
                         <li><a href="#help">Help Center</a></li>
-                        <li><a href="#terms">Terms of Service</a></li>
-                        <li><a href="#delivery">Delivery Terms</a></li>
-                        <li><a href="#refund">Refund Policy</a></li>
+                        <li><a href="javascript:void(0);" onclick="openTermsModal()">Terms of Service</a></li>
+                        <li><a href="javascript:void(0);" onclick="openDeliveryModal()">Delivery Terms</a></li>
+                        <li><a href="javascript:void(0);" onclick="openRefundModal()">Refund Policy</a></li>
                     </ul>
                 </nav>
                 <nav class="footer-section">
