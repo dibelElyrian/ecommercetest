@@ -1,3 +1,54 @@
+    /* Force all mobile menu buttons and filter buttons to have identical width and sizing */
+    .mobile-menu-content .account-btn,
+    .mobile-menu-content .track-order-btn,
+    .mobile-menu-content .filter-btn {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    /* Unify mobile nav-bar and filter button styles for perfect match */
+    .mobile-account-section .account-btn,
+    .mobile-user-section .account-btn,
+    .track-order-btn,
+    .mobile-menu-content .filter-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        min-height: 54px !important;
+        padding: 15px !important;
+        font-size: 1.1rem !important;
+        border-radius: 14px !important;
+        margin-bottom: 10px !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        text-align: center !important;
+        background: var(--card-bg) !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        font-weight: 700 !important;
+        color: var(--text-primary) !important;
+        transition: all 0.3s ease !important;
+    }
+    .mobile-account-section .account-btn.login-btn,
+    .mobile-account-section .account-btn.register-btn,
+    .mobile-user-section .account-btn.profile-btn,
+    .mobile-user-section .account-btn.logout-btn {
+        background: var(--primary-gradient) !important;
+        color: #fff !important;
+        border: none !important;
+    }
+    .track-order-btn {
+        background: linear-gradient(45deg, #10b981, #059669) !important;
+        color: white !important;
+        border: none !important;
+    }
+    .mobile-menu-content .account-btn:last-child,
+    .mobile-menu-content .track-order-btn:last-child,
+    .mobile-menu-content .filter-btn:last-child {
+        margin-bottom: 0 !important;
+    }
 .item-details-flex .item-stock {
     margin-top: auto;
 }
@@ -4327,8 +4378,8 @@ body.admin-mode {
         top: 60px;
         padding: 0 2vw;
     }
-    @media (min-width: 500px) {
-        .items-grid { grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 768px) {
+        .items-grid { grid-template-columns: repeat(2, 1fr) !important; }
     }
 
     /* Product card adjustments */
@@ -4556,13 +4607,82 @@ body.admin-mode {
         flex-direction: column;
         gap: 10px;
     }
-    .mobile-account-section .account-btn {
+    .mobile-account-section .account-btn,
+    .mobile-user-section .account-btn,
+    .track-order-btn {
         width: 100%;
+        min-width: 0;
         min-height: 54px;
         padding: 15px;
         font-size: 1.1rem;
         border-radius: 14px;
-        margin: 5px 0;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        display: block;
+        text-align: center;
+        background: var(--card-bg);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        font-weight: 700;
+        transition: all 0.3s ease;
+        color: var(--text-primary);
+    }
+    .mobile-account-section .account-btn.login-btn,
+    .mobile-account-section .account-btn.register-btn,
+    .mobile-user-section .account-btn.profile-btn,
+    .mobile-user-section .account-btn.logout-btn {
+        background: var(--primary-gradient);
+        color: #fff;
+        border: none;
+    }
+    .track-order-btn {
+        background: linear-gradient(45deg, #10b981, #059669);
+        color: white;
+        border: none;
+    }
+    .mobile-account-section .account-btn:hover,
+    .mobile-user-section .account-btn:hover,
+    .track-order-btn:hover {
+        border-color: rgba(102, 126, 234, 0.3);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    }
+    .mobile-menu-content .filter-btn {
+        width: 100%;
+        min-width: 0;
+        min-height: 54px;
+        padding: 15px;
+        font-size: 1.1rem;
+        border-radius: 14px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        display: block;
+        text-align: center;
+    }
+    .mobile-account-section {
+        margin-top: 18px;
+    }
+    .mobile-user-section {
+        margin-top: 18px;
+    }
+    .track-order-btn {
+        margin-top: 18px;
+    }
+    .mobile-menu-content .account-btn:last-child,
+    .mobile-menu-content .track-order-btn:last-child,
+    .mobile-menu-content .filter-btn:last-child {
+        margin-bottom: 0;
+    }
+    .mobile-menu-content {
+        display: block;
+    }
+    .mobile-menu-content .account-btn:last-child,
+    .mobile-menu-content .track-order-btn:last-child,
+    .mobile-menu-content .filter-btn:last-child {
+        margin-bottom: 0;
+    }
+    .mobile-menu-content .account-btn:last-child,
+    .mobile-menu-content .track-order-btn:last-child {
+        margin-bottom: 0;
     }
 
         /* Custom Profile Button for Mobile User Section */
