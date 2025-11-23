@@ -439,10 +439,10 @@ window.switchToRegister = function() {
 window.logoutUser = function() {
     try {
         console.log('Logging out user...');
-        
         // Use the new authentication system
         window.LilyBlockOnlineShopAuth.logout();
-        
+        // Sync mobile menu UI after logout
+        if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
     } catch (e) { console.error('logoutUser error:', e); }
 };
 
@@ -906,6 +906,7 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 await window.LilyBlockOnlineShopAuth.login({ email, password });
                 closeLoginModal();
+                if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
             } catch (err) {
                 showNotification(err.message, 'error');
             } finally {
@@ -1202,6 +1203,9 @@ function init() {
     setupCurrencySelector();
     updateCurrencySelector();
     setupLanguageSelector();
+
+    // Sync mobile menu login/profile sections
+    if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
     
     // Add authentication status to debug
     setTimeout(() => {
@@ -1234,6 +1238,8 @@ async function loadAdminData() {
             console.error('Access denied - admin privileges required');
             showNotification('Access denied. Admin privileges required.');
             closeAdminPanel();
+            // Sync mobile menu
+            if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
             return;
         }
 
@@ -1281,6 +1287,8 @@ async function loadAdminData() {
         } else {
             // Hide analytics tab if no permission
             const analyticsTab = document.querySelector('[data-tab="analytics"]');
+                // Sync mobile menu
+                if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
 
@@ -1473,9 +1481,11 @@ function displayItems() {
                 ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="item-img" />` : ''}
             </div>
             <div class="item-name">${item.name}</div>
-            <div class="item-description">${item.description || ''}</div>
-            <div class="item-stock">Stock: ${item.stock ?? 0}</div>
-            <div class="item-price">${formatPrice(item.price)}</div>
+            <div class="item-details-flex" style="display: flex; flex-direction: column; min-height: 120px;">
+                <div class="item-description">${item.description || ''}</div>
+                <div class="item-stock" style="margin-top: auto;">Stock: ${item.stock ?? 0}</div>
+                <div class="item-price" style="margin-top: 4px;">${formatPrice(item.price)}</div>
+            </div>
             <button class="add-to-cart-btn" onclick="addToCart(${item.id})">Add to Cart</button>
         </div>
     `).join('');
@@ -1504,12 +1514,13 @@ function initializeLiveCurrencySystem() {
 }
 
 function updateCartCount() {
-    // Find the cart count element (adjust selector as needed)
+    // Find the cart count elements (desktop and mobile)
     const cartCountElem = document.getElementById('cartCount');
-    if (!cartCountElem) return;
+    const cartCountMobileElem = document.getElementById('cartCountMobile');
     // Calculate total quantity in cart
     const total = Array.isArray(cart) ? cart.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
-    cartCountElem.textContent = total;
+    if (cartCountElem) cartCountElem.textContent = total;
+    if (cartCountMobileElem) cartCountMobileElem.textContent = total;
 }
 function setupFilters() {
     const filterContainer = document.getElementById('filterContainer');
@@ -1551,6 +1562,24 @@ function setupEventHandlers() {
     // Cart icon
     const cartIcon = document.getElementById('cartIcon');
     if (cartIcon) cartIcon.onclick = openCart;
+}
+
+// Sync mobile menu login/profile sections with authentication state
+function syncMobileAuthUI() {
+    const mobileLoginSection = document.getElementById('mobileLoginSection');
+    const mobileUserSection = document.getElementById('mobileUserSection');
+    const user = window.LilyBlockOnlineShopAuth?.getCurrentUser();
+    if (user && user.username) {
+        if (mobileLoginSection) mobileLoginSection.style.display = 'none';
+        if (mobileUserSection) {
+            mobileUserSection.style.display = 'block';
+            const nameSpan = mobileUserSection.querySelector('.user-name');
+            if (nameSpan) nameSpan.textContent = user.username;
+        }
+    } else {
+        if (mobileLoginSection) mobileLoginSection.style.display = 'block';
+        if (mobileUserSection) mobileUserSection.style.display = 'none';
+    }
 }
 
 document.addEventListener('click', function (event) {

@@ -1,3 +1,19 @@
+.item-details-flex .item-stock {
+    margin-top: auto;
+}
+/* Ensure item details (description, stock, price) are consistently aligned in cards */
+.item-details-flex {
+    display: flex;
+    flex-direction: column;
+    min-height: 120px;
+    gap: 4px;
+}
+.item-details-flex .item-price {
+    margin-top: auto;
+}
+    @media (max-width: 400px) {
+        .items-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    }
 /* Reset Browser Defaults */
 * {
     margin: 0;
@@ -4420,8 +4436,8 @@ body.admin-mode {
         top: 110%;
         right: 0;
         left: unset;
-        min-width: 180px;
-        width: calc(min(340px, 92vw) - 4px);
+        min-width: 140px;
+        width: calc(min(220px, 92vw) - 4px);
         max-width: calc(100vw - 4px);
         max-height: 260px;
         box-sizing: border-box;
@@ -4436,6 +4452,12 @@ body.admin-mode {
         overflow-y: auto;
         animation: slideIn 0.3s ease;
         overflow-wrap: break-word;
+    }
+    @media (max-width: 400px) {
+        .nav-bar-mobile .currency-dropdown {
+            min-width: 100px !important;
+            width: 140px !important;
+        }
     }
     .nav-bar-mobile .currency-dropdown .currency-option {
         padding: 10px 14px;
@@ -4542,6 +4564,42 @@ body.admin-mode {
         border-radius: 14px;
         margin: 5px 0;
     }
+
+        /* Custom Profile Button for Mobile User Section */
+        .mobile-user-section .profile-btn {
+            background: linear-gradient(90deg, #764ba2 0%, #f093fb 100%);
+            color: #fff;
+            border: none;
+            font-weight: 800;
+            font-size: 1.15rem;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 18px rgba(118,75,162,0.18);
+            border-radius: 18px;
+            padding: 16px 0;
+            margin-bottom: 10px;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+            width: 100%;
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .mobile-user-section .profile-btn:hover {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 8px 32px rgba(118,75,162,0.28);
+            transform: translateY(-2px) scale(1.03);
+        }
+        .mobile-user-section .profile-btn:active {
+            background: linear-gradient(90deg, #f093fb 0%, #764ba2 100%);
+            box-shadow: 0 2px 8px rgba(118,75,162,0.12);
+            transform: scale(0.98);
+        }
+        .mobile-user-section .profile-btn .user-name {
+            font-weight: 900;
+            color: #fff;
+            font-size: 1.1rem;
+            text-shadow: 0 1px 6px rgba(118,75,162,0.18);
+        }
     .track-order-btn { 
         width: 100%; 
         margin-top: 10px;

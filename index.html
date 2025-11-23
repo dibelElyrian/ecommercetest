@@ -100,9 +100,15 @@
                     <button class="filter-btn" data-filter="ml">Mobile Legends</button>
                     <button class="filter-btn" data-filter="roblox">Roblox</button>
                 </div>
-                <div class="mobile-account-section">
+                <div class="mobile-account-section" id="mobileLoginSection">
                     <button class="account-btn login-btn" onclick="openLoginModal()">Login</button>
                     <button class="account-btn register-btn" onclick="openRegisterModal()">Register</button>
+                </div>
+                <div class="mobile-user-section" id="mobileUserSection" style="display:none;">
+                    <button class="account-btn profile-btn" onclick="openProfileModal()">
+                        <span id="mobileUserWelcome">Profile (<span class="user-name">Player</span>)</span>
+                    </button>
+                    <button class="account-btn logout-btn" onclick="logoutUser()">Logout</button>
                 </div>
                 <button class="track-order-btn" onclick="openOrderTracking()">Track Order</button>
             </div>

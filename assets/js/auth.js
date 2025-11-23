@@ -139,6 +139,7 @@ class LilyBlockOnlineShopAuth {
                 this.currentUser = userProfile || { id: sessionData.id };
 
                 this.showUserSection();
+                if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
 
                 // Check admin status and show controls if admin
                 if (await this.isAdmin()) {
@@ -155,6 +156,7 @@ class LilyBlockOnlineShopAuth {
                 console.error('Error parsing saved session data:', error);
                 localStorage.removeItem('session');
                 this.showLoginSection();
+                if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
             }
         } else {
             this.showLoginSection();
@@ -546,12 +548,12 @@ class LilyBlockOnlineShopAuth {
         try {
             const loginSection = document.getElementById('loginSection');
             const userSection = document.getElementById('userSection');
-            
             if (loginSection) loginSection.style.display = 'flex';
             if (userSection) userSection.style.display = 'none';
-            
             // Hide admin controls
             this.hideAdminControls();
+            // Sync mobile menu UI as well
+            if (typeof syncMobileAuthUI === 'function') syncMobileAuthUI();
         } catch (error) {
             console.error('Error showing login section:', error);
         }
