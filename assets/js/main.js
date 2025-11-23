@@ -370,17 +370,25 @@ window.removeFromCart = function(itemId) {
     } catch (e) { console.error('removeFromCart error:', e); }
 };
 
-window.toggleCurrencySelector = function() {
-    try {
-        const dropdown = document.getElementById('currencyDropdown');
-        const selector = document.getElementById('currencySelector');
-        
-        if (dropdown && selector) {
-            const isOpen = dropdown.style.display === 'block';
-            dropdown.style.display = isOpen ? 'none' : 'block';
-            selector.classList.toggle('active', !isOpen);
+window.toggleCurrencySelector = function (type) {
+    let dropdown, selector;
+    if (type === 'mobile') {
+        dropdown = document.getElementById('currencyDropdownMobile');
+        selector = document.getElementById('currencySelectorMobile');
+    } else {
+        dropdown = document.getElementById('currencyDropdown');
+        selector = document.getElementById('currencySelector');
+    }
+    if (dropdown && selector) {
+        const isOpen = dropdown.style.display === 'block';
+        // Close all dropdowns first
+        document.querySelectorAll('.currency-dropdown').forEach(dd => dd.style.display = 'none');
+        document.querySelectorAll('.currency-button').forEach(btn => btn.classList.remove('active'));
+        if (!isOpen) {
+            dropdown.style.display = 'block';
+            selector.classList.add('active');
         }
-    } catch (e) { console.error('toggleCurrencySelector error:', e); }
+    }
 };
 
 window.toggleUserDropdown = function() {
@@ -801,10 +809,52 @@ function createOrderHistoryModal() {
 }
 
 // Initialize everything when DOM is ready
+// Mobile menu toggle function
+window.toggleMobileMenu = function() {
+    const drawer = document.getElementById('mobileMenu');
+    const body = document.body;
+    if (drawer) {
+        const isOpen = drawer.classList.contains('open');
+        if (isOpen) {
+            drawer.classList.remove('open');
+            body.style.overflow = '';
+        } else {
+            drawer.classList.add('open');
+            body.style.overflow = 'hidden';
+        }
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     console.log('DOM Content Loaded - Starting LilyBlock Online Shop initialization...');
     fetchItems().then(() => {
         init();
+        
+        // Add filter button functionality for both desktop and mobile
+        const allFilterButtons = document.querySelectorAll('.filter-btn');
+        allFilterButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filter = btn.getAttribute('data-filter');
+                currentFilter = filter;
+                
+                // Update active state on all filter buttons (both mobile and desktop)
+                allFilterButtons.forEach(button => {
+                    button.classList.remove('active');
+                    if (button.getAttribute('data-filter') === filter) {
+                        button.classList.add('active');
+                    }
+                });
+
+                // Close mobile menu if open
+                const mobileMenu = document.getElementById('mobileMenu');
+                if (mobileMenu && mobileMenu.classList.contains('open')) {
+                    toggleMobileMenu();
+                }
+
+                // Update displayed items
+                displayItems();
+            });
+        });
     });
     // Register form handler
     const registerForm = document.getElementById('registerForm');
@@ -1067,6 +1117,43 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+
+    // --- Unified Filter Button Logic for Desktop & Mobile ---
+
+    // Select all filter buttons (desktop & mobile)
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    // Select all product cards
+    const itemCards = document.querySelectorAll('.item-card');
+    // Select mobile menu (if present)
+    const mobileMenu = document.querySelector('.mobile-menu');
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            // Remove active from all filter buttons
+            filterButtons.forEach(b => b.classList.remove('active'));
+            // Add active to clicked button
+            btn.classList.add('active');
+
+            // Get filter value
+            const filter = btn.getAttribute('data-filter');
+
+            // Show/hide product cards based on filter
+            itemCards.forEach(card => {
+                // Each card should have a class like 'ml-item', 'roblox-item', etc.
+                if (filter === 'all' || card.classList.contains(`${filter}-item`)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Optional: Close mobile menu after selecting filter
+            if (mobileMenu && mobileMenu.classList.contains('open')) {
+                mobileMenu.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        });
+    });
 });
 
 // Also initialize on window load as fallback
@@ -1451,9 +1538,11 @@ function setupEventHandlers() {
     const checkoutCloseBtn = document.querySelector('#checkoutModal .close');
     if (checkoutCloseBtn) checkoutCloseBtn.onclick = closeCheckout;
 
-    // Currency selector
+    // Currency selectors (desktop and mobile)
     const currencySelector = document.getElementById('currencySelector');
-    if (currencySelector) currencySelector.onclick = toggleCurrencySelector;
+    if (currencySelector) currencySelector.onclick = () => toggleCurrencySelector('desktop');
+    const currencySelectorMobile = document.getElementById('currencySelectorMobile');
+    if (currencySelectorMobile) currencySelectorMobile.onclick = () => toggleCurrencySelector('mobile');
 
     // User dropdown
     const userBtn = document.querySelector('.user-info-btn');
@@ -1463,17 +1552,23 @@ function setupEventHandlers() {
     const cartIcon = document.getElementById('cartIcon');
     if (cartIcon) cartIcon.onclick = openCart;
 }
+
 document.addEventListener('click', function (event) {
+    // Desktop
     const currencyDropdown = document.getElementById('currencyDropdown');
     const currencySelector = document.getElementById('currencySelector');
+    // Mobile
+    const currencyDropdownMobile = document.getElementById('currencyDropdownMobile');
+    const currencySelectorMobile = document.getElementById('currencySelectorMobile');
+    // Language
     const languageDropdown = document.getElementById('languageDropdown');
     const languageSelector = document.getElementById('languageSelector');
+    // User
     const userDropdown = document.getElementById('userDropdown');
     const userBtn = document.querySelector('.user-info-btn');
 
-    if (currencyDropdown && currencySelector)
-    {
-        // If dropdown is open and click is outside selector and dropdown, close it
+    // Desktop currency
+    if (currencyDropdown && currencySelector) {
         if (currencyDropdown.style.display === 'block') {
             if (!currencySelector.contains(event.target) && !currencyDropdown.contains(event.target)) {
                 currencyDropdown.style.display = 'none';
@@ -1481,9 +1576,17 @@ document.addEventListener('click', function (event) {
             }
         }
     }
-    if (languageDropdown && languageSelector)
-    {
-        // If dropdown is open and click is outside selector and dropdown, close it
+    // Mobile currency
+    if (currencyDropdownMobile && currencySelectorMobile) {
+        if (currencyDropdownMobile.style.display === 'block') {
+            if (!currencySelectorMobile.contains(event.target) && !currencyDropdownMobile.contains(event.target)) {
+                currencyDropdownMobile.style.display = 'none';
+                currencySelectorMobile.classList.remove('active');
+            }
+        }
+    }
+    // Language
+    if (languageDropdown && languageSelector) {
         if (languageDropdown.style.display === 'block') {
             if (!languageSelector.contains(event.target) && !languageDropdown.contains(event.target)) {
                 languageDropdown.style.display = 'none';
@@ -1491,6 +1594,7 @@ document.addEventListener('click', function (event) {
             }
         }
     }
+    // User
     if (userDropdown && userBtn) {
         if (userDropdown.style.display === 'block') {
             if (!userBtn.contains(event.target) && !userDropdown.contains(event.target)) {
@@ -1500,33 +1604,62 @@ document.addEventListener('click', function (event) {
     }
 });
 function setupCurrencySelector() {
+    // Desktop
     const dropdown = document.getElementById('currencyDropdown');
-    if (!dropdown) return;
-    dropdown.innerHTML = '';
-    const isLive = !!lastCurrencyUpdate;
-    Object.keys(currencies).forEach(code => {
-        const rate = currencies[code].rate;
-        const option = document.createElement('div');
-        option.className = 'currency-option';
-        option.innerHTML = `
-            <span>${currencies[code].symbol} - ${currencies[code].name}</span>
-            <span style="margin-left:8px; color:#aaa; font-size:0.9em;">
-                1 PHP = ${rate} ${code}
-                ${isLive ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
-            </span>
-        `;
-        option.onclick = function () {
-            selectedCurrency = code;
-            updateCurrencySelector();
-            displayItems();
-            // Close dropdown after selection
-            dropdown.style.display = 'none';
-            const selector = document.getElementById('currencySelector');
-            if (selector) selector.classList.remove('active');
-        };
-        dropdown.appendChild(option);
-    });
+    if (dropdown) {
+        dropdown.innerHTML = '';
+        const isLive = !!lastCurrencyUpdate;
+        Object.keys(currencies).forEach(code => {
+            const rate = currencies[code].rate;
+            const option = document.createElement('div');
+            option.className = 'currency-option';
+            option.innerHTML = `
+                <span>${currencies[code].symbol} - ${currencies[code].name}</span>
+                <span style="margin-left:8px; color:#aaa; font-size:0.9em;">
+                    1 PHP = ${rate} ${code}
+                    ${isLive ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
+                </span>
+            `;
+            option.onclick = function () {
+                selectedCurrency = code;
+                updateCurrencySelector();
+                displayItems();
+                dropdown.style.display = 'none';
+                const selector = document.getElementById('currencySelector');
+                if (selector) selector.classList.remove('active');
+            };
+            dropdown.appendChild(option);
+        });
+    }
+    // Mobile
+    const dropdownMobile = document.getElementById('currencyDropdownMobile');
+    if (dropdownMobile) {
+        dropdownMobile.innerHTML = '';
+        const isLive = !!lastCurrencyUpdate;
+        Object.keys(currencies).forEach(code => {
+            const rate = currencies[code].rate;
+            const option = document.createElement('div');
+            option.className = 'currency-option';
+            option.innerHTML = `
+                <span>${currencies[code].symbol} - ${currencies[code].name}</span>
+                <span style="margin-left:8px; color:#aaa; font-size:0.9em;">
+                    1 PHP = ${rate} ${code}
+                    ${isLive ? '<span class="rate-badge live">Live</span>' : '<span class="rate-badge static">Static</span>'}
+                </span>
+            `;
+            option.onclick = function () {
+                selectedCurrency = code;
+                updateCurrencySelector();
+                displayItems();
+                dropdownMobile.style.display = 'none';
+                const selectorMobile = document.getElementById('currencySelectorMobile');
+                if (selectorMobile) selectorMobile.classList.remove('active');
+            };
+            dropdownMobile.appendChild(option);
+        });
+    }
 }
+
 window.toggleLanguageSelector = function() {
     const dropdown = document.getElementById('languageDropdown');
     const selector = document.getElementById('languageSelector');
@@ -1560,12 +1693,18 @@ function setupLanguageSelector() {
 }
 
 function updateCurrencySelector() {
+    // Desktop
     const currencyText = document.getElementById('selectedCurrency');
-    if (currencyText && currencies[selectedCurrency])
-    {
+    if (currencyText && currencies[selectedCurrency]) {
         currencyText.textContent = currencies[selectedCurrency].symbol;
     }
+    // Mobile
+    const currencyTextMobile = document.getElementById('selectedCurrencyMobile');
+    if (currencyTextMobile && currencies[selectedCurrency]) {
+        currencyTextMobile.textContent = currencies[selectedCurrency].symbol;
+    }
 }
+
 function updateLanguageSelector() {
     const currencyText = document.getElementById('selectedLanguage');
     if (currencyText && languages[selectedLanguage]) {
@@ -2104,7 +2243,7 @@ function clearRegisterForm() {
     const usernameInput = document.getElementById('registerUsername');
     const emailInput = document.getElementById('registerEmail');
     const passwordInput = document.getElementById('registerPassword');
-    const confirmPasswordInput = document.getElementById('registerConfirmPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
     const favoriteGameInput = document.getElementById('registerFavoriteGame');
     if (usernameInput) usernameInput.value = '';
     if (emailInput) emailInput.value = '';
@@ -2408,3 +2547,17 @@ window.addEventListener('click', function (event) {
         modal.style.display = 'none';
     }
 });
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const isOpen = menu.classList.toggle('open');
+    if (isOpen) {
+        menu.removeAttribute('inert');
+        // Optionally focus the close button for accessibility
+        const closeBtn = menu.querySelector('.close-mobile-menu');
+        if (closeBtn) closeBtn.focus();
+        document.body.style.overflow = 'hidden';
+    } else {
+        menu.setAttribute('inert', '');
+        document.body.style.overflow = '';
+    }
+}

@@ -61,7 +61,53 @@
             </button>
         </div>
     </div>
-
+    <!-- Mobile Nav Bar (visible only on ≤768px) -->
+    <nav class="nav-bar-mobile" id="navBarMobile">
+        <div class="nav-mobile-left">
+            <button class="nav-hamburger" aria-label="Open menu" aria-controls="mobileMenu" aria-expanded="false" onclick="toggleMobileMenu()">
+                <span class="hamburger-bar"></span>
+                <span class="hamburger-bar"></span>
+                <span class="hamburger-bar"></span>
+            </button>
+            <header class="headerimg"></header>
+        </div>
+        <div class="nav-mobile-right">
+            <div class="currency-selector">
+                    <button class="currency-button" id="currencySelectorMobile" onclick="toggleCurrencySelector('mobile')">
+                    <span id="selectedCurrencyMobile">PHP</span>
+                    <span class="currency-arrow">▼</span>
+                </button>
+                <div class="currency-dropdown" id="currencyDropdownMobile"></div>
+            </div>
+            <button class="cart-button" onclick="openCart()" aria-label="View Cart">
+                <span class="cart-icon" aria-hidden="true">
+                    <!-- SVG as in your code -->
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M3 3h2l2.68 10.39a2 2 0 0 0 2 1.61h6.72a2 2 0 0 0 2-1.61L21 6H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <circle cx="9" cy="19" r="1.5" fill="currentColor" />
+                        <circle cx="17" cy="19" r="1.5" fill="currentColor" />
+                    </svg>
+                </span>
+                <span class="cart-count" id="cartCountMobile">0</span>
+            </button>
+        </div>
+        <!-- Slide-out mobile menu -->
+        <div id="mobileMenu" class="mobile-menu">
+            <button class="close-mobile-menu" onclick="toggleMobileMenu()" aria-label="Close menu">&times;</button>
+            <div class="mobile-menu-content">
+                <div class="mobile-filters">
+                    <button class="filter-btn" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="ml">Mobile Legends</button>
+                    <button class="filter-btn" data-filter="roblox">Roblox</button>
+                </div>
+                <div class="mobile-account-section">
+                    <button class="account-btn login-btn" onclick="openLoginModal()">Login</button>
+                    <button class="account-btn register-btn" onclick="openRegisterModal()">Register</button>
+                </div>
+                <button class="track-order-btn" onclick="openOrderTracking()">Track Order</button>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <!-- Items Grid - FIRST -->
         <div class="items-grid" id="itemsGrid">

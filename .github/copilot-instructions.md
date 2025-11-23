@@ -1,50 +1,44 @@
-﻿# Copilot Instructions
+﻿# LilyBlock Online Shop – Copilot Instructions
 
-You are my senior mentor and coding assistant.  
-I am a solo developer creating a simple ecommerce website similar to lolga.com.  
-The project budget is ₱30k–₱50k, so everything must stay simple and practical.  
+## Critical Rules for Copilot
 
-## My background
-- I am new to web development (HTML, CSS, JavaScript).  
-- I have backend programming experience (C#).  
-- I’m working alone, so I need **ready-to-use solutions** instead of abstract advice.  
+1. **No Hallucination:**
+	- All code changes, suggestions, and explanations must be based on actual files, code, or documentation present in the workspace, or on authoritative external sources (official docs, referenced standards).
+	- Never invent features, APIs, or code that do not exist in the project or in referenced documentation.
 
-## How you should help me
-- Always read and understand **all project files in this workspace** (HTML, CSS, JavaScript, Netlify Functions, API handlers) before giving fixes or new code.  
-- Understand the **full flow of the code** (frontend → backend → API → database) so your solutions are complete and consistent across files.  
-- If I forget to set the scope, remind me to use **`@workspace`** so you can review all files together.  
-- Always output **fully working, production-ready code** that I can copy and paste directly into my files.  
-- When I ask for fixes or improvements, **rewrite the complete section or file with the fix applied**, instead of just describing what to change.  
-- Include **clean, minimal comments** to label major sections of the code. Keep them short and uncluttered.  
-- Keep explanations outside the code **short and clear** — focus on delivering the full corrected code first.  
+2. **Source of Truth:**
+	- Always use the README, project structure, and actual file contents as the primary source of truth.
+	- For backend/API/database changes, reference the Netlify functions and `supabase-schemas.md`.
+	- For frontend/UI/logic, reference `index.html`, `main.js`, `main.css`, and related files.
 
-## Code style & structure rules
-- **Strict rule: Do NOT use inline styles in HTML.**  
-- **Always separate structure and styling:**  
-  - HTML = structure only (no inline styles, no embedded `<style>` tags).  
-  - CSS = all styling rules (colors, spacing, layout, typography, responsiveness).  
-  - JS = interactions only (dropdowns, modals, validation, dynamic updates).  
-- When I ask for a new component (e.g., a product card, button, modal, header, footer, etc.), you must provide:  
-  1. Full **HTML structure** (clean, semantic, no inline styles).  
-  2. The **CSS rules** that go in my stylesheet.  
-  3. Any required **JavaScript**, in a separate file with section comments.  
-- Always format the output so I can clearly see which part belongs in HTML, CSS, and JS.  
+3. **Research Before Edit:**
+	- Before making any change, scan and analyze the relevant files and context.
+	- If a feature or fix is requested, locate the source code, logic, or config that implements it before suggesting or applying changes.
+	- If external documentation is needed, cite the source (e.g., MDN, Supabase docs, Netlify docs).
 
-## What to focus on
-- Core ecommerce features only: product listing, cart, checkout, payment integration, order confirmation.  
-- Security basics: sanitize/validate inputs, no exposed secrets, safe error handling.  
-- Reliability: make sure core flows (add to cart → pay → confirm) work on desktop and mobile.  
-- Maintainability: group code logically, remove unused lines, and keep formatting consistent.  
+4. **Change Management:**
+	- Only edit the minimum set of files required for the requested change.
+	- Use clear, concise comments and code blocks. Avoid unnecessary repetition.
+	- For multi-file changes, explain the relationship and flow between files.
 
-## What NOT to do
-- Do not mix HTML + CSS in the same block unless I explicitly ask for it.  
-- Do not output only snippets unless I explicitly ask; always output the **complete code block** I need.  
-- Do not suggest enterprise-level tools, frameworks, or overengineering.  
-- Do not push SEO, analytics, or fancy UI libraries unless I ask.  
-- Do not clutter HTML with unnecessary attributes or classes.  
+5. **Testing and Validation:**
+	- After making changes, check for errors, broken flows, or regressions.
+	- Use the manual test checklist in the README to validate features.
 
-## Special instructions
-- If a file is too large (over 1000 lines), guide me to split it into smaller chunks and **return fully rewritten cleaned-up chunks** of code.  
-- Always consider **cross-file dependencies** (e.g., frontend calling backend, backend calling APIs). Do not give incomplete fixes that break the flow.  
-- When reviewing my code, always provide the **corrected full code** instead of patch notes.  
-- Provide **manual test checklists** I can use to verify security and stability before deployment.  
+6. **Documentation:**
+	- Update the README or relevant docs if the change affects project structure, flow, or usage.
+	- Add comments in code for non-obvious logic or important rules.
+
+7. **Respect Project Conventions:**
+	- Follow the separation of concerns: HTML for structure, CSS for styles, JS for logic, Netlify functions for backend/API.
+	- Use the mobile-specific styles at the bottom of `main.css` for mobile changes.
+
+8. **Copilot Workflow:**
+	- Always start by analyzing the workspace and context.
+	- Only suggest or apply changes that are supported by the codebase or referenced documentation.
+	- If unsure, ask for clarification or request more information.
+
+---
+
+**Summary:**
+Copilot must never hallucinate or invent code. All changes must be based on the actual source of truth in the workspace or on authoritative research. Always validate, document, and respect project conventions.
