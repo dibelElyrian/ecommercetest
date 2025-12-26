@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="assets/css/modal.css">
     <link rel="stylesheet" href="assets/css/item.css">
     <link rel="stylesheet" href="assets/css/buttons.css">
+    <link rel="stylesheet" href="assets/css/mobile-overrides.css">
     <link rel="icon" type="image/png" href="assets/img/favicon.png">
 </head>
 <body>
@@ -100,18 +101,28 @@
         </div>
         <!-- Slide-out mobile menu -->
         <div id="mobileMenu" class="mobile-menu">
-            <button class="close-mobile-menu" onclick="toggleMobileMenu()" aria-label="Close menu">&times;</button>
+            <div class="mobile-menu-header">
+                <span class="mobile-menu-title">Menu</span>
+                <button class="close-mobile-menu" onclick="toggleMobileMenu()" aria-label="Close menu">&times;</button>
+            </div>
             <div class="mobile-menu-content">
+                <div class="mobile-section-label">Categories</div>
                 <div class="mobile-filters">
-                    <button class="filter-btn" data-filter="all">All</button>
+                    <button class="filter-btn active" data-filter="all">All Items</button>
                     <button class="filter-btn" data-filter="ml">Mobile Legends</button>
                     <button class="filter-btn" data-filter="roblox">Roblox</button>
                 </div>
+                
+                <div class="mobile-divider"></div>
+                
                 <div class="mobile-account-section">
                     <button class="account-btn login-btn" onclick="openLoginModal()">Login</button>
                     <button class="account-btn register-btn" onclick="openRegisterModal()">Register</button>
                 </div>
-                <button class="track-order-btn" onclick="openOrderTracking()">Track Order</button>
+                
+                <button class="track-order-btn" onclick="openOrderTracking()">
+                    <span class="btn-icon">📦</span> Track Order
+                </button>
             </div>
         </div>
     </nav>

@@ -478,14 +478,14 @@ async function fetchItems(options = {}) {
 // REAL-TIME CURRENCY FETCHING SYSTEM
 async function fetchLiveExchangeRates() {
     try {
-        console.log('Fetching live exchange rates from API...');
+        // console.log('Fetching live exchange rates from API...');
         // Using exchangerate-api.com (free tier: 1500 requests/month)
         const response = await fetch('https://api.exchangerate-api.com/v4/latest/PHP');
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         const data = await response.json();
-        console.log('Exchange rate data received:', data);
+        // console.log('Exchange rate data received:', data);
         if (data && data.rates) {
             // Update currency rates with live data
             const supportedCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'KRW', 'SGD', 'MYR', 'THB', 'VND'];
@@ -505,7 +505,7 @@ async function fetchLiveExchangeRates() {
                 rates: currencies,
                 lastUpdate: lastCurrencyUpdate.toISOString()
             }));
-            console.log('Live exchange rates updated successfully');
+            // console.log('Live exchange rates updated successfully');
             if (typeof setupCurrencySelector === 'function') setupCurrencySelector();
             if (typeof displayItems === 'function') displayItems();
             if (typeof showNotification === 'function') showNotification('Exchange rates updated with live data');
@@ -517,7 +517,7 @@ async function fetchLiveExchangeRates() {
         console.error('Failed to fetch live exchange rates:', error);
         // Try fallback API (freeforexapi.com)
         try {
-            console.log('Trying fallback exchange rate API...');
+            // console.log('Trying fallback exchange rate API...');
             const fallbackResponse = await fetch(`https://api.freeforexapi.com/v1/latest?base_currency=PHP&currencies=USD,EUR,GBP,JPY,KRW,SGD,MYR,THB,VND`);
             if (!fallbackResponse.ok) {
                 throw new Error('Fallback API also failed');
@@ -532,7 +532,7 @@ async function fetchLiveExchangeRates() {
                     }
                 });
                 lastCurrencyUpdate = new Date();
-                console.log('Fallback exchange rates updated successfully');
+                // console.log('Fallback exchange rates updated successfully');
                 return true;
             }
         } catch (fallbackError) {
@@ -558,10 +558,10 @@ function loadCachedExchangeRates() {
             if (cacheAge < maxCacheAge) {
                 currencies = { ...currencies, ...cacheData.rates };
                 lastCurrencyUpdate = new Date(cacheData.lastUpdate);
-                console.log('Loaded cached exchange rates (age: ' + Math.round(cacheAge / 1000 / 60) + ' minutes)');
+                // console.log('Loaded cached exchange rates (age: ' + Math.round(cacheAge / 1000 / 60) + ' minutes)');
                 return true;
             } else {
-                console.log('Cached exchange rates are too old, ignoring cache');
+                // console.log('Cached exchange rates are too old, ignoring cache');
             }
         }
     } catch (error) {
@@ -571,21 +571,21 @@ function loadCachedExchangeRates() {
 }
 
 function initializeLiveCurrencySystem() {
-    console.log('Initializing live currency system...');
+    // console.log('Initializing live currency system...');
     loadCachedExchangeRates();
     fetchLiveExchangeRates();
     if (currencyUpdateInterval) {
         clearInterval(currencyUpdateInterval);
     }
     currencyUpdateInterval = setInterval(() => {
-        console.log('Automatic currency rate update...');
+        // console.log('Automatic currency rate update...');
         fetchLiveExchangeRates();
     }, 30 * 60 * 1000); // 30 minutes
-    console.log('Live currency system initialized - updates every 30 minutes');
+    // console.log('Live currency system initialized - updates every 30 minutes');
 }
 
 window.refreshExchangeRates = function() {
-    console.log('Manual currency rate refresh requested...');
+    // console.log('Manual currency rate refresh requested...');
     if (typeof showNotification === 'function') {
         showNotification('Updating exchange rates...');
     }
@@ -809,24 +809,9 @@ function createOrderHistoryModal() {
 }
 
 // Initialize everything when DOM is ready
-// Mobile menu toggle function
-window.toggleMobileMenu = function() {
-    const drawer = document.getElementById('mobileMenu');
-    const body = document.body;
-    if (drawer) {
-        const isOpen = drawer.classList.contains('open');
-        if (isOpen) {
-            drawer.classList.remove('open');
-            body.style.overflow = '';
-        } else {
-            drawer.classList.add('open');
-            body.style.overflow = 'hidden';
-        }
-    }
-};
 
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM Content Loaded - Starting LilyBlock Online Shop initialization...');
+    // console.log('DOM Content Loaded - Starting LilyBlock Online Shop initialization...');
     fetchItems().then(() => {
         init();
         
@@ -1158,38 +1143,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Also initialize on window load as fallback
 window.addEventListener('load', function () {
-    console.log('Window Load event - LilyBlock Online Shop fallback initialization...');
+    // console.log('Window Load event - LilyBlock Online Shop fallback initialization...');
     const itemsGrid = document.getElementById('itemsGrid');
     if (itemsGrid && !itemsGrid.innerHTML.trim()) {
-        console.log('Items grid is empty, forcing initialization...');
+        // console.log('Items grid is empty, forcing initialization...');
         init();
     }
 });
 
 // Additional fallback - initialize after a short delay if nothing happened
 setTimeout(() => {
-    console.log('Timeout fallback - checking if LilyBlock Online Shop needs initialization...');
+    // console.log('Timeout fallback - checking if LilyBlock Online Shop needs initialization...');
     const itemsGrid = document.getElementById('itemsGrid');
     if (itemsGrid && !itemsGrid.innerHTML.trim()) {
-        console.log('Items grid is empty, forcing initialization...');
+        // console.log('Items grid is empty, forcing initialization...');
         init();
     }
 }, 3000); // Increased timeout to 3 seconds
 
 // Initialize everything
 function init() {
-    console.log('LilyBlock Online Shop Initializing...');
-    if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
-        showNotification('No items available. Cannot connect to database (local mode)', 'error');
-        return;
-    }
+    // console.log('LilyBlock Online Shop Initializing...');
     // Check if items array exists
     if (typeof items === 'undefined' || !Array.isArray(items) || items.length === 0) {
         console.error('Items array is not available or empty!', items);
+        showNotification('No items available. Cannot connect to database (local mode)', 'error');
         return;
     }
     
-    console.log('Items array loaded with', items.length, 'items');
+    // console.log('Items array loaded with', items.length, 'items');
     
     // Initialize live currency system first
     initializeLiveCurrencySystem();
@@ -1206,20 +1188,18 @@ function init() {
     // Add authentication status to debug
     setTimeout(() => {
         const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
-        console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
+        // console.log('Authentication initialized. Current user:', currentUser ? currentUser.username : 'Not logged in');
         
         // Show connection status
         if (navigator.onLine) {
-            console.log('Online - Database authentication available');
+            // console.log('Online - Database authentication available');
         } else {
-            console.log('Offline');
+            // console.log('Offline');
         }
     }, 1000);
-    
-    console.log('LilyBlock Online Shop Initialized successfully!');
-}
 
-// NEW: Secure Admin Data Loading Functions (Server-Verified)
+    // console.log('LilyBlock Online Shop Initialized successfully!');
+}// NEW: Secure Admin Data Loading Functions (Server-Verified)
 async function loadAdminData() {
     try {
         const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
@@ -1240,7 +1220,7 @@ async function loadAdminData() {
         const adminLevel = await window.LilyBlockOnlineShopAuth.getAdminLevel();
         const permissions = await window.LilyBlockOnlineShopAuth.getAdminPermissions();
 
-        console.log(`Loading admin data for level ${adminLevel} user`);
+        // console.log(`Loading admin data for level ${adminLevel} user`);
 
         // Update admin level badge
         const adminLevelBadge = document.getElementById('adminLevelBadge');
@@ -1284,7 +1264,7 @@ async function loadAdminData() {
             if (analyticsTab) analyticsTab.style.display = 'none';
         }
 
-        console.log('Admin data loaded successfully');
+        // console.log('Admin data loaded successfully');
 
     } catch (error) {
         console.error('Error loading admin data:', error);
@@ -1309,7 +1289,7 @@ async function loadAdminOrders() {
 // Add placeholder functions for admin actions
 window.updateOrderStatus = async function(orderId, newStatus) {
     try {
-        console.log('Updating order status:', orderId, newStatus);
+        // console.log('Updating order status:', orderId, newStatus);
 
         // Get the current user from the authentication system
         const currentUser = window.LilyBlockOnlineShopAuth?.getCurrentUser();
@@ -1489,27 +1469,21 @@ function formatPrice(price) {
     return `${currency.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function initializeLiveCurrencySystem() {
-    console.log('Initializing live currency system...');
-    loadCachedExchangeRates();
-    fetchLiveExchangeRates();
-    if (currencyUpdateInterval) {
-        clearInterval(currencyUpdateInterval);
-    }
-    currencyUpdateInterval = setInterval(() => {
-        console.log('Automatic currency rate update...');
-        fetchLiveExchangeRates();
-    }, 30 * 60 * 1000); // 30 minutes
-    console.log('Live currency system initialized - updates every 30 minutes');
-}
-
 function updateCartCount() {
-    // Find the cart count element (adjust selector as needed)
-    const cartCountElem = document.getElementById('cartCount');
-    if (!cartCountElem) return;
     // Calculate total quantity in cart
     const total = Array.isArray(cart) ? cart.reduce((sum, item) => sum + (item.quantity || 1), 0) : 0;
-    cartCountElem.textContent = total;
+
+    // Update desktop cart count
+    const cartCountElem = document.getElementById('cartCount');
+    if (cartCountElem) {
+        cartCountElem.textContent = total;
+    }
+
+    // Update mobile cart count
+    const cartCountMobileElem = document.getElementById('cartCountMobile');
+    if (cartCountMobileElem) {
+        cartCountMobileElem.textContent = total;
+    }
 }
 function setupFilters() {
     const filterContainer = document.getElementById('filterContainer');
@@ -1746,21 +1720,40 @@ function showNotification(message, type = 'info') {
     if (!notif) {
         notif = document.createElement('div');
         notif.id = 'notification';
-        notif.className = 'notification';
         document.body.appendChild(notif);
     }
-    notif.textContent = message;
+
+    const iconMap = {
+        info: '<span class="notif-icon">ℹ️</span>',
+        success: '<span class="notif-icon">✅</span>',
+        error: '<span class="notif-icon">⚠️</span>'
+    };
+
     notif.className = `notification ${type}`;
-    notif.style.display = 'block';
+    notif.innerHTML = `
+        <div class="notif-content">
+            ${iconMap[type] || iconMap.info}
+            <span class="notif-message">${message}</span>
+        </div>
+        <button class="notif-close" onclick="this.closest('.notification').classList.remove('show'); setTimeout(() => this.closest('.notification').style.display = 'none', 400);">&times;</button>
+    `;
+    
+    notif.style.display = 'flex';
+    // Trigger reflow to enable transition
+    void notif.offsetWidth;
+    notif.classList.add('show');
 
     // Clear previous timeout if exists
     if (notificationTimeout) {
         clearTimeout(notificationTimeout);
     }
     notificationTimeout = setTimeout(() => {
-        notif.style.display = 'none';
+        notif.classList.remove('show');
+        setTimeout(() => {
+            notif.style.display = 'none';
+        }, 400); // Wait for transition
         notificationTimeout = null;
-    }, 2500);
+    }, 3500);
 }
 function populateProfileForm(user) {
     if (!user) return;
