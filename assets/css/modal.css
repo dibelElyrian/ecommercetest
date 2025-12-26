@@ -1,0 +1,202 @@
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    z-index: 1000;
+}
+.modal-content {
+    background: var(--dark-bg);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 28px;
+    padding: 45px;
+    max-width: 650px;
+    margin: 50px auto;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    backdrop-filter: blur(25px);
+}
+.close {
+    position: absolute;
+    top: 25px;
+    right: 30px;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, transform 0.2s;
+    box-shadow: none;
+    outline: none;
+}
+.close:hover,
+.close:focus {
+    color: var(--roblox-red);
+    background: rgba(255, 51, 51, 0.08);
+    transform: scale(1.12);
+}
+.close:active {
+    background: rgba(255, 51, 51, 0.18);
+    transform: scale(0.98);
+}
+.modal h2 {
+    font-size: 2.5rem;
+    margin-bottom: 35px;
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 900;
+}
+
+/* --- Enhanced Cart Modal Styles (Moved from main.css) --- */
+.cart-modal-content {
+    background: #13132a;
+    border-radius: 28px;
+    padding: 45px 40px 40px 40px;
+    max-width: 500px;
+    margin: 50px auto;
+    position: relative;
+    box-shadow: 0 12px 40px rgba(102,126,234,0.08);
+    color: #fff;
+}
+
+.cart-modal-title {
+    font-size: 2.5rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 32px;
+    letter-spacing: 1px;
+}
+
+.cart-items-list {
+    margin-bottom: 32px;
+}
+
+.cart-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.2s;
+}
+
+.cart-item:last-child {
+    border-bottom: none;
+}
+
+.cart-item-name {
+    font-weight: 700;
+    font-size: 1.08rem;
+    color: #fff;
+    flex: 2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cart-item-qty {
+    font-size: 1rem;
+    color: #a3a3a3;
+    flex: 0.5;
+    text-align: center;
+}
+
+.cart-item-price {
+    font-weight: 700;
+    font-size: 1.08rem;
+    color: #10b981;
+    flex: 1;
+    text-align: right;
+}
+
+.remove-cart-btn {
+    background: linear-gradient(135deg, #ff3333 0%, #ff6b6b 100%);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 1.2rem;
+    font-weight: 900;
+    cursor: pointer;
+    margin-left: 18px;
+    transition: background 0.2s, transform 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.remove-cart-btn:hover {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff3333 100%);
+    transform: scale(1.12);
+}
+
+.cart-total {
+    font-size: 2.2rem;
+    font-weight: 900;
+    background: linear-gradient(45deg, #10b981, #34d399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 35px 0 28px 0;
+    text-align: center;
+    line-height: 1.2;
+    font-family: Arial, "Segoe UI", sans-serif;
+}
+
+.proceed-to-checkout-btn {
+    background: linear-gradient(90deg, #667eea 0%, #f093fb 100%);
+    color: #fff;
+    border: none;
+    padding: 20px 0;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 900;
+    font-size: 1.3rem;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    box-shadow: 0 8px 32px rgba(102,126,234,0.18);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.proceed-to-checkout-btn:hover {
+    background: linear-gradient(90deg, #764ba2 0%, #667eea 100%);
+    transform: translateY(-2px) scale(1.03);
+}
+
+@media (max-width: 600px) {
+    .cart-modal-content {
+        padding: 25px 10px 20px 10px;
+        max-width: 98vw;
+    }
+    .cart-modal-title {
+        font-size: 1.5rem;
+    }
+    .cart-total {
+        font-size: 1.3rem;
+    }
+    .proceed-to-checkout-btn {
+        font-size: 1rem;
+        padding: 14px 0;
+    }
+}

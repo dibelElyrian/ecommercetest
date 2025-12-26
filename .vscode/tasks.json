@@ -1,0 +1,14 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "append_notification_comment",
+			"type": "shell",
+			"command": "echo \"/* Notification Mobile Styles */\" >> assets/css/mobile-overrides.css",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "none"
+		}
+	]
+}
