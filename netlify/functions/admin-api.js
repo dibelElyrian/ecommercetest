@@ -1,10 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
+const { Resend } = require('resend');
 
 // Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICEROLE_KEY // Use service key for admin operations
 );
+
+const resend = new Resend(process.env.RESEND_MAILSENDER);
 
 exports.handler = async (event, context) => {
   // Set CORS headers
@@ -166,14 +169,95 @@ exports.handler = async (event, context) => {
 
       if (error) throw error;
 
+      const updatedOrder = data?.[0];
       console.log(`Order ${orderId} status updated to ${newStatus}`);
+
+      // --- EMAIL NOTIFICATION LOGIC START ---
+      if (updatedOrder && (newStatus === 'completed' || newStatus === 'processing' || newStatus === 'cancelled')) {
+        try {
+          console.log('📧 Sending status update email...');
+
+          // Determine recipient (Test Mode Strategy)
+          // TODO: PRODUCTION - Change this to use updatedOrder.customer_email once domain is verified
+          const testRecipient = 'delivered@resend.dev';
+
+          // Define email content based on status
+          let subject = `Order Update: ${orderId}`;
+          let headline = 'Order Status Update';
+          let messageBody = '';
+          let color = '#667eea';
+
+          switch (newStatus) {
+            case 'completed':
+              subject = `Order Completed: ${orderId}`;
+              headline = 'Your Order is Complete!';
+              messageBody = `<p>Great news! Your order has been successfully processed and delivered.</p>
+                             <p>If you purchased game credits or items, they should now be available in your account.</p>`;
+              color = '#10b981'; // Green
+              break;
+            case 'processing':
+              subject = `Order Processing: ${orderId}`;
+              headline = 'We are working on your order';
+              messageBody = `<p>We have received your payment and are currently processing your order.</p>
+                             <p>You will receive another email once it is completed.</p>`;
+              color = '#3b82f6'; // Blue
+              break;
+            case 'cancelled':
+              subject = `Order Cancelled: ${orderId}`;
+              headline = 'Order Cancelled';
+              messageBody = `<p>Your order has been cancelled.</p>
+                             <p>If you have already paid, please reply to this email for refund assistance.</p>`;
+              color = '#ef4444'; // Red
+              break;
+          }
+
+          const emailHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+              <h1 style="color: ${color};">${headline}</h1>
+              <p>Hello,</p>
+              ${messageBody}
+              
+              <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid ${color};">
+                <p style="margin: 0;"><strong>Order ID:</strong> ${orderId}</p>
+                <p style="margin: 5px 0 0;"><strong>New Status:</strong> ${newStatus.toUpperCase()}</p>
+                ${adminNotes ? `<p style="margin: 10px 0 0; font-style: italic;"><strong>Note from Admin:</strong> ${adminNotes}</p>` : ''}
+              </div>
+
+              <p>Thank you for shopping with LilyBlock Online Shop!</p>
+
+              <p style="margin-top: 20px; font-size: 12px; color: #666;">
+                This email was sent to ${updatedOrder.customer_email}. <br>
+                (Test Mode: Actually sent to ${testRecipient})
+              </p>
+            </div>
+          `;
+
+          const { data: emailData, error: emailError } = await resend.emails.send({
+            // TODO: PRODUCTION - Change 'from' to your verified domain email
+            from: 'LilyBlock Shop <onboarding@resend.dev>',
+            to: [testRecipient],
+            subject: subject,
+            html: emailHtml
+          });
+
+          if (emailError) {
+            console.error('❌ Email sending failed:', emailError);
+          } else {
+            console.log('✅ Status email sent successfully:', emailData.id);
+          }
+
+        } catch (emailErr) {
+          console.error('💥 Email logic error:', emailErr);
+        }
+      }
+      // --- EMAIL NOTIFICATION LOGIC END ---
 
       return {
         statusCode: 200,
         headers,
         body: JSON.stringify({
           success: true,
-          order: data?.[0],
+          order: updatedOrder,
           message: `Order status updated to ${newStatus}`
         })
       };
@@ -319,6 +403,11 @@ async function addItem(params) {
         // Validate required fields
         if (!itemData || !itemData.name || !itemData.price || !itemData.game) {
             throw new Error('Missing required item fields');
+        }
+
+        // Validate price is positive
+        if (typeof itemData.price !== 'number' || itemData.price < 0) {
+            throw new Error('Price must be a positive number');
         }
 
         // Prepare insert data (match Supabase schema)

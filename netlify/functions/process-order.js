@@ -1,5 +1,8 @@
 ﻿const { createClient } = require('@supabase/supabase-js');
 const cookie = require('cookie');
+const { Resend } = require('resend');
+
+const resend = new Resend(process.env.RESEND_MAILSENDER);
 
 exports.handler = async (event, context) => {
   // Set CORS headers
@@ -44,6 +47,85 @@ exports.handler = async (event, context) => {
     if (SUPABASE_URL && SUPABASE_KEY) {
       supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
     }
+
+    // --- SECURITY & VALIDATION START ---
+    if (!orderData.items || !Array.isArray(orderData.items) || orderData.items.length === 0) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ success: false, message: 'Order must contain items' })
+      };
+    }
+
+    if (!supabase) {
+      console.warn('⚠️ Supabase database not configured - skipping server-side validation');
+    } else {
+      // 1. Fetch real item details from database
+      const itemIds = orderData.items.map(i => i.id);
+      const { data: dbItems, error: itemsError } = await supabase
+        .from('items')
+        .select('id, price, name, stock')
+        .in('id', itemIds);
+
+      if (itemsError) {
+        console.error('Error fetching items for validation:', itemsError);
+        return {
+          statusCode: 500,
+          headers,
+          body: JSON.stringify({ success: false, message: 'Server error validating items' })
+        };
+      }
+
+      // 2. Recalculate total and validate quantities
+      let calculatedTotal = 0;
+      const validatedItems = [];
+
+      for (const clientItem of orderData.items) {
+        const dbItem = dbItems.find(i => i.id === clientItem.id);
+
+        if (!dbItem) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, message: `Item ID ${clientItem.id} no longer exists` })
+          };
+        }
+
+        if (!Number.isInteger(clientItem.quantity) || clientItem.quantity <= 0) {
+          return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, message: `Invalid quantity for item: ${dbItem.name}` })
+          };
+        }
+
+        // Optional: Check stock
+        if (dbItem.stock !== null && dbItem.stock < clientItem.quantity) {
+           return {
+            statusCode: 400,
+            headers,
+            body: JSON.stringify({ success: false, message: `Insufficient stock for: ${dbItem.name} (Available: ${dbItem.stock})` })
+          };
+        }
+
+        // Use DB price for calculation
+        calculatedTotal += Number(dbItem.price) * clientItem.quantity;
+
+        validatedItems.push({
+          ...clientItem,
+          price: Number(dbItem.price), // Enforce DB price
+          name: dbItem.name
+        });
+      }
+
+      // 3. Override client data with validated data
+      console.log(`💰 Price Check: Client Total=${orderData.total}, Server Total=${calculatedTotal}`);
+      
+      // Allow small floating point difference (e.g. currency conversion artifacts), but prefer server total
+      orderData.total = calculatedTotal; 
+      orderData.items = validatedItems;
+    }
+    // --- SECURITY & VALIDATION END ---
 
     let jwtToken = null;
     if (event.headers.cookie) {
@@ -296,6 +378,85 @@ exports.handler = async (event, context) => {
       }
     }
 
+    // Send Email Confirmation (Resend)
+    let emailSent = false;
+    if (databaseSaved) {
+      try {
+        console.log('📧 Sending email confirmation...');
+        
+        // Determine recipient (Test Mode Strategy)
+        // Matches user-auth.js implementation
+        // TODO: PRODUCTION - Change this to use orderData.email once domain is verified
+        const testRecipient = 'delivered@resend.dev'; 
+        
+        // Construct HTML Email
+        const itemsHtml = orderData.items.map(item => 
+          `<tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name} (${item.game})</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">x${item.quantity}</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">₱${item.price.toFixed(2)}</td>
+           </tr>`
+        ).join('');
+
+        const emailHtml = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #667eea;">Order Confirmation</h1>
+            <p>Thank you for your order at LilyBlock Online Shop!</p>
+            <p><strong>Order ID:</strong> ${orderData.orderId}</p>
+            <p><strong>Status:</strong> Pending Processing</p>
+            
+            <h3>Order Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f8f9fa;">
+                  <th style="text-align: left; padding: 8px;">Item</th>
+                  <th style="text-align: left; padding: 8px;">Qty</th>
+                  <th style="text-align: left; padding: 8px;">Price</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" style="padding: 8px; text-align: right; font-weight: bold;">Total:</td>
+                  <td style="padding: 8px; font-weight: bold;">₱${orderData.total.toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f0f4f8; border-radius: 5px;">
+              <p style="margin: 0;"><strong>Payment Method:</strong> ${orderData.paymentMethod.toUpperCase()}</p>
+              ${orderData.paymentMethod === 'gcash' ? `<p style="margin: 5px 0 0;">Please complete your payment via GCash if you haven't already.</p>` : ''}
+            </div>
+
+            <p style="margin-top: 20px; font-size: 12px; color: #666;">
+              This email was sent to ${orderData.email}. <br>
+              (Test Mode: Actually sent to ${testRecipient})
+            </p>
+          </div>
+        `;
+
+        const { data: emailData, error: emailError } = await resend.emails.send({
+          // TODO: PRODUCTION - Change 'from' to your verified domain email (e.g., 'orders@lilyblock.com')
+          from: 'LilyBlock Shop <onboarding@resend.dev>',
+          to: [testRecipient],
+          subject: `Order Confirmation: ${orderData.orderId}`,
+          html: emailHtml
+        });
+
+        if (emailError) {
+          console.error('❌ Email sending failed:', emailError);
+        } else {
+          console.log('✅ Email sent successfully:', emailData.id);
+          emailSent = true;
+        }
+
+      } catch (emailErr) {
+        console.error('💥 Email logic error:', emailErr);
+      }
+    }
+
     // Log successful processing
     console.log('💾 Order processed:', {
       orderId: orderData.orderId,
@@ -305,6 +466,7 @@ exports.handler = async (event, context) => {
       itemCount: orderData.items.length,
       databaseSaved: databaseSaved,
       discordSent: discordSent,
+      emailSent: emailSent,
       paymentMethod: orderData.paymentMethod,
       paymentSuccess: paymentResult?.success
     });
@@ -320,10 +482,12 @@ exports.handler = async (event, context) => {
           orderId: orderData.orderId,
           orderDbId: orderDbId,
           discordSent: false,
+          emailSent: false,
           databaseSaved: false,
           paymentResult: paymentResult,
           integrations: {
             discord: !!DISCORD_WEBHOOK_URL,
+            email: false,
             database: false,
             manual_gcash: !!GCASH_NUMBER
           }
@@ -341,6 +505,7 @@ exports.handler = async (event, context) => {
         orderId: orderData.orderId,
         orderDbId: orderDbId,
         discordSent: discordSent,
+        emailSent: emailSent,
         databaseSaved: databaseSaved,
         paymentResult: {
           ...paymentResult,
@@ -348,6 +513,7 @@ exports.handler = async (event, context) => {
         },
         integrations: {
           discord: !!DISCORD_WEBHOOK_URL,
+          email: emailSent,
           database: databaseSaved,
           manual_gcash: !!GCASH_NUMBER
         }

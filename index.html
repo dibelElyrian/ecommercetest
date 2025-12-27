@@ -27,6 +27,10 @@
             </div>
         </div>
         <div class="nav-right">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search items..." oninput="handleSearch(this.value)">
+                <span class="search-icon">🔍</span>
+            </div>
             <div class="currency-selector">
                 <button class="currency-button" id="currencySelector" onclick="toggleCurrencySelector()">
                     <span id="selectedCurrency">PHP</span>
@@ -100,12 +104,17 @@
             </button>
         </div>
         <!-- Slide-out mobile menu -->
+        <div id="mobileMenuOverlay" class="mobile-menu-overlay" onclick="toggleMobileMenu()"></div>
         <div id="mobileMenu" class="mobile-menu">
             <div class="mobile-menu-header">
                 <span class="mobile-menu-title">Menu</span>
                 <button class="close-mobile-menu" onclick="toggleMobileMenu()" aria-label="Close menu">&times;</button>
             </div>
             <div class="mobile-menu-content">
+                <div class="mobile-search-container">
+                    <input type="text" id="searchInputMobile" placeholder="Search items..." oninput="handleSearch(this.value)">
+                    <span class="search-icon">🔍</span>
+                </div>
                 <div class="mobile-section-label">Categories</div>
                 <div class="mobile-filters">
                     <button class="filter-btn active" data-filter="all">All Items</button>

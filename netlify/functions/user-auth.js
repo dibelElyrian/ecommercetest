@@ -90,8 +90,10 @@ exports.handler = async (event, context) => {
 // Helper to send OTP email using Resend
 async function sendEmail(targetMails, code) {
     const result = await resend.emails.send({
+        // TODO: PRODUCTION - Change 'from' to your verified domain email
         from: 'onboarding@resend.dev',
-        to: ['delivered@resend.dev'],//change to targetMails when in production(need domain setup)
+        // TODO: PRODUCTION - Change 'to' to use targetMails once domain is verified
+        to: ['delivered@resend.dev'], 
         subject: `Your LilyBlock Online Shop Verification Code`,
         html: `<p>Your verification code is <b>${code}</b></p><p>This code will expire in 3 minutes.</p>`
     });
@@ -238,6 +240,22 @@ async function handleResendOtp(email) {
 async function handleRegistration(userData) {
     try {
         const { username, email, password, favorite_game } = userData;
+
+        // --- INPUT VALIDATION ---
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Validation Error', message: 'Please enter a valid email address' }) };
+        }
+
+        if (!password || password.length < 8) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Validation Error', message: 'Password must be at least 8 characters long' }) };
+        }
+
+        if (!username || username.length < 3 || username.length > 20) {
+            return { statusCode: 400, headers, body: JSON.stringify({ error: 'Validation Error', message: 'Username must be between 3 and 20 characters' }) };
+        }
+        // --- END VALIDATION ---
+
         const code = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = new Date(Date.now() + 3 * 60 * 1000).toISOString(); // 3 min expiry
 
@@ -323,6 +341,16 @@ async function handleLogin(credentials) {
     try {
         const { email, password } = credentials;
 
+        // --- INPUT VALIDATION ---
+        if (!email || !password) {
+             return {
+                statusCode: 400,
+                headers,
+                body: JSON.stringify({ error: 'Missing credentials', message: 'Email and password are required' })
+            };
+        }
+        // --- END VALIDATION ---
+
         // Get user from database
         const { data: users, error: fetchError } = await supabase
             .from('users')
@@ -335,6 +363,8 @@ async function handleLogin(credentials) {
         }
 
         if (!users || users.length === 0) {
+            // Rate Limiting: Delay response to slow down brute force
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return {
                 statusCode: 401,
                 headers,
@@ -350,6 +380,8 @@ async function handleLogin(credentials) {
         const passwordMatch = await bcrypt.compare(password, user.password_hash);
 
         if (!passwordMatch) {
+            // Rate Limiting: Delay response to slow down brute force
+            await new Promise(resolve => setTimeout(resolve, 1000));
             return {
                 statusCode: 401,
                 headers,
@@ -528,8 +560,10 @@ async function handleGetProfile(userId) {
 // Helper to send password reset email using Resend
 async function sendResetPasswordEmail(targetEmail, tempPassword) {
     const result = await resend.emails.send({
+        // TODO: PRODUCTION - Change 'from' to your verified domain email
         from: 'onboarding@resend.dev',
-        to: ['delivered@resend.dev'], // Use targetEmail in production
+        // TODO: PRODUCTION - Change 'to' to use targetEmail once domain is verified
+        to: ['delivered@resend.dev'], 
         subject: `LilyBlock Online Shop Temporary Password`,
         html: `<p>Your temporary password is: <b>${tempPassword}</b></p>
                <p>Use this password to log in. Please change your password immediately after logging in for security.</p>`

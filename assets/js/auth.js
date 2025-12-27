@@ -218,6 +218,22 @@ class LilyBlockOnlineShopAuth {
                     }
                 }
             }
+
+            // Add admin button to mobile menu
+            const mobileActions = document.querySelector('.mobile-user-actions');
+            if (mobileActions && !document.getElementById('mobileAdminButton')) {
+                const mobileAdminBtn = document.createElement('button');
+                mobileAdminBtn.id = 'mobileAdminButton';
+                mobileAdminBtn.className = 'mobile-action-btn admin-mobile-btn';
+                mobileAdminBtn.innerHTML = '<span class="btn-icon">⚙️</span> Admin Panel';
+                mobileAdminBtn.onclick = () => {
+                    window.openAdminPanel();
+                    if (typeof toggleMobileMenu === 'function') toggleMobileMenu();
+                };
+                
+                // Insert at the top
+                mobileActions.insertBefore(mobileAdminBtn, mobileActions.firstChild);
+            }
         } catch (error) {
             console.error('Error showing admin controls:', error);
         }
@@ -230,9 +246,11 @@ class LilyBlockOnlineShopAuth {
         try {
             const adminButton = document.getElementById('adminButton');
             const adminMenuItem = document.getElementById('adminMenuItem');
+            const mobileAdminButton = document.getElementById('mobileAdminButton');
             
             if (adminButton) adminButton.remove();
             if (adminMenuItem) adminMenuItem.remove();
+            if (mobileAdminButton) mobileAdminButton.remove();
             
             // Clear admin status cache
             this.adminStatus = null;
@@ -550,6 +568,15 @@ class LilyBlockOnlineShopAuth {
             if (loginSection) loginSection.style.display = 'flex';
             if (userSection) userSection.style.display = 'none';
             
+            // Update Mobile Menu
+            const mobileAccountSection = document.querySelector('.mobile-account-section');
+            if (mobileAccountSection) {
+                mobileAccountSection.innerHTML = `
+                    <button class="account-btn login-btn" onclick="openLoginModal()">Login</button>
+                    <button class="account-btn register-btn" onclick="openRegisterModal()">Register</button>
+                `;
+            }
+
             // Hide admin controls
             this.hideAdminControls();
         } catch (error) {
@@ -577,6 +604,33 @@ class LilyBlockOnlineShopAuth {
                 if (userName) {
                     userName.textContent = this.currentUser.username;
                 }
+            }
+
+            // Update Mobile Menu
+            const mobileAccountSection = document.querySelector('.mobile-account-section');
+            if (mobileAccountSection) {
+                mobileAccountSection.innerHTML = `
+                    <div class="mobile-user-profile">
+                        <div class="mobile-user-info">
+                            <div class="user-avatar-placeholder">${this.currentUser.username.charAt(0).toUpperCase()}</div>
+                            <div class="user-details">
+                                <span class="welcome-label">Welcome back,</span>
+                                <span class="username">${this.currentUser.username}</span>
+                            </div>
+                        </div>
+                        <div class="mobile-user-actions">
+                            <button class="mobile-action-btn" onclick="openProfileModal(); toggleMobileMenu();">
+                                <span class="btn-icon">👤</span> Profile Settings
+                            </button>
+                            <button class="mobile-action-btn" onclick="openOrderHistoryModal(); toggleMobileMenu();">
+                                <span class="btn-icon">📜</span> Order History
+                            </button>
+                            <button class="mobile-action-btn logout" onclick="logoutUser(); toggleMobileMenu();">
+                                <span class="btn-icon">🚪</span> Logout
+                            </button>
+                        </div>
+                    </div>
+                `;
             }
         } catch (error) {
             console.error('Error showing user section:', error);

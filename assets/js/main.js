@@ -8,6 +8,7 @@
 let items = [];
 let cart = [];
 let currentFilter = 'all';
+let searchQuery = '';
 let notificationTimeout;
 const gameNames = {
     'ml': 'Mobile Legends: Bang Bang',
@@ -55,7 +56,7 @@ const essentialFunctions = [
     'switchToLogin', 'switchToRegister', 'logoutUser', 'initAuth', 'initializeCurrencySystem',
     'openOrderHistoryModal', 'closeOrderHistoryModal', 'openProfileModal', 'closeProfileModal',
     'openForgotPassword', 'closeForgotPassword',
-    'openAdminPanel', 'closeAdminPanel', 'refreshAdminData'
+    'openAdminPanel', 'closeAdminPanel', 'refreshAdminData', 'handleSearch'
 ];
 
 essentialFunctions.forEach(funcName => {
@@ -593,71 +594,7 @@ window.refreshExchangeRates = function() {
 };
 
 function createAdminModal() {
-    // Only add styles once
-    if (!document.getElementById('adminModalStyles')) {
-        const style = document.createElement('style');
-        style.id = 'adminModalStyles';
-        style.textContent = `
-        .admin-modal {
-            position: fixed; top:0; left:0; width:100vw; height:100vh;
-            background: rgba(24,28,38,0.85); z-index:9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .admin-content {
-            background: rgba(34,38,54,0.95);
-            border-radius: 18px; box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-            padding: 2.5rem 2rem; max-width: 900px; width: 98vw;
-            min-height: 540px; display: flex; flex-direction: column;
-            animation: adminFadeIn 0.3s;
-        }
-        @keyframes adminFadeIn { from { opacity:0; transform:scale(0.97);} to { opacity:1; transform:scale(1);} }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
-        .admin-header h2 { font-size: 2rem; color: #f1c40f; margin: 0; }
-        .admin-controls { display: flex; align-items: center; gap: 1rem; }
-        .admin-level-badge { background: #23272f; color: #f1c40f; border-radius: 6px; padding: 0.3rem 1rem; font-weight: 600; font-size: 1rem; }
-        .admin-btn { background: #e67e22; color: #fff; border: none; border-radius: 6px; padding: 0.5rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: background 0.2s, color 0.2s; }
-        .admin-btn:hover { background: #f1c40f; color: #23272f; }
-        .refresh-btn { background: #23272f; color: #e67e22; border: 1px solid #e67e22; }
-        .refresh-btn:hover { background: #e67e22; color: #fff; }
-        .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
-        .admin-tab { background: #23272f; color: #fff; border: none; border-radius: 6px 6px 0 0; padding: 0.7rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.2s, color 0.2s; }
-        .admin-tab.active { background: #e67e22; color: #fff; }
-        .admin-tab:hover:not(.active) { background: #2c313c; color: #f1c40f; }
-        .admin-content-area { background: #23272f; border-radius: 0 0 12px 12px; padding: 1.2rem; flex: 1; overflow-y: auto; }
-        .admin-tab-content { display: none; }
-        .admin-tab-content.active { display: block; }
-        .admin-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .admin-section-header h3 { color: #f1c40f; margin: 0; font-size: 1.2rem; }
-        .admin-filters select { background: #23272f; color: #fff; border: 1px solid #e67e22; border-radius: 4px; padding: 0.3rem 0.7rem; }
-        .admin-orders-list, .admin-items-list, .admin-users-list, .admin-analytics { margin-top: 0.5rem; }
-        .admin-order-item, .admin-item, .admin-user-item { background: #2c313c; border-radius: 8px; margin-bottom: 0.7rem; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
-        .order-header { display: flex; justify-content: space-between; align-items: center; }
-        .order-status { font-weight: 600; border-radius: 4px; padding: 0.2rem 0.7rem; }
-        .status-pending { background: #f1c40f22; color: #f1c40f; }
-        .status-processing { background: #3498db22; color: #3498db; }
-        .status-completed { background: #2ecc4022; color: #2ecc40; }
-        .status-cancelled { background: #e74c3c22; color: #e74c3c; }
-        .admin-order-actions { display: flex; gap: 0.5rem; margin-top: 0.7rem; }
-        .admin-btn.processing-btn { background: #3498db; }
-        .admin-btn.completed-btn { background: #2ecc40; }
-        .admin-btn.cancel-btn { background: #e74c3c; }
-        .admin-btn.add-btn { background: #27ae60; }
-        .admin-btn.add-btn:hover { background: #2ecc40; }
-        .loading { color: #aaa; text-align: center; padding: 1.2rem 0; }
-        .admin-empty, .admin-error { color: #e74c3c; text-align: center; padding: 1rem 0; }
-        @media (max-width: 700px) {
-            .admin-content { padding: 1rem 0.2rem; min-width: 0; max-width: 99vw; }
-            .admin-header h2 { font-size: 1.3rem; }
-            .admin-tabs { flex-wrap: wrap; }
-            .admin-content-area { padding: 0.5rem; }
-        }
-        .modal-content .close {
-            position: absolute; top: 18px; right: 22px; font-size: 1.5rem;
-            color: #f1c40f; cursor: pointer; background: none; border: none;
-        }
-        `;
-        document.head.appendChild(style);
-    }
+    // Admin panel styles are now loaded from assets/css/admin.css
 
     const modal = document.createElement('div');
     modal.id = 'adminModal';
@@ -1104,41 +1041,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // --- Unified Filter Button Logic for Desktop & Mobile ---
+    // (Logic merged into main initialization block above)
 
-    // Select all filter buttons (desktop & mobile)
-    const filterButtons = document.querySelectorAll('.filter-btn');
-    // Select all product cards
-    const itemCards = document.querySelectorAll('.item-card');
-    // Select mobile menu (if present)
-    const mobileMenu = document.querySelector('.mobile-menu');
-
-    filterButtons.forEach(btn => {
-        btn.addEventListener('click', function () {
-            // Remove active from all filter buttons
-            filterButtons.forEach(b => b.classList.remove('active'));
-            // Add active to clicked button
-            btn.classList.add('active');
-
-            // Get filter value
-            const filter = btn.getAttribute('data-filter');
-
-            // Show/hide product cards based on filter
-            itemCards.forEach(card => {
-                // Each card should have a class like 'ml-item', 'roblox-item', etc.
-                if (filter === 'all' || card.classList.contains(`${filter}-item`)) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            // Optional: Close mobile menu after selecting filter
-            if (mobileMenu && mobileMenu.classList.contains('open')) {
-                mobileMenu.classList.remove('open');
-                document.body.style.overflow = '';
-            }
-        });
-    });
 });
 
 // Also initialize on window load as fallback
@@ -1358,66 +1262,70 @@ function displayAdminOrders(orders) {
             const orderItems = order.order_items || order.items || [];
 
             return `
-                <div class="admin-order-item">
-                    <div class="order-header" style="
-                        display: flex; 
-                        justify-content: space-between; 
-                        align-items: flex-start; 
-                        border-bottom: 1px solid #444; 
-                        padding-bottom: 6px; 
-                        margin-bottom: 8px;
-                    ">
-                        <div>
-                            <div style="font-size:1.1em; font-weight:700; color:#f1c40f;">
-                                ${orderId}
-                            </div>
-                            <div style="font-size:0.97em; color:#aaa;">
-                                ${customerEmail}
-                            </div>
-                            <div style="font-size:0.95em; color:#aaa;">
-                                ${gameUsername}${region ? ' &bull; ' + region : ''}
+                <div class="admin-order-card">
+                    <div class="order-card-header">
+                        <div class="order-id-group">
+                            <span class="order-id">${orderId}</span>
+                            <div class="order-user-info">
+                                <span>${gameUsername} ${region ? `(${region})` : ''}</span>
+                                <span class="user-email">${customerEmail}</span>
                             </div>
                         </div>
-                        <div style="text-align:right;">
-                            <span class="order-status status-${orderStatus}" style="
-                                display:inline-block; 
-                                margin-bottom:4px; 
-                                font-size:1em; 
-                                font-weight:600;
-                            ">
-                                ${orderStatus.toUpperCase()}
-                            </span>
-                            <div style="font-size:0.95em; color:#aaa;">
-                                ${new Date(parseDbUtcStringToLocal(createdAt)).toLocaleString()}
-                            </div>
-                            <div style="font-size:0.95em; color:#aaa;">
-                                ${paymentMethod}
-                            </div>
+                        <div class="order-meta">
+                            <span class="order-status-badge status-${orderStatus}">${orderStatus}</span>
+                            <span>${new Date(parseDbUtcStringToLocal(createdAt)).toLocaleString()}</span>
+                            <span>${paymentMethod}</span>
                         </div>
                     </div>
-                    <div class="order-details" style="margin-bottom:8px;">
-                        <p style="margin:2px 0;"><strong>Total:</strong> ${formatPrice(orderTotal)}</p>
-                        ${whatsapp ? `<p style="margin:2px 0;"><strong>WhatsApp:</strong> ${whatsapp}</p>` : ''}
-                        ${notes ? `<p style="margin:2px 0;"><strong>Customer Notes:</strong> ${notes}</p>` : ''}
-                        ${adminNotes ? `<p style="margin:2px 0; color:#e67e22;"><strong>Admin Notes:</strong> ${adminNotes}</p>` : ''}
+                    
+                    <div class="order-card-body">
+                        <div class="order-items-list">
+                            ${orderItems.map(item => {
+                                const itemName = item.item_name || item.name;
+                                const itemGame = item.item_game || item.game;
+                                const quantity = item.quantity;
+                                return `
+                                    <div class="order-item-row">
+                                        <span>${itemName} (${itemGame ? itemGame.toUpperCase() : ''})</span>
+                                        <span>x${quantity}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        
+                        <div class="order-details-grid">
+                            <div class="detail-group">
+                                <label>Total Amount</label>
+                                <span>${formatPrice(orderTotal)}</span>
+                            </div>
+                            ${whatsapp ? `
+                            <div class="detail-group">
+                                <label>WhatsApp</label>
+                                <span>${whatsapp}</span>
+                            </div>` : ''}
+                            ${notes ? `
+                            <div class="detail-group">
+                                <label>Customer Notes</label>
+                                <span>${notes}</span>
+                            </div>` : ''}
+                            ${adminNotes ? `
+                            <div class="detail-group">
+                                <label>Admin Notes</label>
+                                <span style="color: #e67e22;">${adminNotes}</span>
+                            </div>` : ''}
+                        </div>
                     </div>
-                    <div class="order-items">
-                        <h5 style="margin-bottom:4px;">Items:</h5>
-                        ${orderItems.map(item => {
-                const itemName = item.item_name || item.name;
-                const itemGame = item.item_game || item.game;
-                const quantity = item.quantity;
-                return `
-                                <div class="admin-order-item-detail" style="font-size:0.97em; color:#fff;">
-                                    ${itemName} (${itemGame ? itemGame.toUpperCase() : ''}) x${quantity}
-                                </div>
-                            `;
-            }).join('')}
-                    </div>
-                    <div class="admin-order-actions" style="margin-top:8px;">
-                        <button onclick="updateOrderStatus('${orderId}', 'processing')" class="admin-btn processing-btn">Mark Processing</button>
-                        <button onclick="updateOrderStatus('${orderId}', 'completed')" class="admin-btn completed-btn">Mark Completed</button>
-                        <button onclick="updateOrderStatus('${orderId}', 'cancelled')" class="admin-btn cancel-btn">Cancel Order</button>
+
+                    <div class="order-actions">
+                        <button onclick="updateOrderStatus('${orderId}', 'processing')" class="action-btn btn-process">
+                            <span>&#9881;</span> Process
+                        </button>
+                        <button onclick="updateOrderStatus('${orderId}', 'completed')" class="action-btn btn-complete">
+                            <span>&#10004;</span> Complete
+                        </button>
+                        <button onclick="updateOrderStatus('${orderId}', 'cancelled')" class="action-btn btn-cancel">
+                            <span>&#10006;</span> Cancel
+                        </button>
                     </div>
                 </div>
             `;
@@ -1430,6 +1338,17 @@ function displayAdminOrders(orders) {
         }
     }
 }
+window.handleSearch = function(query) {
+    searchQuery = query.toLowerCase().trim();
+    displayItems();
+    
+    // Sync inputs
+    const desktopInput = document.getElementById('searchInput');
+    const mobileInput = document.getElementById('searchInputMobile');
+    if (desktopInput && desktopInput.value !== query) desktopInput.value = query;
+    if (mobileInput && mobileInput.value !== query) mobileInput.value = query;
+};
+
 function displayItems() {
     const grid = document.getElementById('itemsGrid');
     if (!grid) {
@@ -1437,9 +1356,25 @@ function displayItems() {
         return;
     }
 
-    const filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
+    let filteredItems = currentFilter === 'all' ? items : items.filter(item => item.game === currentFilter);
+    
+    // Apply search filter
+    if (searchQuery) {
+        filteredItems = filteredItems.filter(item => 
+            item.name.toLowerCase().includes(searchQuery) || 
+            (item.description && item.description.toLowerCase().includes(searchQuery))
+        );
+    }
+
     if (filteredItems.length === 0) {
-        grid.innerHTML = '<div class="no-items">No items available for the selected filter.</div>';
+        grid.innerHTML = `
+            <div class="no-items-container">
+                <div class="no-items-icon">🔍</div>
+                <h3 class="no-items-title">No items found</h3>
+                <p class="no-items-text">We couldn't find any items matching your criteria.</p>
+                <button class="clear-search-btn" onclick="handleSearch('')">Clear Search</button>
+            </div>
+        `;
         return;
     }
 
@@ -1450,7 +1385,7 @@ function displayItems() {
                 <div class="rarity-badge rarity-${item.rarity}">${item.rarity || ''}</div>
             </div>
             <div class="item-image ${item.game}-bg">
-                ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="item-img" />` : ''}
+                ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="item-img" loading="lazy" />` : ''}
             </div>
             <div class="item-name">${item.name}</div>
             <div class="item-description">${item.description || ''}</div>
@@ -2542,7 +2477,13 @@ window.addEventListener('click', function (event) {
 });
 function toggleMobileMenu() {
     const menu = document.getElementById('mobileMenu');
+    const overlay = document.getElementById('mobileMenuOverlay');
     const isOpen = menu.classList.toggle('open');
+    
+    if (overlay) {
+        overlay.classList.toggle('open', isOpen);
+    }
+
     if (isOpen) {
         menu.removeAttribute('inert');
         // Optionally focus the close button for accessibility
