@@ -32,6 +32,17 @@
         text-overflow: ellipsis !important;
         min-width: 0 !important; /* Allow shrinking */
     }
+
+    /* Fix for truncated Mobile Legends tag on mobile */
+    .game-tag.ml-tag {
+        font-size: 0 !important;
+    }
+    .game-tag.ml-tag::after {
+        content: "MLBB";
+        font-size: 0.6rem;
+        visibility: visible;
+    }
+
     .rarity-badge { 
         font-size: 0.6rem !important; 
         padding: 2px 6px !important; 
@@ -258,19 +269,22 @@
     }
 
     .mobile-account-section {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
     }
 
     .mobile-account-section .account-btn {
-        margin: 0 !important;
-        font-size: 0.9rem !important;
-        padding: 12px !important;
+        width: 100% !important;
+        margin: 5px 0 !important;
+        min-height: 54px !important;
+        font-size: 1.1rem !important;
+        padding: 15px !important;
+        border-radius: 14px !important;
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 44px !important;
     }
 
     .track-order-btn {
@@ -552,6 +566,24 @@
     }
 
     /* Hamburger slide-out menu */
+    .mobile-menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 2000;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(3px);
+    }
+    .mobile-menu-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
     .mobile-menu {
         position: fixed;
         top: 0;
@@ -585,6 +617,7 @@
         display: flex;
         flex-direction: column;
         gap: 10px;
+        width: 100%;
     }
     .mobile-account-section .account-btn {
         width: 100%;
@@ -594,6 +627,98 @@
         border-radius: 14px;
         margin: 5px 0;
     }
+
+    /* Mobile User Profile Styles */
+    .mobile-user-profile {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 16px;
+        padding: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        width: 100%;
+    }
+
+    .mobile-user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .user-avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        background: var(--primary-gradient);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        color: white;
+        box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .welcome-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .username {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .mobile-user-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .mobile-action-btn {
+        width: 100%;
+        text-align: left;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mobile-action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateX(4px);
+    }
+
+    .mobile-action-btn.logout {
+        color: #ff6b6b;
+        border-color: rgba(255, 107, 107, 0.3);
+        background: rgba(255, 107, 107, 0.05);
+        margin-top: 0;
+    }
+
+    .mobile-action-btn.logout:hover {
+        background: rgba(255, 107, 107, 0.15);
+    }
+
     .track-order-btn { 
         width: 100%; 
         margin-top: 10px;
@@ -675,6 +800,17 @@ Styles
         height: 20px !important;
         font-size: 1.1rem !important;
         padding: 0 !important;
+    }
+
+    .mobile-action-btn.admin-mobile-btn {
+        color: #ffd700;
+        border-color: rgba(255, 215, 0, 0.3);
+        background: rgba(255, 215, 0, 0.05);
+    }
+
+    .mobile-action-btn.admin-mobile-btn:hover {
+        background: rgba(255, 215, 0, 0.15);
+        box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
     }
 }
 
